@@ -1,0 +1,85 @@
+# ===========================================
+# Traefik Static Configuration
+# ===========================================
+# This file contains the static configuration for Traefik
+# Dynamic configuration (routers, middlewares) is in ./dynamic/
+
+# ===========================================
+# Global Settings
+# ===========================================
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+# ===========================================
+# API & Dashboard
+# ===========================================
+api:
+  dashboard: true
+  insecure: true  # For development only
+
+# ===========================================
+# Entry Points
+# ===========================================
+entryPoints:
+  web:
+    address: ":80"
+    # Enable forwarded headers for proper client IP detection
+    forwardedHeaders:
+      insecure: true
+  websecure:
+    address: ":443"
+    forwardedHeaders:
+      insecure: true
+
+# ===========================================
+# Providers
+# ===========================================
+providers:
+  # Docker provider for service discovery
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: ngasihtau-network
+    watch: true
+  
+  # File provider for dynamic configuration
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+# ===========================================
+# Logging
+# ===========================================
+log:
+  level: INFO
+  format: json
+
+accessLog:
+  format: json
+  fields:
+    defaultMode: keep
+    names:
+      ClientUsername: drop
+    headers:
+      defaultMode: keep
+      names:
+        User-Agent: keep
+        Authorization: drop
+        X-Request-ID: keep
+
+# ===========================================
+# Health Check / Ping
+# ===========================================
+ping:
+  entryPoint: web
+
+# ===========================================
+# Metrics (Prometheus)
+# ===========================================
+metrics:
+  prometheus:
+    entryPoint: web
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true

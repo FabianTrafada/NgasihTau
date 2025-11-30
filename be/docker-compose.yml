@@ -1,0 +1,218 @@
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  # Each microservice has its own database and dedicated user
+  # See scripts/init-databases.sh for user/permission setup
+  postgres:
+    image: postgres:15-alpine
+    container_name: ngasihtau-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Service database credentials (used by init script)
+      # Format: database -> user:password
+      # - ngasihtau_users -> user_svc:user_svc_password
+      # - ngasihtau_pods -> pod_svc:pod_svc_password
+      # - ngasihtau_materials -> material_svc:material_svc_password
+      # - ngasihtau_ai -> ai_svc:ai_svc_password
+      # - ngasihtau_notifications -> notification_svc:notification_svc_password
+      # - ngasihtau_search -> search_svc:search_svc_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ngasihtau-network
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: ngasihtau-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - ngasihtau-network
+
+  # ===========================================
+  # NATS with JetStream
+  # ===========================================
+  nats:
+    image: nats:2.10-alpine
+    container_name: ngasihtau-nats
+    restart: unless-stopped
+    command: ["--jetstream", "--store_dir=/data", "-m", "8222"]
+    volumes:
+      - nats_data:/data
+    ports:
+      - "4222:4222"   # Client connections
+      - "8222:8222"   # HTTP monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/varz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - ngasihtau-network
+
+  # ===========================================
+  # MinIO Object Storage
+  # ===========================================
+  minio:
+    image: minio/minio:latest
+    container_name: ngasihtau-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ngasihtau-network
+
+  # MinIO bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    container_name: ngasihtau-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/materials --ignore-existing;
+      mc anonymous set download myminio/materials;
+      exit 0;
+      "
+    networks:
+      - ngasihtau-network
+
+  # ===========================================
+  # Meilisearch Full-Text Search
+  # ===========================================
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: ngasihtau-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: f27ca81ae97cfa6471afc118fbb812dd3bb24c9c
+      MEILI_NO_ANALYTICS: true
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ngasihtau-network
+
+  # ===========================================
+  # Qdrant Vector Database
+  # ===========================================
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: ngasihtau-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ngasihtau-network
+
+
+  # ===========================================
+  # Traefik API Gateway
+  # ===========================================
+  traefik:
+    image: traefik:v3.0
+    container_name: ngasihtau-traefik
+    restart: unless-stopped
+    ports:
+      - "8000:80"     # HTTP entrypoint (mapped to 8000 to avoid conflicts)
+      - "8443:443"    # HTTPS entrypoint
+      - "8081:8080"   # Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ngasihtau-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  ngasihtau-network:
+    driver: bridge
+    name: ngasihtau-network
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data:
+    name: ngasihtau-postgres-data
+  redis_data:
+    name: ngasihtau-redis-data
+  nats_data:
+    name: ngasihtau-nats-data
+  minio_data:
+    name: ngasihtau-minio-data
+  meilisearch_data:
+    name: ngasihtau-meilisearch-data
+  qdrant_data:
+    name: ngasihtau-qdrant-data

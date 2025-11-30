@@ -148,26 +148,67 @@ tasks:
     cmds:
       - echo "Creating migration {{.CLI_ARGS}}..."
 
-  # Docker
-  docker:up:
-    desc: Start all services with Docker Compose
+  # Docker Infrastructure
+  infra:up:
+    desc: Start infrastructure services (PostgreSQL, Redis, NATS, MinIO, Meilisearch, Qdrant, Traefik)
     cmds:
-      - docker-compose up -d
+      - docker compose up -d
+
+  infra:down:
+    desc: Stop infrastructure services
+    cmds:
+      - docker compose down
+
+  infra:down:volumes:
+    desc: Stop infrastructure services and remove volumes
+    cmds:
+      - docker compose down -v
+
+  infra:logs:
+    desc: View logs from infrastructure services
+    cmds:
+      - docker compose logs -f
+
+  infra:logs:service:
+    desc: View logs from a specific service (usage - task infra:logs:service -- postgres)
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
+  infra:ps:
+    desc: Show status of infrastructure services
+    cmds:
+      - docker compose ps
+
+  infra:restart:
+    desc: Restart infrastructure services
+    cmds:
+      - docker compose restart
+
+  infra:pull:
+    desc: Pull latest images for infrastructure services
+    cmds:
+      - docker compose pull
+
+  # Docker (legacy aliases)
+  docker:up:
+    desc: Start all services with Docker Compose (alias for infra:up)
+    cmds:
+      - task: infra:up
 
   docker:down:
-    desc: Stop all services
+    desc: Stop all services (alias for infra:down)
     cmds:
-      - docker-compose down
+      - task: infra:down
 
   docker:logs:
-    desc: View logs from all services
+    desc: View logs from all services (alias for infra:logs)
     cmds:
-      - docker-compose logs -f
+      - task: infra:logs
 
   docker:build:
     desc: Build all Docker images
     cmds:
-      - docker-compose build
+      - docker compose build
 
   # Swagger/OpenAPI
   swagger:
