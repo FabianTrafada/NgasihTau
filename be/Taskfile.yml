@@ -1,0 +1,183 @@
+version: '3'
+
+vars:
+  GO_MODULE: ngasihtau
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Development
+  dev:user:
+    desc: Run user service in development mode
+    cmds:
+      - go run ./cmd/user-service
+
+  dev:pod:
+    desc: Run pod service in development mode
+    cmds:
+      - go run ./cmd/pod-service
+
+  dev:material:
+    desc: Run material service in development mode
+    cmds:
+      - go run ./cmd/material-service
+
+  dev:search:
+    desc: Run search service in development mode
+    cmds:
+      - go run ./cmd/search-service
+
+  dev:ai:
+    desc: Run AI service in development mode
+    cmds:
+      - go run ./cmd/ai-service
+
+  dev:notification:
+    desc: Run notification service in development mode
+    cmds:
+      - go run ./cmd/notification-service
+
+  # Build
+  build:
+    desc: Build all services
+    cmds:
+      - task: build:user
+      - task: build:pod
+      - task: build:material
+      - task: build:search
+      - task: build:ai
+      - task: build:notification
+
+  build:user:
+    desc: Build user service
+    cmds:
+      - go build -o bin/user-service ./cmd/user-service
+
+  build:pod:
+    desc: Build pod service
+    cmds:
+      - go build -o bin/pod-service ./cmd/pod-service
+
+  build:material:
+    desc: Build material service
+    cmds:
+      - go build -o bin/material-service ./cmd/material-service
+
+  build:search:
+    desc: Build search service
+    cmds:
+      - go build -o bin/search-service ./cmd/search-service
+
+  build:ai:
+    desc: Build AI service
+    cmds:
+      - go build -o bin/ai-service ./cmd/ai-service
+
+  build:notification:
+    desc: Build notification service
+    cmds:
+      - go build -o bin/notification-service ./cmd/notification-service
+
+  # Testing
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -v -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - go test -v -short ./...
+
+  # Code Quality
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  # Dependencies
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+
+  deps:tidy:
+    desc: Tidy dependencies
+    cmds:
+      - go mod tidy
+
+  deps:update:
+    desc: Update dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # Database Migrations
+  migrate:up:
+    desc: Run all migrations
+    cmds:
+      - echo "Running migrations..."
+
+  migrate:down:
+    desc: Rollback last migration
+    cmds:
+      - echo "Rolling back migration..."
+
+  migrate:create:
+    desc: Create a new migration
+    cmds:
+      - echo "Creating migration {{.CLI_ARGS}}..."
+
+  # Docker
+  docker:up:
+    desc: Start all services with Docker Compose
+    cmds:
+      - docker-compose up -d
+
+  docker:down:
+    desc: Stop all services
+    cmds:
+      - docker-compose down
+
+  docker:logs:
+    desc: View logs from all services
+    cmds:
+      - docker-compose logs -f
+
+  docker:build:
+    desc: Build all Docker images
+    cmds:
+      - docker-compose build
+
+  # Swagger/OpenAPI
+  swagger:
+    desc: Generate Swagger documentation
+    cmds:
+      - swag init -g cmd/user-service/main.go -o api/swagger --parseDependency
+
+  # Clean
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf bin/
+      - rm -f coverage.out coverage.html
