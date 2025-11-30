@@ -1,0 +1,5 @@
+NgasihTau
+
+Website belajar yang nantinya mirip dengan github, instead of repository... User yang punya role guru atau verified, bisa membuat yang namanya "Knowledge Pod", nanti isinya Guru bisa invite muridnya sebagai collaborator, nah disitu guru maupun siswa(Harus diverifikasi sama guru terlebih dahulu) bisa upload materi(pdf, word, ppt). Nanti kalo user cari materi yang berkaitan dengan matematika, mereka tinggal klik search bar(seperti yang ada di github bagian atas/atas tengah), nanti keluar semua yang berkaitan dengan matematika. Misal, kalkulus... Kalau user klik kalkulus nanti si user bakalan di redirect ke "Knowledge Pod" yang isinya ada materi kalkulus. Nah kalo user klik salah satu materi, misal kalkulus 2. Nanti ada preview materi, dan sebelah kanan ada panel untuk chat with ai lah gampangannya... Nah nanti si user bisa nanya nanya ke ai itu.
+
+Sebelum user bisa akses ke materi tersebut, si guru kan upload materi itu. Di background job, materi tersebut di chunking, embedding agar si ai tidak halu. 
