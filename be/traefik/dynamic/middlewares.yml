@@ -1,0 +1,155 @@
+# ===========================================
+# Traefik Dynamic Configuration - Middlewares
+# ===========================================
+# Rate limiting tiers per Requirement 10.8:
+# - Auth endpoints: 10 req/min
+# - Search endpoints: 60 req/min
+# - AI Chat endpoints: 30 req/min
+# - File upload endpoints: 10 req/min
+# - General API: 100 req/min
+
+http:
+  middlewares:
+    # ===========================================
+    # Rate Limiting Middlewares
+    # ===========================================
+    
+    # Auth endpoints: 10 req/min (Requirement 10.8)
+    rate-limit-auth:
+      rateLimit:
+        average: 10
+        period: 1m
+        burst: 15
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # Search endpoints: 60 req/min (Requirement 10.8)
+    rate-limit-search:
+      rateLimit:
+        average: 60
+        period: 1m
+        burst: 80
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # AI Chat endpoints: 30 req/min (Requirement 10.8)
+    rate-limit-ai:
+      rateLimit:
+        average: 30
+        period: 1m
+        burst: 40
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # File upload endpoints: 10 req/min (Requirement 10.8)
+    rate-limit-upload:
+      rateLimit:
+        average: 10
+        period: 1m
+        burst: 15
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # General API: 100 req/min (Requirement 10.8)
+    rate-limit-general:
+      rateLimit:
+        average: 100
+        period: 1m
+        burst: 150
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # ===========================================
+    # CORS Middleware (Requirement 10)
+    # ===========================================
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+          - HEAD
+        accessControlAllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-Request-ID
+          - X-Requested-With
+          - Accept
+          - Origin
+        accessControlExposeHeaders:
+          - X-Request-ID
+          - X-API-Version
+          - X-RateLimit-Limit
+          - X-RateLimit-Remaining
+          - X-RateLimit-Reset
+          - Retry-After
+        accessControlAllowOriginList:
+          - "http://localhost:3000"
+          - "http://localhost:5173"
+        accessControlAllowCredentials: true
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+    # ===========================================
+    # Security Headers (Requirement 10.7)
+    # ===========================================
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "DENY"
+          X-XSS-Protection: "1; mode=block"
+        # Remove server header for security
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+
+    # ===========================================
+    # API Version Header
+    # ===========================================
+    api-version:
+      headers:
+        customResponseHeaders:
+          X-API-Version: "v1"
+
+    # ===========================================
+    # Retry Middleware (Requirement 10.4)
+    # ===========================================
+    retry-middleware:
+      retry:
+        attempts: 3
+        initialInterval: 100ms
+
+    # ===========================================
+    # Circuit Breaker (Requirement 10.4)
+    # ===========================================
+    circuit-breaker:
+      circuitBreaker:
+        expression: "NetworkErrorRatio() > 0.5 || ResponseCodeRatio(500, 600, 0, 600) > 0.5"
+
+    # ===========================================
+    # Compress Middleware
+    # ===========================================
+    compress:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+
+    # ===========================================
+    # Strip Prefix (for internal routing)
+    # ===========================================
+    strip-api-prefix:
+      stripPrefix:
+        prefixes:
+          - "/api"
