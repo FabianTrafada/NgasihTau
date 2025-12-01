@@ -138,26 +138,31 @@ tasks:
   # Requires: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
   migrate:user:up:
     desc: Run all user service migrations
+    dotenv: ['.env']
     cmds:
       - migrate -path ./migrations/user -database "${USER_DB_URL}" up
 
   migrate:user:down:
     desc: Rollback last user service migration
+    dotenv: ['.env']
     cmds:
       - migrate -path ./migrations/user -database "${USER_DB_URL}" down 1
 
   migrate:user:down:all:
     desc: Rollback all user service migrations
+    dotenv: ['.env']
     cmds:
       - migrate -path ./migrations/user -database "${USER_DB_URL}" down -all
 
   migrate:user:version:
     desc: Show current user service migration version
+    dotenv: ['.env']
     cmds:
       - migrate -path ./migrations/user -database "${USER_DB_URL}" version
 
   migrate:user:force:
     desc: Force set user service migration version (usage - task migrate:user:force -- VERSION)
+    dotenv: ['.env']
     cmds:
       - migrate -path ./migrations/user -database "${USER_DB_URL}" force {{.CLI_ARGS}}
 
