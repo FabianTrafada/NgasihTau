@@ -12,11 +12,13 @@ tasks:
   # Development
   dev:user:
     desc: Run user service in development mode
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/user-service
 
   dev:pod:
     desc: Run pod service in development mode
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/pod-service
 
