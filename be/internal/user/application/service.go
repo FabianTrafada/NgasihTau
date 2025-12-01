@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"ngasihtau/internal/common/errors"
 	"ngasihtau/internal/user/domain"
 	"ngasihtau/pkg/hash"
 	"ngasihtau/pkg/jwt"
+	natspkg "ngasihtau/pkg/nats"
 	"ngasihtau/pkg/oauth"
 	"ngasihtau/pkg/totp"
 )
@@ -129,6 +131,7 @@ type userService struct {
 	verificationTokenRepo domain.VerificationTokenRepository
 	jwtManager            *jwt.Manager
 	googleClient          *oauth.GoogleClient
+	eventPublisher        natspkg.EventPublisher
 }
 
 // NewUserService creates a new UserService instance.
@@ -141,6 +144,7 @@ func NewUserService(
 	verificationTokenRepo domain.VerificationTokenRepository,
 	jwtManager *jwt.Manager,
 	googleClient *oauth.GoogleClient,
+	eventPublisher natspkg.EventPublisher,
 ) UserService {
 	return &userService{
 		userRepo:              userRepo,
@@ -151,6 +155,7 @@ func NewUserService(
 		verificationTokenRepo: verificationTokenRepo,
 		jwtManager:            jwtManager,
 		googleClient:          googleClient,
+		eventPublisher:        eventPublisher,
 	}
 }
 
@@ -202,8 +207,25 @@ func (s *userService) Register(ctx context.Context, input RegisterInput) (*AuthR
 		return nil, err
 	}
 
-	// TODO: Publish user.created event for email verification
-	// TODO: Send verification email via event
+	// Publish user.created event
+	if s.eventPublisher != nil {
+		event := natspkg.UserCreatedEvent{
+			UserID: user.ID,
+			Email:  user.Email,
+			Name:   user.Name,
+			Role:   string(user.Role),
+		}
+		if err := s.eventPublisher.PublishUserCreated(ctx, event); err != nil {
+			log.Error().Err(err).Str("user_id", user.ID.String()).Msg("failed to publish user created event")
+		}
+	}
+
+	// Send verification email automatically after registration
+	// This is done asynchronously via event publishing
+	if err := s.SendVerificationEmail(ctx, user.ID); err != nil {
+		// Log but don't fail registration - user can request verification email later
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("failed to send verification email after registration")
+	}
 
 	return &AuthResult{
 		User:         user,
@@ -743,21 +765,33 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 	}
 
 	// Create verification token (valid for 24 hours as per requirement 1.2)
+	expiresAt := time.Now().Add(24 * time.Hour)
 	verificationToken := domain.NewVerificationToken(
 		userID,
 		tokenHash,
 		domain.TokenTypeEmailVerification,
-		time.Now().Add(24*time.Hour),
+		expiresAt,
 	)
 
 	if err := s.verificationTokenRepo.Create(ctx, verificationToken); err != nil {
 		return err
 	}
 
-	// TODO: Publish email.verification event via NATS for email sending
-	// For now, we return the token in a way that can be used for testing
-	// In production, this would be sent via email
-	_ = rawToken // Token would be included in email link
+	// Publish email.verification event via NATS for email sending
+	// The Notification Service will consume this event and send the verification email
+	if s.eventPublisher != nil {
+		event := natspkg.EmailVerificationEvent{
+			UserID:    userID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Token:     rawToken,
+			ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
+		}
+		if err := s.eventPublisher.PublishEmailVerification(ctx, event); err != nil {
+			// Log the error but don't fail the request - the token is still created
+			log.Error().Err(err).Str("user_id", userID.String()).Msg("failed to publish email verification event")
+		}
+	}
 
 	return nil
 }
@@ -831,20 +865,33 @@ func (s *userService) RequestPasswordReset(ctx context.Context, email string) er
 	}
 
 	// Create password reset token (valid for 1 hour as per requirement 1.2)
+	expiresAt := time.Now().Add(1 * time.Hour)
 	resetToken := domain.NewVerificationToken(
 		user.ID,
 		tokenHash,
 		domain.TokenTypePasswordReset,
-		time.Now().Add(1*time.Hour),
+		expiresAt,
 	)
 
 	if err := s.verificationTokenRepo.Create(ctx, resetToken); err != nil {
 		return err
 	}
 
-	// TODO: Publish email.password_reset event via NATS for email sending
-	// For now, we return success. In production, the token would be sent via email
-	_ = rawToken // Token would be included in email link
+	// Publish email.password_reset event via NATS for email sending
+	// The Notification Service will consume this event and send the password reset email
+	if s.eventPublisher != nil {
+		event := natspkg.EmailPasswordResetEvent{
+			UserID:    user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Token:     rawToken,
+			ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
+		}
+		if err := s.eventPublisher.PublishEmailPasswordReset(ctx, event); err != nil {
+			// Log the error but don't fail the request - the token is still created
+			log.Error().Err(err).Str("user_id", user.ID.String()).Msg("failed to publish password reset event")
+		}
+	}
 
 	return nil
 }
@@ -944,7 +991,12 @@ func (s *userService) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 		return err
 	}
 
-	// TODO: Publish user.updated event via NATS for cache invalidation
+	// Publish user.updated event via NATS for cache invalidation
+	if s.eventPublisher != nil {
+		if err := s.eventPublisher.PublishUserUpdated(ctx, userID); err != nil {
+			log.Error().Err(err).Str("user_id", userID.String()).Msg("failed to publish user updated event")
+		}
+	}
 
 	return nil
 }
@@ -978,7 +1030,15 @@ func (s *userService) Follow(ctx context.Context, followerID, followingID uuid.U
 		return err
 	}
 
-	// TODO: Publish user.followed event via NATS for notifications
+	// Publish user.followed event via NATS for notifications
+	if s.eventPublisher != nil {
+		if err := s.eventPublisher.PublishUserFollowed(ctx, followerID, followingID); err != nil {
+			log.Error().Err(err).
+				Str("follower_id", followerID.String()).
+				Str("following_id", followingID.String()).
+				Msg("failed to publish user followed event")
+		}
+	}
 
 	return nil
 }

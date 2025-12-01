@@ -389,6 +389,7 @@ func newTestService() (UserService, *mockUserRepo, *mockRefreshTokenRepo) {
 		verificationTokenRepo,
 		jwtManager,
 		nil, // No Google client for tests
+		nil, // No event publisher for tests (will use nil checks)
 	)
 
 	return svc, userRepo, refreshTokenRepo

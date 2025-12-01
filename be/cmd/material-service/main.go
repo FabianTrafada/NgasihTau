@@ -1,5 +1,5 @@
-// Package main is the entry point for the User Service.
-// User Service handles authentication, authorization, user profiles, and social features.
+// Package main is the entry point for the Material Service.
+// Material Service handles file uploads, versioning, comments, ratings, and bookmarks.
 package main
 
 import (
@@ -19,12 +19,12 @@ import (
 
 	"ngasihtau/internal/common/config"
 	"ngasihtau/internal/common/middleware"
-	"ngasihtau/internal/user/application"
-	"ngasihtau/internal/user/infrastructure/postgres"
-	userhttp "ngasihtau/internal/user/interfaces/http"
+	"ngasihtau/internal/material/application"
+	minioclient "ngasihtau/internal/material/infrastructure/minio"
+	"ngasihtau/internal/material/infrastructure/postgres"
+	materialhttp "ngasihtau/internal/material/interfaces/http"
 	"ngasihtau/pkg/jwt"
-	natspkg "ngasihtau/pkg/nats"
-	"ngasihtau/pkg/oauth"
+	"ngasihtau/pkg/nats"
 )
 
 func main() {
@@ -49,10 +49,10 @@ func main() {
 	zerolog.SetGlobalLevel(level)
 
 	log.Info().
-		Str("service", "user-service").
+		Str("service", "material-service").
 		Str("env", cfg.App.Env).
-		Int("port", cfg.UserService.Port).
-		Msg("starting user service")
+		Int("port", cfg.MatService.Port).
+		Msg("starting material service")
 
 	// Create application context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,7 +66,7 @@ func main() {
 
 	// Start HTTP server in goroutine
 	go func() {
-		addr := fmt.Sprintf("%s:%d", cfg.UserService.Host, cfg.UserService.Port)
+		addr := fmt.Sprintf("%s:%d", cfg.MatService.Host, cfg.MatService.Port)
 		if err := app.Start(addr); err != nil {
 			log.Error().Err(err).Msg("server error")
 			cancel()
@@ -91,25 +91,25 @@ func main() {
 	log.Info().Msg("server exited")
 }
 
-// App represents the user service application.
+// App represents the material service application.
 type App struct {
 	httpServer *fiber.App
 	db         *pgxpool.Pool
-	natsClient *natspkg.Client
+	natsClient *nats.Client
 }
 
 // initializeApp creates and configures the application with all dependencies.
 func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Initialize database connection pool
-	dbConfig, err := pgxpool.ParseConfig(cfg.UserDB.DSN())
+	dbConfig, err := pgxpool.ParseConfig(cfg.MaterialDB.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database config: %w", err)
 	}
 
-	dbConfig.MaxConns = int32(cfg.UserDB.MaxOpenConns)
-	dbConfig.MinConns = int32(cfg.UserDB.MaxIdleConns / 2)
-	dbConfig.MaxConnLifetime = cfg.UserDB.ConnMaxLifetime
-	dbConfig.MaxConnIdleTime = 5 * time.Minute // Default idle time
+	dbConfig.MaxConns = int32(cfg.MaterialDB.MaxOpenConns)
+	dbConfig.MinConns = int32(cfg.MaterialDB.MaxIdleConns / 2)
+	dbConfig.MaxConnLifetime = cfg.MaterialDB.ConnMaxLifetime
+	dbConfig.MaxConnIdleTime = 5 * time.Minute
 
 	db, err := pgxpool.NewWithConfig(ctx, dbConfig)
 	if err != nil {
@@ -122,6 +122,50 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 	log.Info().Msg("connected to database")
 
+	// Initialize MinIO client
+	minioClient, err := minioclient.NewClient(minioclient.Config{
+		Endpoint:        cfg.MinIO.Endpoint,
+		AccessKey:       cfg.MinIO.AccessKey,
+		SecretKey:       cfg.MinIO.SecretKey,
+		UseSSL:          cfg.MinIO.UseSSL,
+		BucketMaterials: cfg.MinIO.BucketMaterials,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
+	}
+
+	// Ensure materials bucket exists
+	if err := minioClient.EnsureBucket(ctx); err != nil {
+		log.Warn().Err(err).Msg("failed to ensure materials bucket exists")
+	}
+	log.Info().Msg("connected to MinIO")
+
+	// Initialize NATS client for event publishing
+	var natsClient *nats.Client
+	var eventPublisher nats.EventPublisher
+	if cfg.NATS.URL != "" {
+		natsClient, err = nats.NewClient(nats.Config{
+			URL:       cfg.NATS.URL,
+			ClusterID: cfg.NATS.ClusterID,
+			ClientID:  "material-service",
+		})
+		if err != nil {
+			log.Warn().Err(err).Msg("failed to connect to NATS, event publishing disabled")
+			eventPublisher = nats.NewNoOpPublisher()
+		} else {
+			log.Info().Msg("connected to NATS")
+			eventPublisher = nats.NewPublisher(natsClient)
+
+			// Ensure MATERIAL stream exists for event publishing
+			if err := natsClient.EnsureStream(ctx, nats.StreamMaterial, nats.StreamSubjects[nats.StreamMaterial]); err != nil {
+				log.Warn().Err(err).Msg("failed to ensure MATERIAL stream exists")
+			}
+		}
+	} else {
+		log.Info().Msg("NATS not configured, event publishing disabled")
+		eventPublisher = nats.NewNoOpPublisher()
+	}
+
 	// Initialize JWT manager
 	jwtManager := jwt.NewManager(jwt.Config{
 		Secret:             cfg.JWT.Secret,
@@ -131,68 +175,31 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	})
 
 	// Initialize repositories
-	userRepo := postgres.NewUserRepository(db)
-	oauthRepo := postgres.NewOAuthRepository(db)
-	refreshTokenRepo := postgres.NewRefreshTokenRepository(db)
-	backupCodeRepo := postgres.NewBackupCodeRepository(db)
-	followRepo := postgres.NewFollowRepository(db)
-	verificationTokenRepo := postgres.NewVerificationTokenRepository(db)
-
-	// Initialize Google OAuth client (optional - may not be configured)
-	var googleClient *oauth.GoogleClient
-	if cfg.OAuth.Google.ClientID != "" && cfg.OAuth.Google.ClientSecret != "" {
-		googleClient = oauth.NewGoogleClient(oauth.GoogleConfig{
-			ClientID:     cfg.OAuth.Google.ClientID,
-			ClientSecret: cfg.OAuth.Google.ClientSecret,
-			RedirectURL:  cfg.OAuth.Google.RedirectURL,
-		})
-		log.Info().Msg("Google OAuth client initialized")
-	} else {
-		log.Warn().Msg("Google OAuth not configured - Google login will be disabled")
-	}
-
-	// Initialize NATS client (optional - may not be configured)
-	var natsClient *natspkg.Client
-	var eventPublisher natspkg.EventPublisher
-	if cfg.NATS.URL != "" {
-		var err error
-		natsClient, err = natspkg.NewClient(natspkg.Config{
-			URL:       cfg.NATS.URL,
-			ClusterID: cfg.NATS.ClusterID,
-			ClientID:  cfg.NATS.ClientID + "-user-service",
-		})
-		if err != nil {
-			log.Warn().Err(err).Msg("failed to connect to NATS - event publishing will be disabled")
-			eventPublisher = natspkg.NewNoOpPublisher()
-		} else {
-			log.Info().Msg("NATS client initialized")
-			eventPublisher = natspkg.NewPublisher(natsClient)
-		}
-	} else {
-		log.Warn().Msg("NATS not configured - event publishing will be disabled")
-		eventPublisher = natspkg.NewNoOpPublisher()
-	}
+	materialRepo := postgres.NewMaterialRepository(db)
+	versionRepo := postgres.NewMaterialVersionRepository(db)
+	commentRepo := postgres.NewCommentRepository(db)
+	ratingRepo := postgres.NewRatingRepository(db)
+	bookmarkRepo := postgres.NewBookmarkRepository(db)
 
 	// Initialize services
-	userService := application.NewUserService(
-		userRepo,
-		oauthRepo,
-		refreshTokenRepo,
-		backupCodeRepo,
-		followRepo,
-		verificationTokenRepo,
-		jwtManager,
-		googleClient,
+	materialService := application.NewService(
+		materialRepo,
+		versionRepo,
+		commentRepo,
+		ratingRepo,
+		bookmarkRepo,
+		minioClient,
 		eventPublisher,
 	)
 
 	// Initialize HTTP handlers
-	handler := userhttp.NewHandler(userService, jwtManager)
+	handler := materialhttp.NewHandler(materialService, jwtManager)
 
 	// Initialize Fiber app
 	fiberApp := fiber.New(fiber.Config{
-		AppName:      "NgasihTau User Service",
+		AppName:      "NgasihTau Material Service",
 		ErrorHandler: errorHandler,
+		BodyLimit:    100 * 1024 * 1024, // 100MB for file metadata
 	})
 
 	// Global middleware
@@ -221,7 +228,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	fiberApp.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":  "healthy",
-			"service": "user-service",
+			"service": "material-service",
 		})
 	})
 
