@@ -133,20 +133,52 @@ tasks:
       - go mod tidy
 
   # Database Migrations
-  migrate:up:
-    desc: Run all migrations
+  # Requires: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+  migrate:user:up:
+    desc: Run all user service migrations
     cmds:
-      - echo "Running migrations..."
+      - migrate -path ./migrations/user -database "${USER_DB_URL}" up
+
+  migrate:user:down:
+    desc: Rollback last user service migration
+    cmds:
+      - migrate -path ./migrations/user -database "${USER_DB_URL}" down 1
+
+  migrate:user:down:all:
+    desc: Rollback all user service migrations
+    cmds:
+      - migrate -path ./migrations/user -database "${USER_DB_URL}" down -all
+
+  migrate:user:version:
+    desc: Show current user service migration version
+    cmds:
+      - migrate -path ./migrations/user -database "${USER_DB_URL}" version
+
+  migrate:user:force:
+    desc: Force set user service migration version (usage - task migrate:user:force -- VERSION)
+    cmds:
+      - migrate -path ./migrations/user -database "${USER_DB_URL}" force {{.CLI_ARGS}}
+
+  migrate:user:create:
+    desc: Create a new user service migration (usage - task migrate:user:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/user -seq {{.CLI_ARGS}}
+
+  migrate:up:
+    desc: Run all migrations for all services
+    cmds:
+      - task: migrate:user:up
 
   migrate:down:
-    desc: Rollback last migration
+    desc: Rollback last migration for all services
     cmds:
-      - echo "Rolling back migration..."
+      - task: migrate:user:down
 
   migrate:create:
-    desc: Create a new migration
+    desc: Create a new migration (usage - task migrate:create -- service_name migration_name)
     cmds:
-      - echo "Creating migration {{.CLI_ARGS}}..."
+      - echo "Use task migrate:{service}:create -- migration_name"
+      - echo "Available services - user, pod, material, search, ai, notification"
 
   # Docker Infrastructure
   infra:up:
