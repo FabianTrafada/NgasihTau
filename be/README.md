@@ -64,6 +64,7 @@ Run `task` or `task --list` to see all available commands.
 | `task dev:search` | Run Search Service (port 8004) |
 | `task dev:ai` | Run AI Service (port 8005) |
 | `task dev:notification` | Run Notification Service (port 8006) |
+| `task dev:file-processor` | Run File Processor Service (port 8007) |
 
 ### Infrastructure
 
@@ -185,6 +186,7 @@ Content-Type: application/json
 | Meilisearch | 7700 | Full-text search |
 | Qdrant | 6333 | Vector database |
 | Traefik | 8000 (HTTP), 8081 (Dashboard) | API Gateway |
+| File Processor | 8007 | Text extraction (PDF/DOCX/PPTX) |
 
 ## Troubleshooting
 

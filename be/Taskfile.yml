@@ -42,6 +42,12 @@ tasks:
     cmds:
       - go run ./cmd/notification-service
 
+  dev:file-processor:
+    desc: Run file processor service in development mode (Python)
+    dir: file-processor
+    cmds:
+      - uv run uvicorn main:app --reload --port 8007
+
   # Build
   build:
     desc: Build all services

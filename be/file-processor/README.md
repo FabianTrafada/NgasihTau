@@ -43,7 +43,7 @@ A lightweight Python service for extracting text from PDF, DOCX, and PPTX files.
 
 4. **Run the service**:
    ```bash
-   uvicorn main:app --reload --port 8000
+   uvicorn main:app --reload --port 8007
    ```
 
 ## API Endpoints
@@ -100,7 +100,7 @@ docker build -t file-processor .
 
 ### Run the container
 ```bash
-docker run -p 8000:8000 file-processor
+docker run -p 8007:8007 file-processor
 ```
 
 ## Testing
@@ -167,7 +167,7 @@ uv sync --all-extras
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `HOST` | Server host | `0.0.0.0` |
-| `PORT` | Server port | `8000` |
+| `PORT` | Server port | `8007` |
 
 ## License
 
