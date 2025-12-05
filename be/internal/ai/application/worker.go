@@ -94,7 +94,7 @@ func (w *Worker) handleMaterialUploaded(ctx context.Context, event natspkg.Cloud
 			Str("material_id", data.MaterialID.String()).
 			Msg("failed to process material")
 
-		w.publishProcessedEvent(ctx, data.MaterialID, "processing_failed", 0, 0, err.Error())
+		w.publishProcessedEvent(ctx, data.MaterialID, "processing_failed", 0, 0, err.Error(), nil)
 		return nil
 	}
 
@@ -185,7 +185,18 @@ func (w *Worker) processMaterial(ctx context.Context, data natspkg.MaterialUploa
 		wordCount = int(wc)
 	}
 
-	w.publishProcessedEvent(ctx, data.MaterialID, "ready", len(materialChunks), wordCount, "")
+	// Build material info for search indexing from the uploaded event
+	info := &MaterialInfo{
+		PodID:       data.PodID,
+		UploaderID:  data.UploaderID,
+		Title:       data.Title,
+		Description: data.Description,
+		FileType:    data.FileType,
+		Categories:  data.Categories,
+		Tags:        data.Tags,
+	}
+
+	w.publishProcessedEvent(ctx, data.MaterialID, "ready", len(materialChunks), wordCount, "", info)
 
 	return nil
 }
@@ -237,7 +248,18 @@ func (w *Worker) extractText(ctx context.Context, fileURL, fileType string) (str
 	return extractResp.Text, extractResp.Metadata, nil
 }
 
-func (w *Worker) publishProcessedEvent(ctx context.Context, materialID uuid.UUID, status string, chunkCount, wordCount int, errMsg string) {
+// MaterialInfo contains material information for event publishing.
+type MaterialInfo struct {
+	PodID       uuid.UUID
+	UploaderID  uuid.UUID
+	Title       string
+	Description string
+	FileType    string
+	Categories  []string
+	Tags        []string
+}
+
+func (w *Worker) publishProcessedEvent(ctx context.Context, materialID uuid.UUID, status string, chunkCount, wordCount int, errMsg string, info *MaterialInfo) {
 	if w.natsClient == nil {
 		return
 	}
@@ -248,6 +270,17 @@ func (w *Worker) publishProcessedEvent(ctx context.Context, materialID uuid.UUID
 		ChunkCount: chunkCount,
 		WordCount:  wordCount,
 		Error:      errMsg,
+	}
+
+	// Include material info if available (for search indexing)
+	if info != nil {
+		event.PodID = info.PodID
+		event.UploaderID = info.UploaderID
+		event.Title = info.Title
+		event.Description = info.Description
+		event.FileType = info.FileType
+		event.Categories = info.Categories
+		event.Tags = info.Tags
 	}
 
 	if err := w.natsClient.Publish(ctx, natspkg.SubjectMaterialProcessed, "material.processed", event); err != nil {

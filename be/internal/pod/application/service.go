@@ -112,6 +112,13 @@ type podService struct {
 	starRepo         domain.PodStarRepository
 	followRepo       domain.PodFollowRepository
 	activityRepo     domain.ActivityRepository
+	eventPublisher   EventPublisher
+}
+
+// EventPublisher defines the interface for publishing pod events.
+type EventPublisher interface {
+	PublishPodCreated(ctx context.Context, pod *domain.Pod) error
+	PublishPodUpdated(ctx context.Context, pod *domain.Pod) error
 }
 
 // NewPodService creates a new PodService instance.
@@ -121,6 +128,7 @@ func NewPodService(
 	starRepo domain.PodStarRepository,
 	followRepo domain.PodFollowRepository,
 	activityRepo domain.ActivityRepository,
+	eventPublisher EventPublisher,
 ) PodService {
 	return &podService{
 		podRepo:          podRepo,
@@ -128,6 +136,7 @@ func NewPodService(
 		starRepo:         starRepo,
 		followRepo:       followRepo,
 		activityRepo:     activityRepo,
+		eventPublisher:   eventPublisher,
 	}
 }
 
@@ -194,6 +203,16 @@ func (s *podService) CreatePod(ctx context.Context, input CreatePodInput) (*doma
 
 	if err := s.podRepo.Create(ctx, pod); err != nil {
 		return nil, err
+	}
+
+	// Publish pod.created event for search indexing
+	if s.eventPublisher != nil {
+		go func() {
+			if err := s.eventPublisher.PublishPodCreated(context.Background(), pod); err != nil {
+				// Log error but don't fail the request
+				// The pod is already created, event publishing is best-effort
+			}
+		}()
 	}
 
 	return pod, nil
@@ -290,6 +309,15 @@ func (s *podService) UpdatePod(ctx context.Context, id uuid.UUID, userID uuid.UU
 		"changes": "pod_updated",
 	})
 	_ = s.activityRepo.Create(ctx, activity)
+
+	// Publish pod.updated event for search re-indexing
+	if s.eventPublisher != nil {
+		go func() {
+			if err := s.eventPublisher.PublishPodUpdated(context.Background(), pod); err != nil {
+				// Log error but don't fail the request
+			}
+		}()
+	}
 
 	return pod, nil
 }

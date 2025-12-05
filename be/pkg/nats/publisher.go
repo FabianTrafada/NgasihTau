@@ -35,7 +35,7 @@ type EventPublisher interface {
 	PublishPodCreated(ctx context.Context, event PodCreatedEvent) error
 
 	// PublishPodUpdated publishes a pod updated event.
-	PublishPodUpdated(ctx context.Context, podID uuid.UUID) error
+	PublishPodUpdated(ctx context.Context, event PodUpdatedEvent) error
 
 	// PublishCollaboratorInvited publishes a collaborator invited event.
 	PublishCollaboratorInvited(ctx context.Context, event CollaboratorInvitedEvent) error
@@ -100,8 +100,7 @@ func (p *Publisher) PublishPodCreated(ctx context.Context, event PodCreatedEvent
 }
 
 // PublishPodUpdated publishes a pod updated event.
-func (p *Publisher) PublishPodUpdated(ctx context.Context, podID uuid.UUID) error {
-	event := PodUpdatedEvent{PodID: podID}
+func (p *Publisher) PublishPodUpdated(ctx context.Context, event PodUpdatedEvent) error {
 	return p.client.Publish(ctx, SubjectPodUpdated, "pod.updated", event)
 }
 
@@ -164,7 +163,7 @@ func (p *NoOpPublisher) PublishPodCreated(ctx context.Context, event PodCreatedE
 }
 
 // PublishPodUpdated is a no-op.
-func (p *NoOpPublisher) PublishPodUpdated(ctx context.Context, podID uuid.UUID) error {
+func (p *NoOpPublisher) PublishPodUpdated(ctx context.Context, event PodUpdatedEvent) error {
 	return nil
 }
 

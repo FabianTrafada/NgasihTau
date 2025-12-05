@@ -173,12 +173,20 @@ func (s *Service) ConfirmUpload(ctx context.Context, input ConfirmUploadInput) (
 	// Publish material.uploaded event for background processing (AI Service, Search Service)
 	// Implements requirement 5, 6: Material Upload and Material Processing
 	if s.eventPublisher != nil {
+		description := ""
+		if material.Description != nil {
+			description = *material.Description
+		}
 		event := nats.MaterialUploadedEvent{
-			MaterialID: material.ID,
-			PodID:      material.PodID,
-			FileURL:    material.FileURL,
-			FileType:   string(material.FileType),
-			UploaderID: material.UploaderID,
+			MaterialID:  material.ID,
+			PodID:       material.PodID,
+			FileURL:     material.FileURL,
+			FileType:    string(material.FileType),
+			UploaderID:  material.UploaderID,
+			Title:       material.Title,
+			Description: description,
+			// Note: Categories and Tags are inherited from pod
+			// They will be populated by the search service when indexing
 		}
 		if err := s.eventPublisher.PublishMaterialUploaded(ctx, event); err != nil {
 			// Log error but don't fail the operation - event publishing is non-critical
