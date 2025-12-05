@@ -556,7 +556,7 @@ func (m *mockEventPublisher) PublishMaterialDeleted(ctx context.Context, event n
 func (m *mockEventPublisher) PublishPodCreated(ctx context.Context, event nats.PodCreatedEvent) error {
 	return nil
 }
-func (m *mockEventPublisher) PublishPodUpdated(ctx context.Context, podID uuid.UUID) error {
+func (m *mockEventPublisher) PublishPodUpdated(ctx context.Context, event nats.PodUpdatedEvent) error {
 	return nil
 }
 func (m *mockEventPublisher) PublishCollaboratorInvited(ctx context.Context, event nats.CollaboratorInvitedEvent) error {

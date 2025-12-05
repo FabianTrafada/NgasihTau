@@ -386,6 +386,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 	starRepo := newMockStarRepo()
 	followRepo := newMockFollowRepo()
 	activityRepo := newMockActivityRepo()
+	eventPublisher := NewNoOpEventPublisher()
 
 	svc := NewPodService(
 		podRepo,
@@ -393,6 +394,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 		starRepo,
 		followRepo,
 		activityRepo,
+		eventPublisher,
 	)
 
 	return svc, podRepo, collaboratorRepo, activityRepo

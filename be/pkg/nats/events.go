@@ -109,21 +109,36 @@ type UserFollowedEvent struct {
 }
 
 // MaterialUploadedEvent is published when a material is uploaded.
+// Consumed by AI Service for processing and embedding generation.
 type MaterialUploadedEvent struct {
-	MaterialID uuid.UUID `json:"material_id"`
-	PodID      uuid.UUID `json:"pod_id"`
-	FileURL    string    `json:"file_url"`
-	FileType   string    `json:"file_type"`
-	UploaderID uuid.UUID `json:"uploader_id"`
+	MaterialID  uuid.UUID `json:"material_id"`
+	PodID       uuid.UUID `json:"pod_id"`
+	FileURL     string    `json:"file_url"`
+	FileType    string    `json:"file_type"`
+	UploaderID  uuid.UUID `json:"uploader_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	// Inherited from pod for search indexing
+	Categories []string `json:"categories,omitempty"`
+	Tags       []string `json:"tags,omitempty"`
 }
 
 // MaterialProcessedEvent is published when a material has been processed.
+// Consumed by Search Service for indexing and Material Service for status update.
 type MaterialProcessedEvent struct {
-	MaterialID uuid.UUID `json:"material_id"`
-	Status     string    `json:"status"` // "ready" or "processing_failed"
-	ChunkCount int       `json:"chunk_count,omitempty"`
-	WordCount  int       `json:"word_count,omitempty"`
-	Error      string    `json:"error,omitempty"`
+	MaterialID  uuid.UUID `json:"material_id"`
+	PodID       uuid.UUID `json:"pod_id"`
+	UploaderID  uuid.UUID `json:"uploader_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	FileType    string    `json:"file_type"`
+	Status      string    `json:"status"` // "ready" or "processing_failed"
+	ChunkCount  int       `json:"chunk_count,omitempty"`
+	WordCount   int       `json:"word_count,omitempty"`
+	Error       string    `json:"error,omitempty"`
+	// Inherited from pod for search indexing
+	Categories []string `json:"categories,omitempty"`
+	Tags       []string `json:"tags,omitempty"`
 }
 
 // MaterialDeletedEvent is published when a material is deleted.
@@ -133,16 +148,32 @@ type MaterialDeletedEvent struct {
 }
 
 // PodCreatedEvent is published when a pod is created.
+// Consumed by Search Service for indexing.
 type PodCreatedEvent struct {
-	PodID   uuid.UUID `json:"pod_id"`
-	OwnerID uuid.UUID `json:"owner_id"`
-	Name    string    `json:"name"`
-	Slug    string    `json:"slug"`
+	PodID       uuid.UUID `json:"pod_id"`
+	OwnerID     uuid.UUID `json:"owner_id"`
+	Name        string    `json:"name"`
+	Slug        string    `json:"slug"`
+	Description string    `json:"description,omitempty"`
+	Visibility  string    `json:"visibility"`
+	Categories  []string  `json:"categories,omitempty"`
+	Tags        []string  `json:"tags,omitempty"`
 }
 
 // PodUpdatedEvent is published when a pod is updated.
+// Consumed by Search Service for re-indexing.
 type PodUpdatedEvent struct {
-	PodID uuid.UUID `json:"pod_id"`
+	PodID       uuid.UUID `json:"pod_id"`
+	OwnerID     uuid.UUID `json:"owner_id"`
+	Name        string    `json:"name"`
+	Slug        string    `json:"slug"`
+	Description string    `json:"description,omitempty"`
+	Visibility  string    `json:"visibility"`
+	Categories  []string  `json:"categories,omitempty"`
+	Tags        []string  `json:"tags,omitempty"`
+	StarCount   int       `json:"star_count"`
+	ForkCount   int       `json:"fork_count"`
+	ViewCount   int       `json:"view_count"`
 }
 
 // CollaboratorInvitedEvent is published when a collaborator is invited.

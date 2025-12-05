@@ -23,6 +23,7 @@ import (
 	"ngasihtau/internal/pod/infrastructure/postgres"
 	podhttp "ngasihtau/internal/pod/interfaces/http"
 	"ngasihtau/pkg/jwt"
+	"ngasihtau/pkg/nats"
 )
 
 func main() {
@@ -93,6 +94,7 @@ func main() {
 type App struct {
 	httpServer *fiber.App
 	db         *pgxpool.Pool
+	natsClient *nats.Client
 }
 
 // initializeApp creates and configures the application with all dependencies.
@@ -127,6 +129,29 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		Issuer:             "ngasihtau",
 	})
 
+	// Initialize NATS client for event publishing
+	var natsClient *nats.Client
+	var eventPublisher application.EventPublisher
+
+	natsConfig := nats.Config{
+		URL:       cfg.NATS.URL,
+		ClusterID: cfg.NATS.ClusterID,
+		ClientID:  "pod-service",
+	}
+	natsClient, err = nats.NewClient(natsConfig)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to connect to NATS, events will not be published")
+		eventPublisher = application.NewNoOpEventPublisher()
+	} else {
+		// Ensure POD stream exists
+		if err := natsClient.EnsureStream(ctx, nats.StreamPod, nats.StreamSubjects[nats.StreamPod]); err != nil {
+			log.Warn().Err(err).Msg("failed to ensure POD stream")
+		}
+		publisher := nats.NewPublisher(natsClient)
+		eventPublisher = application.NewNATSEventPublisher(publisher)
+		log.Info().Msg("connected to NATS for event publishing")
+	}
+
 	// Initialize repositories
 	podRepo := postgres.NewPodRepository(db)
 	collaboratorRepo := postgres.NewCollaboratorRepository(db)
@@ -141,6 +166,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		starRepo,
 		followRepo,
 		activityRepo,
+		eventPublisher,
 	)
 
 	// Initialize HTTP handlers
@@ -187,6 +213,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	return &App{
 		httpServer: fiberApp,
 		db:         db,
+		natsClient: natsClient,
 	}, nil
 }
 
@@ -203,6 +230,12 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Shutdown HTTP server
 	if err := a.httpServer.ShutdownWithContext(ctx); err != nil {
 		log.Error().Err(err).Msg("failed to shutdown HTTP server")
+	}
+
+	// Close NATS connection
+	if a.natsClient != nil {
+		a.natsClient.Close()
+		log.Info().Msg("NATS connection closed")
 	}
 
 	// Close database pool
