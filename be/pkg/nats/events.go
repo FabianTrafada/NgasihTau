@@ -186,9 +186,10 @@ type CollaboratorInvitedEvent struct {
 
 // CommentCreatedEvent is published when a comment is created.
 type CommentCreatedEvent struct {
-	CommentID  uuid.UUID  `json:"comment_id"`
-	MaterialID uuid.UUID  `json:"material_id"`
-	UserID     uuid.UUID  `json:"user_id"`
-	ParentID   *uuid.UUID `json:"parent_id,omitempty"`
-	Content    string     `json:"content"`
+	CommentID      uuid.UUID  `json:"comment_id"`
+	MaterialID     uuid.UUID  `json:"material_id"`
+	UserID         uuid.UUID  `json:"user_id"`
+	ParentID       *uuid.UUID `json:"parent_id,omitempty"`
+	ParentAuthorID *uuid.UUID `json:"parent_author_id,omitempty"`
+	Content        string     `json:"content"`
 }

@@ -9,30 +9,31 @@ import (
 
 // Config holds all configuration for the application.
 type Config struct {
-	App          AppConfig          `mapstructure:"app"`
-	UserService  ServiceConfig      `mapstructure:"user_service"`
-	PodService   ServiceConfig      `mapstructure:"pod_service"`
-	MatService   ServiceConfig      `mapstructure:"material_service"`
-	SearchSvc    ServiceConfig      `mapstructure:"search_service"`
-	AISvc        ServiceConfig      `mapstructure:"ai_service"`
-	NotifSvc     ServiceConfig      `mapstructure:"notification_service"`
-	FileProcSvc  FileProcConfig     `mapstructure:"file_processor"`
-	JWT          JWTConfig          `mapstructure:"jwt"`
-	OAuth        OAuthConfig        `mapstructure:"oauth"`
-	UserDB       DatabaseConfig     `mapstructure:"user_db"`
-	PodDB        DatabaseConfig     `mapstructure:"pod_db"`
-	MaterialDB   DatabaseConfig     `mapstructure:"material_db"`
-	AIDB         DatabaseConfig     `mapstructure:"ai_db"`
-	NotifDB      DatabaseConfig     `mapstructure:"notification_db"`
-	Redis        RedisConfig        `mapstructure:"redis"`
-	NATS         NATSConfig         `mapstructure:"nats"`
-	MinIO        MinIOConfig        `mapstructure:"minio"`
-	Meilisearch  MeilisearchConfig  `mapstructure:"meilisearch"`
-	Qdrant       QdrantConfig       `mapstructure:"qdrant"`
-	OpenAI       OpenAIConfig       `mapstructure:"openai"`
-	SMTP         SMTPConfig         `mapstructure:"smtp"`
-	RateLimit    RateLimitConfig    `mapstructure:"rate_limit"`
-	CORS         CORSConfig         `mapstructure:"cors"`
+	App           AppConfig           `mapstructure:"app"`
+	UserService   ServiceConfig       `mapstructure:"user_service"`
+	PodService    ServiceConfig       `mapstructure:"pod_service"`
+	MatService    ServiceConfig       `mapstructure:"material_service"`
+	SearchSvc     ServiceConfig       `mapstructure:"search_service"`
+	AISvc         ServiceConfig       `mapstructure:"ai_service"`
+	NotifSvc      ServiceConfig       `mapstructure:"notification_service"`
+	FileProcSvc   FileProcConfig      `mapstructure:"file_processor"`
+	JWT           JWTConfig           `mapstructure:"jwt"`
+	OAuth         OAuthConfig         `mapstructure:"oauth"`
+	UserDB        DatabaseConfig      `mapstructure:"user_db"`
+	PodDB         DatabaseConfig      `mapstructure:"pod_db"`
+	MaterialDB    DatabaseConfig      `mapstructure:"material_db"`
+	AIDB          DatabaseConfig      `mapstructure:"ai_db"`
+	NotifDB       DatabaseConfig      `mapstructure:"notification_db"`
+	Redis         RedisConfig         `mapstructure:"redis"`
+	NATS          NATSConfig          `mapstructure:"nats"`
+	MinIO         MinIOConfig         `mapstructure:"minio"`
+	Meilisearch   MeilisearchConfig   `mapstructure:"meilisearch"`
+	Qdrant        QdrantConfig        `mapstructure:"qdrant"`
+	OpenAI        OpenAIConfig        `mapstructure:"openai"`
+	SMTP          SMTPConfig          `mapstructure:"smtp"`
+	Email         EmailConfig         `mapstructure:"email"`
+	RateLimit     RateLimitConfig     `mapstructure:"rate_limit"`
+	CORS          CORSConfig          `mapstructure:"cors"`
 	Observability ObservabilityConfig `mapstructure:"observability"`
 }
 
@@ -56,7 +57,6 @@ type FileProcConfig struct {
 	Port int    `mapstructure:"port" validate:"required,min=1,max=65535"`
 	URL  string `mapstructure:"url" validate:"required,url"`
 }
-
 
 // JWTConfig holds JWT authentication settings.
 type JWTConfig struct {
@@ -187,4 +187,15 @@ type ObservabilityConfig struct {
 	ServiceName    string `mapstructure:"service_name"`
 	MetricsEnabled bool   `mapstructure:"metrics_enabled"`
 	MetricsPort    int    `mapstructure:"metrics_port" validate:"omitempty,min=1,max=65535"`
+}
+
+// EmailConfig holds email provider settings.
+type EmailConfig struct {
+	Provider     string `mapstructure:"provider" validate:"required,oneof=sendgrid ses smtp"`
+	FromEmail    string `mapstructure:"from_email" validate:"required,email"`
+	FromName     string `mapstructure:"from_name" validate:"required"`
+	SendGridKey  string `mapstructure:"sendgrid_api_key"`
+	SESRegion    string `mapstructure:"ses_region"`
+	SESAccessKey string `mapstructure:"ses_access_key"`
+	SESSecretKey string `mapstructure:"ses_secret_key"`
 }
