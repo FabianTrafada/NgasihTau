@@ -1,3 +1,170 @@
+# IDE and Editors
 /.kiro/*
 /.idea/*
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment Files
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Backend (Go) Specific
+# Vendor
+be/vendor/
+
+# Binary files
+be/search-service
+be/file-processor
+be/notification-service
+be/main
+be/app
+
+# Test coverage and profiling
+be/coverage.out
+be/coverage.html
+be/*.test
+be/*.prof
+be/cpu.pprof
+be/mem.pprof
+
+# Go build artifacts
+be/*.exe
+be/*.exe~
+be/*.dll
+be/*.so
+be/*.dylib
+be/test-*
+
+# Air live reload
+be/air.toml
+be/tmp/
+
+# Task caches
+be/.task/
+
+# Frontend (Next.js/React) Specific
+fe/node_modules/
+fe/.pnp
+fe/.pnp.*
+fe/.yarn/*
+fe/.yarn/cache/
+fe/.yarn/unplugged/
+fe/.yarn/build-state.yml
+fe/.yarn/install-state.gz
+fe/.pnp.*
+
+# Next.js
+fe/.next/
+fe/out/
+fe/build/
+fe/dist/
+
+# Testing
+fe/coverage/
+fe/.coverage/
+fe/nyc_output/
+fe/cypress/videos/
+fe/cypress/screenshots/
+
+# Logs
+fe/npm-debug.log*
+fe/yarn-debug.log*
+fe/yarn-error.log*
+fe/pnpm-debug.log*
+fe/lerna-debug.log*
+fe/.pnpm-debug.log*
+fe/bun.lockb
+
+# Runtime data
+fe/pids
+fe/*.pid
+fe/*.seed
+fe/*.pid.lock
+
+# TypeScript
+fe/*.tsbuildinfo
+fe/next-env.d.ts
+
+# Misc
+fe*.pem
+fe*.log
+
+# Production builds
+fe/.vercel
+fe/.netlify
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.local.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# OS generated files
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+.cache/
+
+# Security
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Local development
+local/
+.dev/
+dev-data/
+
+# Build and deployment artifacts
+*.tar.gz
+*.zip
+dist/
+build/
+bin/
+
+# Monitoring and analytics
+*.prof
+*.pprof
+*.heap
+*.trace
+
+# Package manager lock files (keep ones you use)
+# Uncomment these if you want to ignore specific lock files
+# fe/package-lock.json
+# be/go.sum (usually keep this)
+
+# Generated files
+generated/
+protobuf/
+*.pb.go
+*.pb.gw.go
+
+# Air (Go live reload)
+be/air.toml
+be/tmp/
