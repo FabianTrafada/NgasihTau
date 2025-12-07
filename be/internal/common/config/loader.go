@@ -161,7 +161,6 @@ func setDatabaseDefaults(v *viper.Viper, prefix, dbName string, maxOpen, maxIdle
 	v.SetDefault(prefix+".conn_max_lifetime", 5*time.Minute)
 }
 
-
 // bindEnvVars binds environment variables to viper keys.
 func bindEnvVars(v *viper.Viper) {
 	v.AutomaticEnv()
@@ -267,6 +266,15 @@ func bindEnvVars(v *viper.Viper) {
 	_ = v.BindEnv("smtp.password", "SMTP_PASSWORD")
 	_ = v.BindEnv("smtp.from_email", "SMTP_FROM_EMAIL")
 	_ = v.BindEnv("smtp.from_name", "SMTP_FROM_NAME")
+
+	// Email Provider
+	_ = v.BindEnv("email.provider", "EMAIL_PROVIDER")
+	_ = v.BindEnv("email.from_email", "EMAIL_FROM_EMAIL")
+	_ = v.BindEnv("email.from_name", "EMAIL_FROM_NAME")
+	_ = v.BindEnv("email.sendgrid_api_key", "SENDGRID_API_KEY")
+	_ = v.BindEnv("email.ses_region", "AWS_SES_REGION")
+	_ = v.BindEnv("email.ses_access_key", "AWS_SES_ACCESS_KEY")
+	_ = v.BindEnv("email.ses_secret_key", "AWS_SES_SECRET_KEY")
 
 	// Rate Limits
 	_ = v.BindEnv("rate_limit.auth", "RATE_LIMIT_AUTH")

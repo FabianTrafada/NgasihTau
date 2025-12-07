@@ -23,6 +23,7 @@ be/vendor/
 be/search-service
 be/file-processor
 be/notification-service
+be/search-service
 be/main
 be/app
 

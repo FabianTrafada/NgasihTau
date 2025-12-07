@@ -1,4 +1,4 @@
-package aiservice
+package main
 
 import (
 	"context"
@@ -21,15 +21,18 @@ import (
 	"ngasihtau/internal/ai/infrastructure/qdrant"
 	aihttp "ngasihtau/internal/ai/interfaces/http"
 	"ngasihtau/internal/common/config"
+	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/pkg/jwt"
 	natspkg "ngasihtau/pkg/nats"
 )
 
 type App struct {
-	httpServer *fiber.App
-	db         *pgxpool.Pool
-	natsClient *natspkg.Client
+	httpServer    *fiber.App
+	db            *pgxpool.Pool
+	natsClient    *natspkg.Client
+	qdrantClient  *qdrant.Client
+	healthChecker *health.Checker
 }
 
 func main() {
@@ -200,19 +203,23 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 
 	handler.RegisterRoutes(fiberApp)
 
-	fiberApp.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "healthy",
-			"service": "ai-service",
-		})
-	})
+	// Initialize health checker
+	healthChecker := health.NewChecker("ai-service", "1.0.0")
+	healthChecker.AddDependency("postgres", health.PostgresCheck("postgres", db))
+	healthChecker.AddDependency("qdrant", health.QdrantCheck("qdrant", qdrantClient))
+	if natsClient != nil {
+		healthChecker.AddDependency("nats", health.NATSCheck("nats", natsClient))
+	}
+	healthChecker.RegisterRoutes(fiberApp)
 
 	log.Info().Msg("application initialized")
 
 	return &App{
-		httpServer: fiberApp,
-		db:         db,
-		natsClient: natsClient,
+		httpServer:    fiberApp,
+		db:            db,
+		natsClient:    natsClient,
+		qdrantClient:  qdrantClient,
+		healthChecker: healthChecker,
 	}, nil
 }
 

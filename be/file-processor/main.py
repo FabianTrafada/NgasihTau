@@ -61,7 +61,20 @@ class HealthResponse(BaseModel):
 
     status: str = Field(default="healthy")
     service: str = Field(default="file-processor")
+    version: str = Field(default="1.0.0")
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class LiveResponse(BaseModel):
+    """Liveness check response."""
+
+    status: str = Field(default="alive")
+
+
+class ReadyResponse(BaseModel):
+    """Readiness check response."""
+
+    status: str = Field(default="healthy")
 
 
 class ErrorDetail(BaseModel):
@@ -224,15 +237,37 @@ async def download_file(url: str, suffix: str) -> Path:
         return Path(temp_file.name)
 
 
-# Endpoints
+# Health Endpoints
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check() -> HealthResponse:
     """
-    Health check endpoint.
+    Detailed health check endpoint.
 
-    Returns the current health status of the service.
+    Returns the current health status of the service with metadata.
     """
     return HealthResponse()
+
+
+@app.get("/health/live", response_model=LiveResponse, tags=["Health"])
+async def liveness_check() -> LiveResponse:
+    """
+    Liveness probe endpoint.
+
+    Simple check that returns if the service is alive.
+    Used by Kubernetes liveness probes.
+    """
+    return LiveResponse()
+
+
+@app.get("/ready", response_model=ReadyResponse, tags=["Health"])
+async def readiness_check() -> ReadyResponse:
+    """
+    Readiness probe endpoint.
+
+    Returns if the service is ready to accept requests.
+    Used by Kubernetes readiness probes.
+    """
+    return ReadyResponse()
 
 
 @app.post(

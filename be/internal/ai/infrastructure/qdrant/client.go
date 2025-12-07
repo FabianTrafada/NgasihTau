@@ -220,3 +220,14 @@ func (c *Client) DeleteByPodID(ctx context.Context, podID uuid.UUID) error {
 
 	return err
 }
+
+// HealthCheck checks if Qdrant is accessible by getting collection info.
+func (c *Client) HealthCheck(ctx context.Context) error {
+	_, err := c.collectionsClient.Get(ctx, &pb.GetCollectionInfoRequest{
+		CollectionName: c.collectionName,
+	})
+	if err != nil {
+		return fmt.Errorf("Qdrant health check failed: %w", err)
+	}
+	return nil
+}

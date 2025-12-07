@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"ngasihtau/internal/common/config"
+	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/internal/search/application"
 	"ngasihtau/internal/search/infrastructure/meilisearch"
@@ -128,24 +129,30 @@ func main() {
 	// Global middleware
 	app.Use(recover.New())
 	app.Use(middleware.RequestID())
+	corsOrigins := "http://localhost:3000,http://localhost:5173"
+	if len(cfg.CORS.AllowedOrigins) > 0 {
+		corsOrigins = cfg.CORS.AllowedOrigins[0]
+		for _, origin := range cfg.CORS.AllowedOrigins[1:] {
+			corsOrigins += "," + origin
+		}
+	}
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",
+		AllowOrigins:     corsOrigins,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Request-ID",
 		AllowCredentials: true,
 	}))
 
-	// Health check endpoint
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "healthy",
-			"service": "search-service",
-		})
-	})
-
 	// Initialize handler with service and JWT manager
 	handler := http.NewHandler(service, jwtManager)
 	handler.RegisterRoutes(app)
+
+	// Initialize health checker
+	healthChecker := health.NewChecker("search-service", "1.0.0")
+	healthChecker.AddDependency("meilisearch", health.MeilisearchCheck("meilisearch", meiliClient))
+	healthChecker.AddDependency("qdrant", health.QdrantCheck("qdrant", qdrantClient))
+	healthChecker.AddDependency("nats", health.NATSCheck("nats", natsClient))
+	healthChecker.RegisterRoutes(app)
 
 	// Start server
 	port := 8085 // Default search service port

@@ -244,3 +244,12 @@ func (c *Client) ListObjects(ctx context.Context, prefix string, recursive bool)
 func (c *Client) GetUnderlyingClient() *minio.Client {
 	return c.client
 }
+
+// HealthCheck checks if MinIO is accessible by verifying bucket existence.
+func (c *Client) HealthCheck(ctx context.Context) error {
+	_, err := c.client.BucketExists(ctx, c.bucket)
+	if err != nil {
+		return fmt.Errorf("MinIO health check failed: %w", err)
+	}
+	return nil
+}

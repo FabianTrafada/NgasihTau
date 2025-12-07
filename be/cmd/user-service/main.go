@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"ngasihtau/internal/common/config"
+	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/internal/user/application"
 	"ngasihtau/internal/user/infrastructure/postgres"
@@ -93,9 +94,10 @@ func main() {
 
 // App represents the user service application.
 type App struct {
-	httpServer *fiber.App
-	db         *pgxpool.Pool
-	natsClient *natspkg.Client
+	httpServer    *fiber.App
+	db            *pgxpool.Pool
+	natsClient    *natspkg.Client
+	healthChecker *health.Checker
 }
 
 // initializeApp creates and configures the application with all dependencies.
@@ -217,20 +219,21 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Register routes
 	handler.RegisterRoutes(fiberApp)
 
-	// Health check endpoint
-	fiberApp.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "healthy",
-			"service": "user-service",
-		})
-	})
+	// Initialize health checker
+	healthChecker := health.NewChecker("user-service", "1.0.0")
+	healthChecker.AddDependency("postgres", health.PostgresCheck("postgres", db))
+	if natsClient != nil {
+		healthChecker.AddDependency("nats", health.NATSCheck("nats", natsClient))
+	}
+	healthChecker.RegisterRoutes(fiberApp)
 
 	log.Info().Msg("application initialized")
 
 	return &App{
-		httpServer: fiberApp,
-		db:         db,
-		natsClient: natsClient,
+		httpServer:    fiberApp,
+		db:            db,
+		natsClient:    natsClient,
+		healthChecker: healthChecker,
 	}, nil
 }
 

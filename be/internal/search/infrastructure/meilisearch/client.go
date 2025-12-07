@@ -309,5 +309,14 @@ func getString(m map[string]any, key string) string {
 	return ""
 }
 
+// HealthCheck checks if Meilisearch is accessible.
+func (c *Client) HealthCheck(ctx context.Context) error {
+	_, err := c.client.Health()
+	if err != nil {
+		return fmt.Errorf("Meilisearch health check failed: %w", err)
+	}
+	return nil
+}
+
 var _ domain.SearchRepository = (*Client)(nil)
 var _ domain.IndexRepository = (*Client)(nil)

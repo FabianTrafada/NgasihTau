@@ -24,23 +24,62 @@ tasks:
 
   dev:material:
     desc: Run material service in development mode
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/material-service
 
   dev:search:
     desc: Run search service in development mode
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/search-service
 
   dev:ai:
     desc: Run AI service in development mode
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/ai-service
 
   dev:notification:
     desc: Run notification service in development mode
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/notification-service
+
+  dev:all:
+    desc: Run all services in separate terminal windows
+    cmds:
+      - gnome-terminal --tab --title="User Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:user; exec bash'
+      - gnome-terminal --tab --title="Pod Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:pod; exec bash'
+      - gnome-terminal --tab --title="Material Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:material; exec bash'
+      - gnome-terminal --tab --title="Search Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:search; exec bash'
+      - gnome-terminal --tab --title="AI Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:ai; exec bash'
+      - gnome-terminal --tab --title="Notification Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:notification; exec bash'
+      - echo "All services started in separate terminal tabs"
+
+  dev:all:bg:
+    desc: Run all services in background (logs to files)
+    dotenv: ['.env']
+    cmds:
+      - mkdir -p logs
+      - nohup go run ./cmd/user-service > logs/user-service.log 2>&1 &
+      - nohup go run ./cmd/pod-service > logs/pod-service.log 2>&1 &
+      - nohup go run ./cmd/material-service > logs/material-service.log 2>&1 &
+      - nohup go run ./cmd/search-service > logs/search-service.log 2>&1 &
+      - nohup go run ./cmd/ai-service > logs/ai-service.log 2>&1 &
+      - nohup go run ./cmd/notification-service > logs/notification-service.log 2>&1 &
+      - echo "All services started in background. Logs in ./logs/"
+
+  dev:stop:
+    desc: Stop all background services
+    cmds:
+      - pkill -f "go run ./cmd/user-service" || true
+      - pkill -f "go run ./cmd/pod-service" || true
+      - pkill -f "go run ./cmd/material-service" || true
+      - pkill -f "go run ./cmd/search-service" || true
+      - pkill -f "go run ./cmd/ai-service" || true
+      - pkill -f "go run ./cmd/notification-service" || true
+      - echo "All services stopped"
 
   # Build
   build:

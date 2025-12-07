@@ -92,5 +92,10 @@ func (c *Client) GetBucketName() string {
 	return c.client.GetBucket()
 }
 
+// HealthCheck checks if MinIO is accessible.
+func (c *Client) HealthCheck(ctx context.Context) error {
+	return c.client.HealthCheck(ctx)
+}
+
 // Verify that Client implements application.MinIOClient interface.
 var _ application.MinIOClient = (*Client)(nil)

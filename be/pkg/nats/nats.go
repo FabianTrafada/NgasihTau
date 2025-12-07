@@ -170,13 +170,14 @@ func (s *Subscription) Stop() {
 }
 
 // EnsureStream creates or updates a JetStream stream with the given configuration.
+// Uses InterestPolicy to allow multiple consumers to receive the same messages.
 func (c *Client) EnsureStream(ctx context.Context, name string, subjects []string) error {
 	_, err := c.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:        name,
 		Description: fmt.Sprintf("Stream for %s events", name),
 		Subjects:    subjects,
-		Retention:   jetstream.WorkQueuePolicy,
-		MaxAge:      7 * 24 * time.Hour, // 7 days retention
+		Retention:   jetstream.InterestPolicy, // Allow multiple consumers per subject
+		MaxAge:      7 * 24 * time.Hour,       // 7 days retention
 		Storage:     jetstream.FileStorage,
 		Replicas:    1,
 		Discard:     jetstream.DiscardOld,

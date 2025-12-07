@@ -105,5 +105,14 @@ func getPayloadInt(payload map[string]*qdrant.Value, key string) int64 {
 	return 0
 }
 
+// HealthCheck checks if Qdrant is accessible.
+func (c *Client) HealthCheck(ctx context.Context) error {
+	_, err := c.client.ListCollections(ctx)
+	if err != nil {
+		return fmt.Errorf("Qdrant health check failed: %w", err)
+	}
+	return nil
+}
+
 // Ensure Client implements interface
 var _ domain.VectorSearchRepository = (*Client)(nil)
