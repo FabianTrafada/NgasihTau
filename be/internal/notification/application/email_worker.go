@@ -21,9 +21,8 @@ type EmailWorkerConfig struct {
 
 func DefaultEmailWorkerConfig() EmailWorkerConfig {
 	return EmailWorkerConfig{
-		AppName: "NgasihTau",
-		// TODO: Change into prod URL later on.
-		AppUrl:         "http://localhost:3000",
+		AppName:        "NgasihTau",
+		AppUrl:         "http://localhost:3000", // Override via config.App.FrontendURL
 		SupportEmail:   "support@ngasihtau.com",
 		MaxRetries:     3,
 		RetryBaseDelay: time.Second,

@@ -119,6 +119,7 @@ type podService struct {
 type EventPublisher interface {
 	PublishPodCreated(ctx context.Context, pod *domain.Pod) error
 	PublishPodUpdated(ctx context.Context, pod *domain.Pod) error
+	PublishCollaboratorInvited(ctx context.Context, collaborator *domain.Collaborator, podName string) error
 }
 
 // NewPodService creates a new PodService instance.
@@ -569,7 +570,14 @@ func (s *podService) InviteCollaborator(ctx context.Context, input InviteCollabo
 	})
 	_ = s.activityRepo.Create(ctx, activity)
 
-	// TODO: Publish collaborator.invited event for notification
+	// Publish collaborator.invited event for notification
+	if s.eventPublisher != nil {
+		go func() {
+			if err := s.eventPublisher.PublishCollaboratorInvited(context.Background(), collaborator, pod.Name); err != nil {
+				// Log error but don't fail the request
+			}
+		}()
+	}
 
 	return collaborator, nil
 }

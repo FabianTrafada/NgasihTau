@@ -9,6 +9,8 @@ import (
 	"ngasihtau/internal/common/validator"
 	"ngasihtau/internal/user/application"
 	"ngasihtau/internal/user/domain"
+
+	_ "ngasihtau/docs" // Swagger docs
 )
 
 // AuthHandler handles authentication-related HTTP requests.
@@ -113,7 +115,16 @@ func toAuthResponse(result *application.AuthResult) *AuthResponse {
 }
 
 // Register handles user registration.
-// POST /api/v1/auth/register
+// @Summary Register a new user
+// @Description Create a new user account with email and password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration details"
+// @Success 201 {object} response.Response[AuthResponse] "User created successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body or validation error"
+// @Failure 409 {object} errors.ErrorResponse "Email already exists"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -141,7 +152,17 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 }
 
 // Login handles user login.
-// POST /api/v1/auth/login
+// @Summary Login with email and password
+// @Description Authenticate user with email and password. Returns JWT tokens or 2FA challenge.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} response.Response[AuthResponse] "Login successful"
+// @Success 200 {object} response.Response[TwoFactorRequiredResponse] "2FA verification required"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Invalid credentials"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -180,7 +201,16 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 
 // RefreshToken handles token refresh.
-// POST /api/v1/auth/refresh
+// @Summary Refresh access token
+// @Description Exchange a valid refresh token for a new access token and refresh token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RefreshTokenRequest true "Refresh token"
+// @Success 200 {object} response.Response[AuthResponse] "Tokens refreshed successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Invalid or expired refresh token"
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -204,7 +234,15 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 }
 
 // Logout handles user logout.
-// POST /api/v1/auth/logout
+// @Summary Logout user
+// @Description Invalidate the refresh token to logout the user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body LogoutRequest true "Refresh token to invalidate"
+// @Success 200 {object} response.Response[any] "Logout successful"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -227,7 +265,16 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 }
 
 // GoogleLogin handles Google OAuth login.
-// POST /api/v1/auth/google
+// @Summary Login with Google OAuth
+// @Description Authenticate user using Google OAuth authorization code
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body GoogleLoginRequest true "Google OAuth code and redirect URI"
+// @Success 200 {object} response.Response[AuthResponse] "Login successful"
+// @Success 200 {object} response.Response[TwoFactorRequiredResponse] "2FA verification required"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body or OAuth error"
+// @Router /auth/google [post]
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -262,7 +309,16 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 }
 
 // Enable2FA initiates 2FA setup for the authenticated user.
-// POST /api/v1/auth/2fa/enable
+// @Summary Enable two-factor authentication
+// @Description Generate TOTP secret and QR code for 2FA setup
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[TwoFactorSetupResponse] "2FA setup initiated"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 409 {object} errors.ErrorResponse "2FA already enabled"
+// @Router /auth/2fa/enable [post]
 func (h *AuthHandler) Enable2FA(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -286,7 +342,17 @@ func (h *AuthHandler) Enable2FA(c *fiber.Ctx) error {
 }
 
 // Verify2FA completes 2FA setup by verifying a TOTP code.
-// POST /api/v1/auth/2fa/verify
+// @Summary Verify and activate 2FA
+// @Description Complete 2FA setup by verifying a TOTP code from authenticator app
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body Verify2FARequest true "TOTP code"
+// @Success 200 {object} response.Response[map[string]bool] "2FA enabled successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid TOTP code"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /auth/2fa/verify [post]
 func (h *AuthHandler) Verify2FA(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -317,7 +383,17 @@ func (h *AuthHandler) Verify2FA(c *fiber.Ctx) error {
 }
 
 // Disable2FA disables 2FA for the authenticated user.
-// POST /api/v1/auth/2fa/disable
+// @Summary Disable two-factor authentication
+// @Description Disable 2FA by verifying current TOTP code
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body Verify2FARequest true "Current TOTP code for verification"
+// @Success 200 {object} response.Response[map[string]bool] "2FA disabled successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid TOTP code"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /auth/2fa/disable [post]
 func (h *AuthHandler) Disable2FA(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -348,7 +424,16 @@ func (h *AuthHandler) Disable2FA(c *fiber.Ctx) error {
 }
 
 // Verify2FALogin completes login for users with 2FA enabled.
-// POST /api/v1/auth/2fa/login
+// @Summary Complete 2FA login verification
+// @Description Verify TOTP code or backup code to complete login for 2FA-enabled accounts
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body Verify2FALoginRequest true "Temp token and TOTP/backup code"
+// @Success 200 {object} response.Response[AuthResponse] "Login successful"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Invalid code or expired temp token"
+// @Router /auth/2fa/login [post]
 func (h *AuthHandler) Verify2FALogin(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -372,7 +457,15 @@ func (h *AuthHandler) Verify2FALogin(c *fiber.Ctx) error {
 }
 
 // VerifyEmail handles email verification.
-// POST /api/v1/auth/verify-email
+// @Summary Verify email address
+// @Description Verify user's email address using the verification token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyEmailRequest true "Email verification token"
+// @Success 200 {object} response.Response[map[string]bool] "Email verified successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid or expired token"
+// @Router /auth/verify-email [post]
 func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -397,7 +490,15 @@ func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 }
 
 // RequestPasswordReset handles password reset request.
-// POST /api/v1/auth/password/forgot
+// @Summary Request password reset
+// @Description Send password reset email to the user (always returns success to prevent email enumeration)
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body PasswordResetRequest true "Email address"
+// @Success 200 {object} response.Response[map[string]string] "Password reset email sent"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Router /auth/password/forgot [post]
 func (h *AuthHandler) RequestPasswordReset(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -422,7 +523,15 @@ func (h *AuthHandler) RequestPasswordReset(c *fiber.Ctx) error {
 }
 
 // ResetPassword handles password reset confirmation.
-// POST /api/v1/auth/password/reset
+// @Summary Reset password
+// @Description Reset user's password using the reset token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body PasswordResetConfirmRequest true "Reset token and new password"
+// @Success 200 {object} response.Response[map[string]bool] "Password reset successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid or expired token"
+// @Router /auth/password/reset [post]
 func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -447,7 +556,16 @@ func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 }
 
 // SendVerificationEmail handles sending verification email.
-// POST /api/v1/auth/send-verification (protected)
+// @Summary Send verification email
+// @Description Send a new verification email to the authenticated user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[map[string]string] "Verification email sent"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 409 {object} errors.ErrorResponse "Email already verified"
+// @Router /auth/send-verification [post]
 func (h *AuthHandler) SendVerificationEmail(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 

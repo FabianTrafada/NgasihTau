@@ -145,8 +145,9 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 			log.Warn().Err(err).Msg("failed to initialize email provider - email sending will be disabled")
 		} else {
 			emailWorkerConfig := application.DefaultEmailWorkerConfig()
-			if cfg.App.Env == "production" {
-				emailWorkerConfig.AppUrl = "https://ngasihtau.com" // TODO: Make configurable
+			// Use configured frontend URL if available
+			if cfg.App.FrontendURL != "" {
+				emailWorkerConfig.AppUrl = cfg.App.FrontendURL
 			}
 
 			emailWorker = application.NewEmailWorker(natsClient, emailProvider, emailWorkerConfig)
@@ -173,7 +174,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	fiberApp.Use(recover.New())
 	fiberApp.Use(middleware.RequestID())
 
-	// TODO: Change corsOrigin
+	// Configure CORS from config
 	corsOrigins := "*"
 	if len(cfg.CORS.AllowedOrigins) > 0 {
 		corsOrigins = cfg.CORS.AllowedOrigins[0]

@@ -292,7 +292,13 @@ tasks:
   swagger:
     desc: Generate Swagger documentation
     cmds:
-      - swag init -g cmd/user-service/main.go -o api/swagger --parseDependency
+      - swag init -g main.go -o api/swagger --parseDependency --parseInternal
+    silent: false
+
+  swagger:fmt:
+    desc: Format Swagger annotations
+    cmds:
+      - swag fmt
 
   # Clean
   clean:
