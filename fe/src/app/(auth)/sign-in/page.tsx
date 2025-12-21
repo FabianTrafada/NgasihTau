@@ -1,19 +1,173 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
+/**
+ * Sign In Page Component
+ * 
+ * AUTHENTICATION FLOW:
+ * 1. User enters email + password
+ * 2. Form submits to useAuth().login()
+ * 3. If 2FA enabled → Show 2FA input
+ * 4. If no 2FA → Redirect to dashboard
+ * 5. Errors are displayed from auth context
+ */
 export default function SignInPage() {
+    const router = useRouter();
+    const { login, verify2FA, loading, error, clearError } = useAuth();
+
+    // Form state
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // 2FA state
+    const [requires2FA, setRequires2FA] = useState(false);
+    const [tempToken, setTempToken] = useState("");
+    const [totpCode, setTotpCode] = useState("");
+
+    // Local error state (for form validation)
+    const [formError, setFormError] = useState("");
+
+    /**
+     * Handle initial login form submission
+     */
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log({ email, password });
+        setFormError("");
+        clearError();
+
+        try {
+            const result = await login(email, password);
+
+            if (result.requires2FA && result.tempToken) {
+                // User has 2FA enabled - show 2FA form
+                setRequires2FA(true);
+                setTempToken(result.tempToken);
+            } else {
+                // Login successful - redirect to dashboard
+                router.push("/dashboard");
+            }
+        } catch {
+            // Error is already set in auth context
+        }
     };
 
+    /**
+     * Handle 2FA verification
+     */
+    const handle2FASubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setFormError("");
+        clearError();
+
+        if (totpCode.length < 6) {
+            setFormError("Please enter a valid 6-digit code");
+            return;
+        }
+
+        try {
+            await verify2FA(tempToken, totpCode);
+            router.push("/dashboard");
+        } catch {
+            // Error is already set in auth context
+        }
+    };
+
+    /**
+     * Display error message (from context or local validation)
+     */
+    const displayError = error?.message || formError;
+
+    // =========================================================================
+    // 2FA VERIFICATION UI
+    // =========================================================================
+    if (requires2FA) {
+        return (
+            <div className="w-full max-w-md">
+                <div className="relative">
+                    <div className="absolute top-4 left-4 w-full h-full bg-[#FF8811] rounded-2xl" />
+                    <div className="bg-white rounded-2xl p-8 relative border-2 border-[#2B2D42]">
+                        {/* Logo */}
+                        <div className="text-center mb-6">
+                            <h1 className="text-2xl font-bold">
+                                <span className="text-[#FF8811]">Ngasih</span>
+                                <span className="text-[#2B2D42]">Tau</span>
+                            </h1>
+                        </div>
+
+                        {/* 2FA Header */}
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl font-bold font-[family-name:var(--font-plus-jakarta-sans)]">
+                                <span className="text-[#2B2D42]">Two-Factor </span>
+                                <span className="text-[#FF8811]">Auth</span>
+                            </h2>
+                            <p className="text-gray-500 text-sm mt-2 font-[family-name:var(--font-inter)]">
+                                Enter the 6-digit code from your authenticator app
+                            </p>
+                        </div>
+
+                        {/* Error Display */}
+                        {displayError && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                                {displayError}
+                            </div>
+                        )}
+
+                        {/* 2FA Form */}
+                        <form onSubmit={handle2FASubmit} className="space-y-5">
+                            <div>
+                                <label
+                                    htmlFor="totp"
+                                    className="block text-sm font-semibold text-[#2B2D42] mb-2"
+                                >
+                                    Verification Code
+                                </label>
+                                <input
+                                    type="text"
+                                    id="totp"
+                                    value={totpCode}
+                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all text-center text-2xl tracking-widest"
+                                    placeholder="000000"
+                                    maxLength={6}
+                                    autoComplete="one-time-code"
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-lg font-bold border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? "Verifying..." : "Verify"}
+                            </button>
+                        </form>
+
+                        {/* Back Button */}
+                        <button
+                            onClick={() => {
+                                setRequires2FA(false);
+                                setTempToken("");
+                                setTotpCode("");
+                            }}
+                            className="w-full mt-4 text-gray-500 text-sm hover:text-gray-700"
+                        >
+                            ← Back to login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // =========================================================================
+    // LOGIN UI
+    // =========================================================================
     return (
         <div className="w-full max-w-md ">
             {/* Card Container with Brutalist shadow */}
@@ -42,6 +196,13 @@ export default function SignInPage() {
                             Enter your email and password to access your account.
                         </p>
                     </div>
+
+                    {/* Error Display */}
+                    {displayError && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                            {displayError}
+                        </div>
+                    )}
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
@@ -112,33 +273,34 @@ export default function SignInPage() {
                         </div>
 
                         <button
-                        type="submit"
-                        className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-lg font-bold border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all font-[family-name:var(--font-plus-jakarta-sans)]"
+                            type="submit"
+                            disabled={loading}
+                            className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-lg font-bold border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all font-[family-name:var(--font-plus-jakarta-sans)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? "Logging in..." : "Log In"}
+                        </button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="flex items-center my-6">
+                        <div className="flex-1 border-t-2 border-gray-200"></div>
+                        <span className="px-4 text-gray-500 text-sm font-bold font-[family-name:var(--font-inter)]">Or Login With</span>
+                        <div className="flex-1 border-t-2 border-gray-200"></div>
+                    </div>
+
+                    {/* Google Button */}
+                    <button
+                        type="button"
+                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-[#2B2D42] rounded-lg shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all font-[family-name:var(--font-inter)]"
                     >
-                        Log In
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19.8055 10.2275C19.8055 9.51803 19.7477 8.83551 19.6399 8.17969H10.2002V12.0494H15.6006C15.3681 13.2994 14.6259 14.3578 13.5379 15.0672V17.5766H16.8055C18.7054 15.8369 19.8055 13.2713 19.8055 10.2275Z" fill="#4285F4" />
+                            <path d="M10.2002 20.0003C12.9002 20.0003 15.1719 19.1044 16.8055 17.5763L13.5379 15.0669C12.6215 15.6669 11.4845 16.0213 10.2002 16.0213C7.59478 16.0213 5.38234 14.2631 4.57289 11.9004H1.20312V14.4907C2.83212 17.7594 6.26791 20.0003 10.2002 20.0003Z" fill="#34A853" />
+                            <path d="M4.57289 11.9003C4.37289 11.3003 4.25952 10.659 4.25952 10.0003C4.25952 9.34155 4.37289 8.70023 4.57289 8.10023V5.50977H1.20312C0.437559 6.85977 0 8.38629 0 10.0003C0 11.6143 0.437559 13.1408 1.20312 14.4908L4.57289 11.9003Z" fill="#FBBC04" />
+                            <path d="M10.2002 3.97898C11.5997 3.97898 12.8545 4.47898 13.8386 5.45896L16.8767 2.42091C15.168 0.919312 12.8963 0 10.2002 0C6.26791 0 2.83212 2.24091 1.20312 5.50958L4.57289 8.10004C5.38234 5.73725 7.59478 3.97898 10.2002 3.97898Z" fill="#E94235" />
+                        </svg>
+                        <span className="font-bold text-[#2B2D42]">Google</span>
                     </button>
-                </form>
-
-                {/* Divider */}
-                <div className="flex items-center my-6">
-                    <div className="flex-1 border-t-2 border-gray-200"></div>
-                    <span className="px-4 text-gray-500 text-sm font-bold font-[family-name:var(--font-inter)]">Or Login With</span>
-                    <div className="flex-1 border-t-2 border-gray-200"></div>
-                </div>
-
-                {/* Google Button */}
-                <button
-                    type="button"
-                    className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-[#2B2D42] rounded-lg shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all font-[family-name:var(--font-inter)]"
-                >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19.8055 10.2275C19.8055 9.51803 19.7477 8.83551 19.6399 8.17969H10.2002V12.0494H15.6006C15.3681 13.2994 14.6259 14.3578 13.5379 15.0672V17.5766H16.8055C18.7054 15.8369 19.8055 13.2713 19.8055 10.2275Z" fill="#4285F4" />
-                        <path d="M10.2002 20.0003C12.9002 20.0003 15.1719 19.1044 16.8055 17.5763L13.5379 15.0669C12.6215 15.6669 11.4845 16.0213 10.2002 16.0213C7.59478 16.0213 5.38234 14.2631 4.57289 11.9004H1.20312V14.4907C2.83212 17.7594 6.26791 20.0003 10.2002 20.0003Z" fill="#34A853" />
-                        <path d="M4.57289 11.9003C4.37289 11.3003 4.25952 10.659 4.25952 10.0003C4.25952 9.34155 4.37289 8.70023 4.57289 8.10023V5.50977H1.20312C0.437559 6.85977 0 8.38629 0 10.0003C0 11.6143 0.437559 13.1408 1.20312 14.4908L4.57289 11.9003Z" fill="#FBBC04" />
-                        <path d="M10.2002 3.97898C11.5997 3.97898 12.8545 4.47898 13.8386 5.45896L16.8767 2.42091C15.168 0.919312 12.8963 0 10.2002 0C6.26791 0 2.83212 2.24091 1.20312 5.50958L4.57289 8.10004C5.38234 5.73725 7.59478 3.97898 10.2002 3.97898Z" fill="#E94235" />
-                    </svg>
-                    <span className="font-bold text-[#2B2D42]">Google</span>
-                </button>
 
                     {/* Register Link */}
                     <p className="text-center mt-6 text-gray-600 text-sm font-[family-name:var(--font-inter)]">
