@@ -49,6 +49,38 @@ tasks:
   dev:all:
     desc: Run all services in separate terminal windows
     cmds:
+      - task: dev:all:windows
+        platforms: [windows]
+      - task: dev:all:darwin
+        platforms: [darwin]
+      - task: dev:all:linux
+        platforms: [linux]
+
+  dev:all:windows:
+    desc: Run all services on Windows
+    cmds:
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:user'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:pod'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:material'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:search'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:ai'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:notification'"
+      - echo "All services started in separate PowerShell windows"
+
+  dev:all:darwin:
+    desc: Run all services on macOS
+    cmds:
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:user"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:pod"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:material"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:search"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:ai"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:notification"'
+      - echo "All services started in separate Terminal windows"
+
+  dev:all:linux:
+    desc: Run all services on Linux
+    cmds:
       - gnome-terminal --tab --title="User Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:user; exec bash'
       - gnome-terminal --tab --title="Pod Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:pod; exec bash'
       - gnome-terminal --tab --title="Material Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:material; exec bash'
