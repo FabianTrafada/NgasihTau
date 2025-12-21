@@ -13,10 +13,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/swagger"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	_ "ngasihtau/api/swagger" // Swagger generated docs
 	"ngasihtau/internal/common/config"
 	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
@@ -218,6 +220,18 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 
 	// Register routes
 	handler.RegisterRoutes(fiberApp)
+
+	// Register Swagger UI routes
+	// Swagger UI at /api/docs
+	fiberApp.Get("/api/docs/*", swagger.HandlerDefault)
+	// OpenAPI spec at /api/openapi.json
+	fiberApp.Get("/api/openapi.json", func(c *fiber.Ctx) error {
+		return c.SendFile("./api/swagger/swagger.json")
+	})
+	// OpenAPI spec at /api/openapi.yaml
+	fiberApp.Get("/api/openapi.yaml", func(c *fiber.Ctx) error {
+		return c.SendFile("./api/swagger/swagger.yaml")
+	})
 
 	// Initialize health checker
 	healthChecker := health.NewChecker("user-service", "1.0.0")

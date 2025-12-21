@@ -5,12 +5,16 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"ngasihtau/docs"
 	"ngasihtau/internal/common/errors"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/internal/common/response"
 	"ngasihtau/internal/search/application"
 	"ngasihtau/pkg/jwt"
 )
+
+// Ensure docs package is used for swagger
+var _ = docs.Meta{}
 
 // Handler handles HTTP requests for search service
 type Handler struct {
@@ -44,7 +48,21 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 }
 
 // Search handles full-text search requests
-// GET /api/v1/search
+// @Summary Full-text search
+// @Description Search for pods and materials using full-text search
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param q query string true "Search query"
+// @Param type query string false "Filter by type (pod, material)"
+// @Param category query string false "Filter by category"
+// @Param file_type query string false "Filter by file type (pdf, docx, pptx)"
+// @Param pod_id query string false "Filter by pod ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[any] "Search results"
+// @Router /search [get]
 func (h *Handler) Search(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -94,7 +112,18 @@ func (h *Handler) Search(c *fiber.Ctx) error {
 }
 
 // SemanticSearch handles semantic search requests
-// GET /api/v1/search/semantic
+// @Summary Semantic search
+// @Description Search using natural language with vector similarity
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Param q query string true "Natural language query"
+// @Param pod_id query string false "Filter by pod ID" format(uuid)
+// @Param limit query int false "Maximum results" default(10)
+// @Param min_score query number false "Minimum similarity score" default(0)
+// @Success 200 {object} response.Response[any] "Semantic search results"
+// @Failure 400 {object} errors.ErrorResponse "Query parameter required"
+// @Router /search/semantic [get]
 func (h *Handler) SemanticSearch(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -123,7 +152,22 @@ func (h *Handler) SemanticSearch(c *fiber.Ctx) error {
 }
 
 // HybridSearch handles hybrid search requests combining keyword and semantic search
-// GET /api/v1/search/hybrid
+// @Summary Hybrid search
+// @Description Combine keyword and semantic search for best results
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param q query string true "Search query"
+// @Param type query string false "Filter by type"
+// @Param category query string false "Filter by category"
+// @Param file_type query string false "Filter by file type"
+// @Param pod_id query string false "Filter by pod ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Param semantic_weight query number false "Weight for semantic results (0-1)" default(0.3)
+// @Success 200 {object} response.PaginatedResponse[any] "Hybrid search results"
+// @Router /search/hybrid [get]
 func (h *Handler) HybridSearch(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -175,7 +219,16 @@ func (h *Handler) HybridSearch(c *fiber.Ctx) error {
 }
 
 // GetSuggestions handles autocomplete suggestion requests
-// GET /api/v1/search/suggestions
+// @Summary Get search suggestions
+// @Description Get autocomplete suggestions based on query prefix
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Param q query string true "Query prefix"
+// @Param limit query int false "Maximum suggestions" default(10)
+// @Success 200 {object} response.Response[map[string][]string] "Suggestions"
+// @Failure 400 {object} errors.ErrorResponse "Query parameter required"
+// @Router /search/suggestions [get]
 func (h *Handler) GetSuggestions(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -197,7 +250,15 @@ func (h *Handler) GetSuggestions(c *fiber.Ctx) error {
 }
 
 // GetTrending handles trending materials requests
-// GET /api/v1/search/trending
+// @Summary Get trending materials
+// @Description Get materials ranked by recent engagement (last 7 days)
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Param category query string false "Filter by category"
+// @Param limit query int false "Maximum results" default(20)
+// @Success 200 {object} response.Response[any] "Trending materials"
+// @Router /search/trending [get]
 func (h *Handler) GetTrending(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -213,7 +274,15 @@ func (h *Handler) GetTrending(c *fiber.Ctx) error {
 }
 
 // GetPopular handles popular materials requests
-// GET /api/v1/search/popular
+// @Summary Get popular materials
+// @Description Get materials ranked by all-time engagement
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Param category query string false "Filter by category"
+// @Param limit query int false "Maximum results" default(20)
+// @Success 200 {object} response.Response[any] "Popular materials"
+// @Router /search/popular [get]
 func (h *Handler) GetPopular(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -229,7 +298,16 @@ func (h *Handler) GetPopular(c *fiber.Ctx) error {
 }
 
 // GetSearchHistory handles search history requests
-// GET /api/v1/search/history
+// @Summary Get search history
+// @Description Get the authenticated user's search history
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param limit query int false "Maximum results" default(20)
+// @Success 200 {object} docs.SuccessResponse "Search history"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /search/history [get]
 func (h *Handler) GetSearchHistory(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -251,7 +329,15 @@ func (h *Handler) GetSearchHistory(c *fiber.Ctx) error {
 }
 
 // ClearSearchHistory handles clearing search history
-// DELETE /api/v1/search/history
+// @Summary Clear search history
+// @Description Clear the authenticated user's search history
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[map[string]string] "History cleared"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /search/history [delete]
 func (h *Handler) ClearSearchHistory(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 

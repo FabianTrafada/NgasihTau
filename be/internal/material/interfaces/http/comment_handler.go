@@ -15,7 +15,18 @@ type AddCommentRequest struct {
 }
 
 // AddComment adds a comment to a material.
-// POST /api/v1/materials/:id/comments
+// @Summary Add a comment
+// @Description Add a comment to a material. Supports threaded replies.
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body AddCommentRequest true "Comment content"
+// @Success 201 {object} fiber.Map "Created comment"
+// @Failure 400 {object} fiber.Map "Invalid request"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/{id}/comments [post]
 func (h *Handler) AddComment(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -62,7 +73,18 @@ func (h *Handler) AddComment(c *fiber.Ctx) error {
 }
 
 // GetComments retrieves comments for a material.
-// GET /api/v1/materials/:id/comments
+// @Summary Get comments
+// @Description Get a paginated list of comments for a material
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} fiber.Map "List of comments"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Router /materials/{id}/comments [get]
 func (h *Handler) GetComments(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -90,7 +112,19 @@ type UpdateCommentRequest struct {
 }
 
 // UpdateComment updates a comment.
-// PUT /api/v1/comments/:id
+// @Summary Update a comment
+// @Description Update a comment. Only the comment author can update.
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Comment ID" format(uuid)
+// @Param request body UpdateCommentRequest true "Updated content"
+// @Success 200 {object} fiber.Map "Updated comment"
+// @Failure 400 {object} fiber.Map "Invalid request"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Failure 403 {object} fiber.Map "Not comment author"
+// @Router /comments/{id} [put]
 func (h *Handler) UpdateComment(c *fiber.Ctx) error {
 	commentID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -124,7 +158,18 @@ func (h *Handler) UpdateComment(c *fiber.Ctx) error {
 }
 
 // DeleteComment soft-deletes a comment.
-// DELETE /api/v1/comments/:id
+// @Summary Delete a comment
+// @Description Soft-delete a comment. Only the comment author can delete.
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Comment ID" format(uuid)
+// @Success 204 "Comment deleted"
+// @Failure 400 {object} fiber.Map "Invalid comment ID"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Failure 403 {object} fiber.Map "Not comment author"
+// @Router /comments/{id} [delete]
 func (h *Handler) DeleteComment(c *fiber.Ctx) error {
 	commentID, err := uuid.Parse(c.Params("id"))
 	if err != nil {

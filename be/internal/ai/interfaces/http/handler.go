@@ -7,11 +7,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 
+	"ngasihtau/docs"
 	"ngasihtau/internal/ai/application"
 	"ngasihtau/internal/ai/domain"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/pkg/jwt"
 )
+
+// Ensure docs package is used for swagger
+var _ = docs.Meta{}
 
 type Handler struct {
 	service    *application.Service
@@ -48,6 +52,19 @@ type ExportChatRequest struct {
 	Format string `json:"format" validate:"required,oneof=pdf markdown"`
 }
 
+// ExportChat exports chat history to PDF or Markdown.
+// @Summary Export chat history
+// @Description Export chat history for a material to PDF or Markdown format
+// @Tags AI
+// @Accept json
+// @Produce application/pdf,text/markdown
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body ExportChatRequest true "Export format"
+// @Success 200 {file} binary "Exported chat file"
+// @Failure 400 {object} docs.ErrorResponse "Invalid request"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Router /materials/{id}/chat/export [post]
 func (h *Handler) ExportChat(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -76,6 +93,19 @@ func (h *Handler) ExportChat(c *fiber.Ctx) error {
 	return c.Send(output.Content)
 }
 
+// Chat handles AI chat with material context.
+// @Summary Chat with material
+// @Description Send a message to AI with material context using RAG
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body ChatRequest true "Chat message"
+// @Success 200 {object} docs.SuccessResponse "AI response"
+// @Failure 400 {object} docs.ErrorResponse "Invalid request"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Router /materials/{id}/chat [post]
 func (h *Handler) Chat(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -101,6 +131,19 @@ func (h *Handler) Chat(c *fiber.Ctx) error {
 	return h.successResponse(c, fiber.StatusOK, output.Message)
 }
 
+// PodChat handles AI chat with pod-wide context.
+// @Summary Chat with pod
+// @Description Send a message to AI with context from all materials in a pod
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param request body ChatRequest true "Chat message"
+// @Success 200 {object} docs.SuccessResponse "AI response with material citations"
+// @Failure 400 {object} docs.ErrorResponse "Invalid request"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Router /pods/{id}/chat [post]
 func (h *Handler) PodChat(c *fiber.Ctx) error {
 	podID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -126,6 +169,20 @@ func (h *Handler) PodChat(c *fiber.Ctx) error {
 	return h.successResponse(c, fiber.StatusOK, output.Message)
 }
 
+// GetChatHistory retrieves chat history for a material.
+// @Summary Get chat history
+// @Description Get paginated chat history for a material
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param limit query int false "Maximum messages" default(50)
+// @Param offset query int false "Offset for pagination" default(0)
+// @Success 200 {object} docs.SuccessResponse "Chat history"
+// @Failure 400 {object} docs.ErrorResponse "Invalid material ID"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Router /materials/{id}/chat/history [get]
 func (h *Handler) GetChatHistory(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -144,6 +201,18 @@ func (h *Handler) GetChatHistory(c *fiber.Ctx) error {
 	return h.paginatedResponse(c, messages, limit, offset, total)
 }
 
+// GetSuggestions retrieves suggested questions for a material.
+// @Summary Get suggested questions
+// @Description Get AI-generated suggested questions based on material content
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 200 {object} docs.SuggestedQuestionsResponse "Suggested questions"
+// @Failure 400 {object} docs.ErrorResponse "Invalid material ID"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Router /materials/{id}/chat/suggestions [get]
 func (h *Handler) GetSuggestions(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -168,6 +237,19 @@ type FeedbackRequest struct {
 	FeedbackText *string `json:"feedback_text,omitempty"`
 }
 
+// SubmitFeedback submits feedback for an AI response.
+// @Summary Submit feedback
+// @Description Submit thumbs up/down feedback for an AI response
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param messageId path string true "Message ID" format(uuid)
+// @Param request body FeedbackRequest true "Feedback data"
+// @Success 200 {object} docs.MessageResponse "Feedback submitted"
+// @Failure 400 {object} docs.ErrorResponse "Invalid request"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Router /chat/{messageId}/feedback [post]
 func (h *Handler) SubmitFeedback(c *fiber.Ctx) error {
 	messageID, err := uuid.Parse(c.Params("messageId"))
 	if err != nil {

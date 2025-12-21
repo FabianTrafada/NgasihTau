@@ -39,9 +39,10 @@ type Config struct {
 
 // AppConfig holds general application settings.
 type AppConfig struct {
-	Env      string `mapstructure:"env" validate:"required,oneof=development staging production"`
-	Debug    bool   `mapstructure:"debug"`
-	LogLevel string `mapstructure:"log_level" validate:"required,oneof=debug info warn error"`
+	Env         string `mapstructure:"env" validate:"required,oneof=development staging production"`
+	Debug       bool   `mapstructure:"debug"`
+	LogLevel    string `mapstructure:"log_level" validate:"required,oneof=debug info warn error"`
+	FrontendURL string `mapstructure:"frontend_url"` // Frontend URL for email links (e.g., http://localhost:3000)
 }
 
 // ServiceConfig holds common service configuration.

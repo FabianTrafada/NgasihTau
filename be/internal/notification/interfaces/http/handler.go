@@ -36,6 +36,17 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 }
 
 // GetNotifications handles GET /api/v1/notifications
+// @Summary Get notifications
+// @Description Get a paginated list of notifications for the authenticated user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param limit query int false "Maximum notifications" default(20)
+// @Param offset query int false "Offset for pagination" default(0)
+// @Success 200 {object} fiber.Map "Notifications with unread count"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /notifications [get]
 func (h *Handler) GetNotifications(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -71,6 +82,18 @@ func (h *Handler) GetNotifications(c *fiber.Ctx) error {
 }
 
 // MarkAsRead handles PUT /api/v1/notifications/:id/read
+// @Summary Mark notification as read
+// @Description Mark a single notification as read
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Notification ID" format(uuid)
+// @Success 200 {object} fiber.Map "Notification marked as read"
+// @Failure 400 {object} fiber.Map "Invalid notification ID"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Failure 404 {object} fiber.Map "Notification not found"
+// @Router /notifications/{id}/read [put]
 func (h *Handler) MarkAsRead(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -102,6 +125,15 @@ func (h *Handler) MarkAsRead(c *fiber.Ctx) error {
 }
 
 // MarkAllAsRead handles PUT /api/v1/notifications/read-all
+// @Summary Mark all notifications as read
+// @Description Mark all notifications as read for the authenticated user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} fiber.Map "All notifications marked as read"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /notifications/read-all [put]
 func (h *Handler) MarkAllAsRead(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -125,6 +157,15 @@ func (h *Handler) MarkAllAsRead(c *fiber.Ctx) error {
 }
 
 // GetPreferences handles GET /api/v1/notifications/preferences
+// @Summary Get notification preferences
+// @Description Get notification preferences for the authenticated user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} fiber.Map "Notification preferences"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /notifications/preferences [get]
 func (h *Handler) GetPreferences(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -157,6 +198,17 @@ type UpdatePreferencesRequest struct {
 }
 
 // UpdatePreferences handles PUT /api/v1/notifications/preferences
+// @Summary Update notification preferences
+// @Description Update notification preferences for the authenticated user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UpdatePreferencesRequest true "Preference updates"
+// @Success 200 {object} fiber.Map "Updated preferences"
+// @Failure 400 {object} fiber.Map "Invalid request body"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /notifications/preferences [put]
 func (h *Handler) UpdatePreferences(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

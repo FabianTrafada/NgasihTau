@@ -1,0 +1,3468 @@
+basePath: /api/v1
+definitions:
+  application.CreatePodInput:
+    properties:
+      categories:
+        items:
+          type: string
+        maxItems: 5
+        type: array
+      description:
+        maxLength: 2000
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      tags:
+        items:
+          type: string
+        maxItems: 10
+        type: array
+      visibility:
+        allOf:
+        - $ref: '#/definitions/domain.Visibility'
+        enum:
+        - public
+        - private
+    required:
+    - name
+    - visibility
+    type: object
+  application.InviteCollaboratorInput:
+    properties:
+      role:
+        allOf:
+        - $ref: '#/definitions/domain.CollaboratorRole'
+        enum:
+        - viewer
+        - contributor
+        - admin
+      user_id:
+        type: string
+    required:
+    - role
+    - user_id
+    type: object
+  application.UpdatePodInput:
+    properties:
+      categories:
+        items:
+          type: string
+        maxItems: 5
+        type: array
+      description:
+        maxLength: 2000
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      tags:
+        items:
+          type: string
+        maxItems: 10
+        type: array
+      visibility:
+        allOf:
+        - $ref: '#/definitions/domain.Visibility'
+        enum:
+        - public
+        - private
+    type: object
+  docs.ErrorBody:
+    properties:
+      code:
+        example: VALIDATION_ERROR
+        type: string
+      details:
+        items:
+          $ref: '#/definitions/docs.ErrorDetail'
+        type: array
+      message:
+        example: Invalid input data
+        type: string
+    type: object
+  docs.ErrorDetail:
+    properties:
+      field:
+        example: email
+        type: string
+      message:
+        example: Invalid email format
+        type: string
+    type: object
+  docs.ErrorResponse:
+    description: Standard error response format
+    properties:
+      error:
+        $ref: '#/definitions/docs.ErrorBody'
+      meta:
+        $ref: '#/definitions/docs.Meta'
+      success:
+        example: false
+        type: boolean
+    type: object
+  docs.MessageResponse:
+    description: Success response with a message
+    properties:
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      meta:
+        $ref: '#/definitions/docs.Meta'
+      success:
+        example: true
+        type: boolean
+    type: object
+  docs.Meta:
+    properties:
+      request_id:
+        example: req_abc123
+        type: string
+      timestamp:
+        example: "2025-12-08T10:00:00Z"
+        type: string
+    type: object
+  docs.SuccessResponse:
+    description: Standard success response format
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/docs.Meta'
+      success:
+        example: true
+        type: boolean
+    type: object
+  docs.SuggestedQuestionsResponse:
+    description: Suggested questions for AI chat
+    properties:
+      questions:
+        example:
+        - What are the key concepts?
+        - Can you explain the main idea?
+        - What are the practical applications?
+        items:
+          type: string
+        type: array
+    type: object
+  domain.Activity:
+    properties:
+      action:
+        $ref: '#/definitions/domain.ActivityAction'
+      created_at:
+        type: string
+      id:
+        type: string
+      metadata:
+        $ref: '#/definitions/domain.ActivityMetadata'
+      pod_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  domain.ActivityAction:
+    enum:
+    - material_uploaded
+    - collaborator_added
+    - pod_updated
+    - pod_forked
+    type: string
+    x-enum-varnames:
+    - ActivityActionMaterialUploaded
+    - ActivityActionCollaboratorAdded
+    - ActivityActionPodUpdated
+    - ActivityActionPodForked
+  domain.ActivityMetadata:
+    additionalProperties: {}
+    type: object
+  domain.Collaborator:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      invited_by:
+        type: string
+      pod_id:
+        type: string
+      role:
+        $ref: '#/definitions/domain.CollaboratorRole'
+      status:
+        $ref: '#/definitions/domain.CollaboratorStatus'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  domain.CollaboratorRole:
+    enum:
+    - viewer
+    - contributor
+    - admin
+    type: string
+    x-enum-varnames:
+    - CollaboratorRoleViewer
+    - CollaboratorRoleContributor
+    - CollaboratorRoleAdmin
+  domain.CollaboratorStatus:
+    enum:
+    - pending
+    - pending_verification
+    - verified
+    type: string
+    x-enum-varnames:
+    - CollaboratorStatusPending
+    - CollaboratorStatusPendingVerification
+    - CollaboratorStatusVerified
+  domain.Pod:
+    properties:
+      categories:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      fork_count:
+        type: integer
+      forked_from_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+      slug:
+        type: string
+      star_count:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      view_count:
+        type: integer
+      visibility:
+        $ref: '#/definitions/domain.Visibility'
+    type: object
+  domain.Visibility:
+    enum:
+    - public
+    - private
+    type: string
+    x-enum-varnames:
+    - VisibilityPublic
+    - VisibilityPrivate
+  errors.ErrorBody:
+    properties:
+      code:
+        type: string
+      details:
+        items:
+          $ref: '#/definitions/errors.ErrorDetail'
+        type: array
+      message:
+        type: string
+    type: object
+  errors.ErrorDetail:
+    properties:
+      field:
+        type: string
+      message:
+        type: string
+      value: {}
+    type: object
+  errors.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/errors.ErrorBody'
+      meta:
+        $ref: '#/definitions/errors.ResponseMeta'
+      success:
+        type: boolean
+    type: object
+  errors.ResponseMeta:
+    properties:
+      request_id:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  fiber.Map:
+    additionalProperties: true
+    type: object
+  http.AddCommentRequest:
+    properties:
+      content:
+        maxLength: 2000
+        type: string
+      parent_id:
+        type: string
+    required:
+    - content
+    type: object
+  http.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/http.UserResponse'
+    type: object
+  http.BookmarkMaterialRequest:
+    properties:
+      folder:
+        maxLength: 100
+        type: string
+    type: object
+  http.ChatRequest:
+    properties:
+      message:
+        maxLength: 2000
+        minLength: 1
+        type: string
+    required:
+    - message
+    type: object
+  http.ConfirmUploadRequest:
+    properties:
+      description:
+        maxLength: 2000
+        type: string
+      object_key:
+        type: string
+      pod_id:
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    required:
+    - object_key
+    - pod_id
+    - title
+    type: object
+  http.CreateVersionRequest:
+    properties:
+      changelog:
+        maxLength: 1000
+        type: string
+      object_key:
+        type: string
+    required:
+    - object_key
+    type: object
+  http.ExportChatRequest:
+    properties:
+      format:
+        enum:
+        - pdf
+        - markdown
+        type: string
+    required:
+    - format
+    type: object
+  http.FeedbackRequest:
+    properties:
+      feedback:
+        enum:
+        - thumbs_up
+        - thumbs_down
+        type: string
+      feedback_text:
+        type: string
+    required:
+    - feedback
+    type: object
+  http.GoogleLoginRequest:
+    properties:
+      code:
+        type: string
+      redirect_uri:
+        type: string
+    required:
+    - code
+    - redirect_uri
+    type: object
+  http.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  http.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  http.PasswordResetConfirmRequest:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  http.PasswordResetRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  http.RateMaterialRequest:
+    properties:
+      review:
+        maxLength: 2000
+        type: string
+      score:
+        maximum: 5
+        minimum: 1
+        type: integer
+    required:
+    - score
+    type: object
+  http.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  http.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  http.TwoFactorRequiredResponse:
+    properties:
+      temp_token:
+        type: string
+      two_factor_method:
+        description: '"totp" or "backup_code"'
+        type: string
+    type: object
+  http.TwoFactorSetupResponse:
+    properties:
+      backup_codes:
+        items:
+          type: string
+        type: array
+      qr_code_url:
+        type: string
+      secret:
+        type: string
+    type: object
+  http.UpdateCommentRequest:
+    properties:
+      content:
+        maxLength: 2000
+        type: string
+    required:
+    - content
+    type: object
+  http.UpdateMaterialRequest:
+    properties:
+      description:
+        maxLength: 2000
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    type: object
+  http.UpdatePreferencesRequest:
+    properties:
+      email_comment_reply:
+        type: boolean
+      email_new_material:
+        type: boolean
+      email_pod_invite:
+        type: boolean
+      inapp_comment_reply:
+        type: boolean
+      inapp_new_material:
+        type: boolean
+      inapp_pod_invite:
+        type: boolean
+    type: object
+  http.UpdateProfileRequest:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        maxLength: 500
+        type: string
+      language:
+        enum:
+        - id
+        - en
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    type: object
+  http.UploadURLRequest:
+    properties:
+      content_type:
+        type: string
+      filename:
+        type: string
+      size:
+        description: 100MB max
+        maximum: 104857600
+        type: integer
+    required:
+    - content_type
+    - filename
+    - size
+    type: object
+  http.UserProfileResponse:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      follower_count:
+        type: integer
+      following_count:
+        type: integer
+      id:
+        type: string
+      is_following:
+        description: Only when viewing another user's profile
+        type: boolean
+      material_count:
+        type: integer
+      name:
+        type: string
+      pod_count:
+        type: integer
+      role:
+        type: string
+    type: object
+  http.UserResponse:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        description: Only included for own profile
+        type: string
+      email_verified:
+        description: Only included for own profile
+        type: boolean
+      id:
+        type: string
+      language:
+        description: Only included for own profile
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      two_factor_enabled:
+        description: Only included for own profile
+        type: boolean
+    type: object
+  http.Verify2FALoginRequest:
+    properties:
+      code:
+        maxLength: 10
+        minLength: 6
+        type: string
+      temp_token:
+        type: string
+    required:
+    - code
+    - temp_token
+    type: object
+  http.Verify2FARequest:
+    properties:
+      code:
+        maxLength: 10
+        minLength: 6
+        type: string
+    required:
+    - code
+    type: object
+  http.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  map_string_array_string:
+    additionalProperties:
+      items:
+        type: string
+      type: array
+    type: object
+  map_string_bool:
+    additionalProperties:
+      type: boolean
+    type: object
+  map_string_string:
+    additionalProperties:
+      type: string
+    type: object
+  response.Meta:
+    properties:
+      request_id:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  response.PaginatedResponse-any:
+    properties:
+      data:
+        items: {}
+        type: array
+      meta:
+        $ref: '#/definitions/response.Meta'
+      pagination:
+        $ref: '#/definitions/response.Pagination'
+      success:
+        type: boolean
+    type: object
+  response.PaginatedResponse-domain_Activity:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Activity'
+        type: array
+      meta:
+        $ref: '#/definitions/response.Meta'
+      pagination:
+        $ref: '#/definitions/response.Pagination'
+      success:
+        type: boolean
+    type: object
+  response.PaginatedResponse-domain_Pod:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Pod'
+        type: array
+      meta:
+        $ref: '#/definitions/response.Meta'
+      pagination:
+        $ref: '#/definitions/response.Pagination'
+      success:
+        type: boolean
+    type: object
+  response.PaginatedResponse-http_UserResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/http.UserResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/response.Meta'
+      pagination:
+        $ref: '#/definitions/response.Pagination'
+      success:
+        type: boolean
+    type: object
+  response.Pagination:
+    properties:
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.Response-any:
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-array_domain_Collaborator:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Collaborator'
+        type: array
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_Collaborator:
+    properties:
+      data:
+        $ref: '#/definitions/domain.Collaborator'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_Pod:
+    properties:
+      data:
+        $ref: '#/definitions/domain.Pod'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-http_AuthResponse:
+    properties:
+      data:
+        $ref: '#/definitions/http.AuthResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-http_TwoFactorRequiredResponse:
+    properties:
+      data:
+        $ref: '#/definitions/http.TwoFactorRequiredResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-http_TwoFactorSetupResponse:
+    properties:
+      data:
+        $ref: '#/definitions/http.TwoFactorSetupResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-http_UserProfileResponse:
+    properties:
+      data:
+        $ref: '#/definitions/http.UserProfileResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-http_UserResponse:
+    properties:
+      data:
+        $ref: '#/definitions/http.UserResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-map_string_array_string:
+    properties:
+      data:
+        $ref: '#/definitions/map_string_array_string'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-map_string_bool:
+    properties:
+      data:
+        $ref: '#/definitions/map_string_bool'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-map_string_string:
+    properties:
+      data:
+        $ref: '#/definitions/map_string_string'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+host: localhost:8001
+info:
+  contact:
+    email: support@ngasihtau.com
+    name: NgasihTau API Support
+  description: |-
+    NgasihTau is a learning platform API that enables teachers to create Knowledge Pods for sharing learning materials with students.
+    The platform uses a microservices architecture with Go as the primary backend language.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: NgasihTau API
+  version: "1.0"
+paths:
+  /auth/2fa/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable 2FA by verifying current TOTP code
+      parameters:
+      - description: Current TOTP code for verification
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.Verify2FARequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA disabled successfully
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "400":
+          description: Invalid TOTP code
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disable two-factor authentication
+      tags:
+      - Auth
+  /auth/2fa/enable:
+    post:
+      consumes:
+      - application/json
+      description: Generate TOTP secret and QR code for 2FA setup
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA setup initiated
+          schema:
+            $ref: '#/definitions/response.Response-http_TwoFactorSetupResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: 2FA already enabled
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Enable two-factor authentication
+      tags:
+      - Auth
+  /auth/2fa/login:
+    post:
+      consumes:
+      - application/json
+      description: Verify TOTP code or backup code to complete login for 2FA-enabled
+        accounts
+      parameters:
+      - description: Temp token and TOTP/backup code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.Verify2FALoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/response.Response-http_AuthResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Invalid code or expired temp token
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Complete 2FA login verification
+      tags:
+      - Auth
+  /auth/2fa/verify:
+    post:
+      consumes:
+      - application/json
+      description: Complete 2FA setup by verifying a TOTP code from authenticator
+        app
+      parameters:
+      - description: TOTP code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.Verify2FARequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA enabled successfully
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "400":
+          description: Invalid TOTP code
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify and activate 2FA
+      tags:
+      - Auth
+  /auth/google:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user using Google OAuth authorization code
+      parameters:
+      - description: Google OAuth code and redirect URI
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.GoogleLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA verification required
+          schema:
+            $ref: '#/definitions/response.Response-http_TwoFactorRequiredResponse'
+        "400":
+          description: Invalid request body or OAuth error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Login with Google OAuth
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password. Returns JWT tokens or
+        2FA challenge.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA verification required
+          schema:
+            $ref: '#/definitions/response.Response-http_TwoFactorRequiredResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Login with email and password
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate the refresh token to logout the user
+      parameters:
+      - description: Refresh token to invalidate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Logout user
+      tags:
+      - Auth
+  /auth/password/forgot:
+    post:
+      consumes:
+      - application/json
+      description: Send password reset email to the user (always returns success to
+        prevent email enumeration)
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset email sent
+          schema:
+            $ref: '#/definitions/response.Response-map_string_string'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - Auth
+  /auth/password/reset:
+    post:
+      consumes:
+      - application/json
+      description: Reset user's password using the reset token
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.PasswordResetConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "400":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Reset password
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new access token and refresh
+        token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed successfully
+          schema:
+            $ref: '#/definitions/response.Response-http_AuthResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with email and password
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/response.Response-http_AuthResponse'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Email already exists
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /auth/send-verification:
+    post:
+      consumes:
+      - application/json
+      description: Send a new verification email to the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email sent
+          schema:
+            $ref: '#/definitions/response.Response-map_string_string'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Email already verified
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send verification email
+      tags:
+      - Auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verify user's email address using the verification token
+      parameters:
+      - description: Email verification token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "400":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Verify email address
+      tags:
+      - Auth
+  /bookmarks:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of bookmarked materials
+      parameters:
+      - description: Filter by folder name
+        in: query
+        name: folder
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of bookmarked materials
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get bookmarks
+      tags:
+      - Bookmarks
+  /bookmarks/folders:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all bookmark folders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of folders
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get bookmark folders
+      tags:
+      - Bookmarks
+  /chat/{messageId}/feedback:
+    post:
+      consumes:
+      - application/json
+      description: Submit thumbs up/down feedback for an AI response
+      parameters:
+      - description: Message ID
+        format: uuid
+        in: path
+        name: messageId
+        required: true
+        type: string
+      - description: Feedback data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.FeedbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Feedback submitted
+          schema:
+            $ref: '#/definitions/docs.MessageResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit feedback
+      tags:
+      - AI
+  /comments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-delete a comment. Only the comment author can delete.
+      parameters:
+      - description: Comment ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Comment deleted
+        "400":
+          description: Invalid comment ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "403":
+          description: Not comment author
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Delete a comment
+      tags:
+      - Comments
+    put:
+      consumes:
+      - application/json
+      description: Update a comment. Only the comment author can update.
+      parameters:
+      - description: Comment ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated content
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.UpdateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated comment
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "403":
+          description: Not comment author
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Update a comment
+      tags:
+      - Comments
+  /feed:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated activity feed from followed pods and users
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity feed
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-domain_Activity'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user activity feed
+      tags:
+      - Pods
+  /materials/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-delete a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Material deleted
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Delete a material
+      tags:
+      - Materials
+    get:
+      consumes:
+      - application/json
+      description: Get a material by ID
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Material details
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "404":
+          description: Material not found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get a material
+      tags:
+      - Materials
+    put:
+      consumes:
+      - application/json
+      description: Update a material's title and description
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Material update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.UpdateMaterialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated material
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Update a material
+      tags:
+      - Materials
+  /materials/{id}/bookmark:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a material from bookmarks
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Bookmark removed
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Remove a bookmark
+      tags:
+      - Bookmarks
+    post:
+      consumes:
+      - application/json
+      description: Add a material to bookmarks with optional folder
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Optional folder name
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/http.BookmarkMaterialRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created bookmark
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "409":
+          description: Already bookmarked
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Bookmark a material
+      tags:
+      - Bookmarks
+  /materials/{id}/chat:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to AI with material context using RAG
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Chat message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: AI response
+          schema:
+            $ref: '#/definitions/docs.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Chat with material
+      tags:
+      - AI
+  /materials/{id}/chat/export:
+    post:
+      consumes:
+      - application/json
+      description: Export chat history for a material to PDF or Markdown format
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Export format
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.ExportChatRequest'
+      produces:
+      - application/pdf
+      - text/markdown
+      responses:
+        "200":
+          description: Exported chat file
+          schema:
+            type: file
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export chat history
+      tags:
+      - AI
+  /materials/{id}/chat/history:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated chat history for a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 50
+        description: Maximum messages
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chat history
+          schema:
+            $ref: '#/definitions/docs.SuccessResponse'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get chat history
+      tags:
+      - AI
+  /materials/{id}/chat/suggestions:
+    get:
+      consumes:
+      - application/json
+      description: Get AI-generated suggested questions based on material content
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Suggested questions
+          schema:
+            $ref: '#/definitions/docs.SuggestedQuestionsResponse'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get suggested questions
+      tags:
+      - AI
+  /materials/{id}/comments:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of comments for a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of comments
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get comments
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      description: Add a comment to a material. Supports threaded replies.
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment content
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.AddCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created comment
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Add a comment
+      tags:
+      - Comments
+  /materials/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: Generate a presigned URL for downloading a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Download URL
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "404":
+          description: Material not found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get download URL
+      tags:
+      - Materials
+  /materials/{id}/preview:
+    get:
+      consumes:
+      - application/json
+      description: Generate a presigned URL for previewing a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Preview URL
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "404":
+          description: Material not found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get preview URL
+      tags:
+      - Materials
+  /materials/{id}/ratings:
+    get:
+      consumes:
+      - application/json
+      description: Get ratings for a material. Use summary=true for rating summary.
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Return summary instead of list
+        in: query
+        name: summary
+        type: boolean
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        maximum: 50
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ratings or summary
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get ratings
+      tags:
+      - Ratings
+    post:
+      consumes:
+      - application/json
+      description: Rate a material (1-5 stars) with optional review. Updates existing
+        rating if already rated.
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rating and optional review
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.RateMaterialRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created/updated rating
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Rate a material
+      tags:
+      - Ratings
+  /materials/{id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Get all versions of a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of versions
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get version history
+      tags:
+      - Materials
+    post:
+      consumes:
+      - application/json
+      description: Upload a new version of an existing material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Version details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.CreateVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created version
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Create a new version
+      tags:
+      - Materials
+  /materials/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a file upload and create a material record
+      parameters:
+      - description: Upload confirmation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.ConfirmUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created material
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request or upload error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Confirm file upload
+      tags:
+      - Materials
+  /materials/upload-url:
+    post:
+      consumes:
+      - application/json
+      description: Generate a presigned URL for direct file upload to storage
+      parameters:
+      - description: Upload request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.UploadURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Upload URL and object key
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request or unsupported file type
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get presigned upload URL
+      tags:
+      - Materials
+  /notifications:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of notifications for the authenticated user
+      parameters:
+      - default: 20
+        description: Maximum notifications
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notifications with unread count
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get notifications
+      tags:
+      - Notifications
+  /notifications/{id}/read:
+    put:
+      consumes:
+      - application/json
+      description: Mark a single notification as read
+      parameters:
+      - description: Notification ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification marked as read
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid notification ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "404":
+          description: Notification not found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Mark notification as read
+      tags:
+      - Notifications
+  /notifications/preferences:
+    get:
+      consumes:
+      - application/json
+      description: Get notification preferences for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification preferences
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Get notification preferences
+      tags:
+      - Notifications
+    put:
+      consumes:
+      - application/json
+      description: Update notification preferences for the authenticated user
+      parameters:
+      - description: Preference updates
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.UpdatePreferencesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated preferences
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Update notification preferences
+      tags:
+      - Notifications
+  /notifications/read-all:
+    put:
+      consumes:
+      - application/json
+      description: Mark all notifications as read for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All notifications marked as read
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: Mark all notifications as read
+      tags:
+      - Notifications
+  /pods:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of Knowledge Pods with optional filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter by owner ID
+        format: uuid
+        in: query
+        name: owner_id
+        type: string
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by visibility
+        enum:
+        - public
+        - private
+        in: query
+        name: visibility
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of pods
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-domain_Pod'
+      summary: List Knowledge Pods
+      tags:
+      - Pods
+    post:
+      consumes:
+      - application/json
+      description: Create a new Knowledge Pod. Only verified users (teachers) can
+        create pods.
+      parameters:
+      - description: Pod creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/application.CreatePodInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Pod created successfully
+          schema:
+            $ref: '#/definitions/response.Response-domain_Pod'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Only verified users can create pods
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new Knowledge Pod
+      tags:
+      - Pods
+  /pods/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Knowledge Pod. Only the owner can delete a pod.
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Pod deleted successfully
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Owner access required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a Knowledge Pod
+      tags:
+      - Pods
+    get:
+      consumes:
+      - application/json
+      description: Get a Knowledge Pod by ID. Private pods require authentication
+        and access.
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pod details
+          schema:
+            $ref: '#/definitions/response.Response-domain_Pod'
+        "400":
+          description: Invalid pod ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied to private pod
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a Knowledge Pod
+      tags:
+      - Pods
+    put:
+      consumes:
+      - application/json
+      description: Update a Knowledge Pod. Requires owner or admin collaborator access.
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Pod update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/application.UpdatePodInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated pod
+          schema:
+            $ref: '#/definitions/response.Response-domain_Pod'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Edit access required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a Knowledge Pod
+      tags:
+      - Pods
+  /pods/{id}/activity:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of activities for a pod
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of activities
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-domain_Activity'
+        "400":
+          description: Invalid pod ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pod activity
+      tags:
+      - Pods
+  /pods/{id}/chat:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to AI with context from all materials in a pod
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Chat message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: AI response with material citations
+          schema:
+            $ref: '#/definitions/docs.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Chat with pod
+      tags:
+      - AI
+  /pods/{id}/collaborators:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of collaborators for a pod
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of collaborators
+          schema:
+            $ref: '#/definitions/response.Response-array_domain_Collaborator'
+        "400":
+          description: Invalid pod ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pod collaborators
+      tags:
+      - Pods
+    post:
+      consumes:
+      - application/json
+      description: Invite a user to collaborate on a pod. Requires owner or admin
+        access.
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Collaborator invitation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/application.InviteCollaboratorInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Collaborator invited
+          schema:
+            $ref: '#/definitions/response.Response-domain_Collaborator'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Collaborator management access required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod or user not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invite a collaborator
+      tags:
+      - Pods
+  /pods/{id}/collaborators/{userId}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a collaborator from a pod. Requires owner or admin access.
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Collaborator user ID
+        format: uuid
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Collaborator removed
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Collaborator management access required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod or collaborator not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a collaborator
+      tags:
+      - Pods
+    put:
+      consumes:
+      - application/json
+      description: Verify a collaborator or update their role. Requires owner or admin
+        access.
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Collaborator user ID
+        format: uuid
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: Action (verify/update_role) and optional role
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            action:
+              type: string
+            role:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Collaborator updated
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "400":
+          description: Invalid request body or action
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Collaborator management access required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod or collaborator not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a collaborator
+      tags:
+      - Pods
+  /pods/{id}/follow:
+    delete:
+      consumes:
+      - application/json
+      description: Stop following a pod
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pod unfollowed
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unfollow a Knowledge Pod
+      tags:
+      - Pods
+    post:
+      consumes:
+      - application/json
+      description: Follow a pod to receive notifications about new materials
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pod followed
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Follow a Knowledge Pod
+      tags:
+      - Pods
+  /pods/{id}/fork:
+    post:
+      consumes:
+      - application/json
+      description: Create a copy of a Knowledge Pod. Only verified users can fork
+        pods.
+      parameters:
+      - description: Pod ID to fork
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Forked pod
+          schema:
+            $ref: '#/definitions/response.Response-domain_Pod'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied or not verified
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Fork a Knowledge Pod
+      tags:
+      - Pods
+  /pods/{id}/star:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a pod from your starred list
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pod unstarred
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found or not starred
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unstar a Knowledge Pod
+      tags:
+      - Pods
+    post:
+      consumes:
+      - application/json
+      description: Add a pod to your starred list
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pod starred
+          schema:
+            $ref: '#/definitions/response.Response-map_string_bool'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Pod not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Already starred
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Star a Knowledge Pod
+      tags:
+      - Pods
+  /pods/{podId}/materials:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of materials in a Knowledge Pod
+      parameters:
+      - description: Pod ID
+        format: uuid
+        in: path
+        name: podId
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of materials
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "400":
+          description: Invalid pod ID
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      security:
+      - BearerAuth: []
+      summary: List materials in a pod
+      tags:
+      - Materials
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: Search for pods and materials using full-text search
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Filter by type (pod, material)
+        in: query
+        name: type
+        type: string
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by file type (pdf, docx, pptx)
+        in: query
+        name: file_type
+        type: string
+      - description: Filter by pod ID
+        format: uuid
+        in: query
+        name: pod_id
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search results
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-any'
+      security:
+      - BearerAuth: []
+      summary: Full-text search
+      tags:
+      - Search
+  /search/history:
+    delete:
+      consumes:
+      - application/json
+      description: Clear the authenticated user's search history
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: History cleared
+          schema:
+            $ref: '#/definitions/response.Response-map_string_string'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Clear search history
+      tags:
+      - Search
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's search history
+      parameters:
+      - default: 20
+        description: Maximum results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search history
+          schema:
+            $ref: '#/definitions/docs.SuccessResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get search history
+      tags:
+      - Search
+  /search/hybrid:
+    get:
+      consumes:
+      - application/json
+      description: Combine keyword and semantic search for best results
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Filter by type
+        in: query
+        name: type
+        type: string
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by file type
+        in: query
+        name: file_type
+        type: string
+      - description: Filter by pod ID
+        format: uuid
+        in: query
+        name: pod_id
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - default: 0.3
+        description: Weight for semantic results (0-1)
+        in: query
+        name: semantic_weight
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Hybrid search results
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-any'
+      security:
+      - BearerAuth: []
+      summary: Hybrid search
+      tags:
+      - Search
+  /search/popular:
+    get:
+      consumes:
+      - application/json
+      description: Get materials ranked by all-time engagement
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - default: 20
+        description: Maximum results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Popular materials
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get popular materials
+      tags:
+      - Search
+  /search/semantic:
+    get:
+      consumes:
+      - application/json
+      description: Search using natural language with vector similarity
+      parameters:
+      - description: Natural language query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Filter by pod ID
+        format: uuid
+        in: query
+        name: pod_id
+        type: string
+      - default: 10
+        description: Maximum results
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Minimum similarity score
+        in: query
+        name: min_score
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Semantic search results
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Query parameter required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Semantic search
+      tags:
+      - Search
+  /search/suggestions:
+    get:
+      consumes:
+      - application/json
+      description: Get autocomplete suggestions based on query prefix
+      parameters:
+      - description: Query prefix
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 10
+        description: Maximum suggestions
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Suggestions
+          schema:
+            $ref: '#/definitions/response.Response-map_string_array_string'
+        "400":
+          description: Query parameter required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get search suggestions
+      tags:
+      - Search
+  /search/trending:
+    get:
+      consumes:
+      - application/json
+      description: Get materials ranked by recent engagement (last 7 days)
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - default: 20
+        description: Maximum results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trending materials
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get trending materials
+      tags:
+      - Search
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a user's public profile by ID. Includes follow status if authenticated.
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User public profile
+          schema:
+            $ref: '#/definitions/response.Response-http_UserProfileResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user public profile
+      tags:
+      - Users
+  /users/{id}/follow:
+    delete:
+      consumes:
+      - application/json
+      description: Stop following a user
+      parameters:
+      - description: User ID to unfollow
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully unfollowed user
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not following this user
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unfollow a user
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Follow another user to see their activities in your feed
+      parameters:
+      - description: User ID to follow
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully followed user
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Invalid user ID or cannot follow yourself
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Already following this user
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Follow a user
+      tags:
+      - Users
+  /users/{id}/followers:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of users following the specified user
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of followers
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-http_UserResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get user's followers
+      tags:
+      - Users
+  /users/{id}/following:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of users that the specified user is following
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of followed users
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-http_UserResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get users being followed
+      tags:
+      - Users
+  /users/{id}/pods:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of pods owned by a user
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user's pods
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-domain_Pod'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get user's pods
+      tags:
+      - Pods
+  /users/{id}/starred:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of pods starred by a user
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of starred pods
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse-domain_Pod'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get user's starred pods
+      tags:
+      - Pods
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's full profile including private fields
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/response.Response-http_UserResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated user profile
+          schema:
+            $ref: '#/definitions/response.Response-http_UserResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT Bearer token. Format: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

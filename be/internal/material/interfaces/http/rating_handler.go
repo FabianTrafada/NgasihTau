@@ -15,7 +15,18 @@ type RateMaterialRequest struct {
 }
 
 // RateMaterial rates a material.
-// POST /api/v1/materials/:id/ratings
+// @Summary Rate a material
+// @Description Rate a material (1-5 stars) with optional review. Updates existing rating if already rated.
+// @Tags Ratings
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body RateMaterialRequest true "Rating and optional review"
+// @Success 201 {object} fiber.Map "Created/updated rating"
+// @Failure 400 {object} fiber.Map "Invalid request"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/{id}/ratings [post]
 func (h *Handler) RateMaterial(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -53,7 +64,19 @@ func (h *Handler) RateMaterial(c *fiber.Ctx) error {
 }
 
 // GetRatings retrieves ratings for a material.
-// GET /api/v1/materials/:id/ratings
+// @Summary Get ratings
+// @Description Get ratings for a material. Use summary=true for rating summary.
+// @Tags Ratings
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param summary query bool false "Return summary instead of list"
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(10) maximum(50)
+// @Success 200 {object} fiber.Map "Ratings or summary"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Router /materials/{id}/ratings [get]
 func (h *Handler) GetRatings(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {

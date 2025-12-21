@@ -65,6 +65,18 @@ func (p *NATSEventPublisher) PublishPodUpdated(ctx context.Context, pod *domain.
 	return p.publisher.PublishPodUpdated(ctx, event)
 }
 
+// PublishCollaboratorInvited publishes a collaborator.invited event.
+func (p *NATSEventPublisher) PublishCollaboratorInvited(ctx context.Context, collaborator *domain.Collaborator, podName string) error {
+	event := natspkg.CollaboratorInvitedEvent{
+		PodID:     collaborator.PodID,
+		InviterID: collaborator.InvitedBy,
+		InviteeID: collaborator.UserID,
+		Role:      string(collaborator.Role),
+	}
+
+	return p.publisher.PublishCollaboratorInvited(ctx, event)
+}
+
 // NoOpEventPublisher is a no-op implementation of EventPublisher.
 type NoOpEventPublisher struct{}
 
@@ -80,5 +92,10 @@ func (p *NoOpEventPublisher) PublishPodCreated(ctx context.Context, pod *domain.
 
 // PublishPodUpdated is a no-op.
 func (p *NoOpEventPublisher) PublishPodUpdated(ctx context.Context, pod *domain.Pod) error {
+	return nil
+}
+
+// PublishCollaboratorInvited is a no-op.
+func (p *NoOpEventPublisher) PublishCollaboratorInvited(ctx context.Context, collaborator *domain.Collaborator, podName string) error {
 	return nil
 }

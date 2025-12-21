@@ -10,6 +10,8 @@ import (
 	"ngasihtau/internal/common/validator"
 	"ngasihtau/internal/pod/application"
 	"ngasihtau/internal/pod/domain"
+
+	_ "ngasihtau/docs" // Swagger docs
 )
 
 // PodHandler handles HTTP requests for pod operations.
@@ -27,6 +29,18 @@ func NewPodHandler(podService application.PodService) *PodHandler {
 }
 
 // CreatePod handles POST /api/v1/pods
+// @Summary Create a new Knowledge Pod
+// @Description Create a new Knowledge Pod. Only verified users (teachers) can create pods.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body application.CreatePodInput true "Pod creation data"
+// @Success 201 {object} response.Response[domain.Pod] "Pod created successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Only verified users can create pods"
+// @Router /pods [post]
 func (h *PodHandler) CreatePod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -54,7 +68,18 @@ func (h *PodHandler) CreatePod(c *fiber.Ctx) error {
 }
 
 // GetPod handles GET /api/v1/pods/:id
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Get a Knowledge Pod
+// @Description Get a Knowledge Pod by ID. Private pods require authentication and access.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[domain.Pod] "Pod details"
+// @Failure 400 {object} errors.ErrorResponse "Invalid pod ID"
+// @Failure 403 {object} errors.ErrorResponse "Access denied to private pod"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id} [get]
 func (h *PodHandler) GetPod(c *fiber.Ctx) error {
 	// Pod ID is extracted and validated by middleware
 	podID, ok := GetPodID(c)
@@ -83,6 +108,18 @@ func (h *PodHandler) GetPod(c *fiber.Ctx) error {
 }
 
 // ListPods handles GET /api/v1/pods
+// @Summary List Knowledge Pods
+// @Description Get a paginated list of Knowledge Pods with optional filters
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Param owner_id query string false "Filter by owner ID" format(uuid)
+// @Param category query string false "Filter by category"
+// @Param visibility query string false "Filter by visibility" Enums(public, private)
+// @Success 200 {object} response.PaginatedResponse[domain.Pod] "List of pods"
+// @Router /pods [get]
 func (h *PodHandler) ListPods(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	perPage := c.QueryInt("per_page", 20)
@@ -114,7 +151,20 @@ func (h *PodHandler) ListPods(c *fiber.Ctx) error {
 }
 
 // UpdatePod handles PUT /api/v1/pods/:id
-// Permission check is done by middleware (RequireEditAccess).
+// @Summary Update a Knowledge Pod
+// @Description Update a Knowledge Pod. Requires owner or admin collaborator access.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param request body application.UpdatePodInput true "Pod update data"
+// @Success 200 {object} response.Response[domain.Pod] "Updated pod"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Edit access required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id} [put]
 func (h *PodHandler) UpdatePod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -150,7 +200,18 @@ func (h *PodHandler) UpdatePod(c *fiber.Ctx) error {
 }
 
 // DeletePod handles DELETE /api/v1/pods/:id
-// Permission check is done by middleware (RequireOwnerAccess).
+// @Summary Delete a Knowledge Pod
+// @Description Delete a Knowledge Pod. Only the owner can delete a pod.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 204 "Pod deleted successfully"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Owner access required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id} [delete]
 func (h *PodHandler) DeletePod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -175,7 +236,18 @@ func (h *PodHandler) DeletePod(c *fiber.Ctx) error {
 }
 
 // ForkPod handles POST /api/v1/pods/:id/fork
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Fork a Knowledge Pod
+// @Description Create a copy of a Knowledge Pod. Only verified users can fork pods.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID to fork" format(uuid)
+// @Success 201 {object} response.Response[domain.Pod] "Forked pod"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Access denied or not verified"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id}/fork [post]
 func (h *PodHandler) ForkPod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -202,7 +274,18 @@ func (h *PodHandler) ForkPod(c *fiber.Ctx) error {
 }
 
 // StarPod handles POST /api/v1/pods/:id/star
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Star a Knowledge Pod
+// @Description Add a pod to your starred list
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Pod starred"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Failure 409 {object} errors.ErrorResponse "Already starred"
+// @Router /pods/{id}/star [post]
 func (h *PodHandler) StarPod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -228,7 +311,17 @@ func (h *PodHandler) StarPod(c *fiber.Ctx) error {
 }
 
 // UnstarPod handles DELETE /api/v1/pods/:id/star
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Unstar a Knowledge Pod
+// @Description Remove a pod from your starred list
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Pod unstarred"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found or not starred"
+// @Router /pods/{id}/star [delete]
 func (h *PodHandler) UnstarPod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -254,7 +347,17 @@ func (h *PodHandler) UnstarPod(c *fiber.Ctx) error {
 }
 
 // FollowPod handles POST /api/v1/pods/:id/follow
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Follow a Knowledge Pod
+// @Description Follow a pod to receive notifications about new materials
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Pod followed"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id}/follow [post]
 func (h *PodHandler) FollowPod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -280,7 +383,17 @@ func (h *PodHandler) FollowPod(c *fiber.Ctx) error {
 }
 
 // UnfollowPod handles DELETE /api/v1/pods/:id/follow
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Unfollow a Knowledge Pod
+// @Description Stop following a pod
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Pod unfollowed"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id}/follow [delete]
 func (h *PodHandler) UnfollowPod(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -306,7 +419,20 @@ func (h *PodHandler) UnfollowPod(c *fiber.Ctx) error {
 }
 
 // InviteCollaborator handles POST /api/v1/pods/:id/collaborators
-// Permission check is done by middleware (RequireCollaboratorManagement).
+// @Summary Invite a collaborator
+// @Description Invite a user to collaborate on a pod. Requires owner or admin access.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param request body application.InviteCollaboratorInput true "Collaborator invitation"
+// @Success 201 {object} response.Response[domain.Collaborator] "Collaborator invited"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Collaborator management access required"
+// @Failure 404 {object} errors.ErrorResponse "Pod or user not found"
+// @Router /pods/{id}/collaborators [post]
 func (h *PodHandler) InviteCollaborator(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -345,7 +471,21 @@ func (h *PodHandler) InviteCollaborator(c *fiber.Ctx) error {
 }
 
 // UpdateCollaborator handles PUT /api/v1/pods/:id/collaborators/:userId
-// Permission check is done by middleware (RequireCollaboratorManagement).
+// @Summary Update a collaborator
+// @Description Verify a collaborator or update their role. Requires owner or admin access.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param userId path string true "Collaborator user ID" format(uuid)
+// @Param request body object{action=string,role=string} true "Action (verify/update_role) and optional role"
+// @Success 200 {object} response.Response[map[string]bool] "Collaborator updated"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body or action"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Collaborator management access required"
+// @Failure 404 {object} errors.ErrorResponse "Pod or collaborator not found"
+// @Router /pods/{id}/collaborators/{userId} [put]
 func (h *PodHandler) UpdateCollaborator(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -414,7 +554,19 @@ func (h *PodHandler) UpdateCollaborator(c *fiber.Ctx) error {
 }
 
 // RemoveCollaborator handles DELETE /api/v1/pods/:id/collaborators/:userId
-// Permission check is done by middleware (RequireCollaboratorManagement).
+// @Summary Remove a collaborator
+// @Description Remove a collaborator from a pod. Requires owner or admin access.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param userId path string true "Collaborator user ID" format(uuid)
+// @Success 204 "Collaborator removed"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Collaborator management access required"
+// @Failure 404 {object} errors.ErrorResponse "Pod or collaborator not found"
+// @Router /pods/{id}/collaborators/{userId} [delete]
 func (h *PodHandler) RemoveCollaborator(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -462,7 +614,18 @@ func (h *PodHandler) RemoveCollaborator(c *fiber.Ctx) error {
 }
 
 // GetCollaborators handles GET /api/v1/pods/:id/collaborators
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Get pod collaborators
+// @Description Get a list of collaborators for a pod
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[[]domain.Collaborator] "List of collaborators"
+// @Failure 400 {object} errors.ErrorResponse "Invalid pod ID"
+// @Failure 403 {object} errors.ErrorResponse "Access denied"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id}/collaborators [get]
 func (h *PodHandler) GetCollaborators(c *fiber.Ctx) error {
 	// Pod ID is extracted and validated by middleware
 	podID, ok := GetPodID(c)
@@ -484,7 +647,20 @@ func (h *PodHandler) GetCollaborators(c *fiber.Ctx) error {
 }
 
 // GetPodActivity handles GET /api/v1/pods/:id/activity
-// Permission check is done by middleware (RequireReadAccess).
+// @Summary Get pod activity
+// @Description Get a paginated list of activities for a pod
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.Activity] "List of activities"
+// @Failure 400 {object} errors.ErrorResponse "Invalid pod ID"
+// @Failure 403 {object} errors.ErrorResponse "Access denied"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/{id}/activity [get]
 func (h *PodHandler) GetPodActivity(c *fiber.Ctx) error {
 	// Pod ID is extracted and validated by middleware
 	podID, ok := GetPodID(c)
@@ -509,6 +685,17 @@ func (h *PodHandler) GetPodActivity(c *fiber.Ctx) error {
 }
 
 // GetUserFeed handles GET /api/v1/feed
+// @Summary Get user activity feed
+// @Description Get a paginated activity feed from followed pods and users
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.Activity] "Activity feed"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /feed [get]
 func (h *PodHandler) GetUserFeed(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok || userID == uuid.Nil {
@@ -528,6 +715,17 @@ func (h *PodHandler) GetUserFeed(c *fiber.Ctx) error {
 }
 
 // GetUserPods handles GET /api/v1/users/:id/pods
+// @Summary Get user's pods
+// @Description Get a paginated list of pods owned by a user
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.Pod] "List of user's pods"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID"
+// @Router /users/{id}/pods [get]
 func (h *PodHandler) GetUserPods(c *fiber.Ctx) error {
 	ownerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -547,6 +745,17 @@ func (h *PodHandler) GetUserPods(c *fiber.Ctx) error {
 }
 
 // GetUserStarredPods handles GET /api/v1/users/:id/starred
+// @Summary Get user's starred pods
+// @Description Get a paginated list of pods starred by a user
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.Pod] "List of starred pods"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID"
+// @Router /users/{id}/starred [get]
 func (h *PodHandler) GetUserStarredPods(c *fiber.Ctx) error {
 	userID, err := uuid.Parse(c.Params("id"))
 	if err != nil {

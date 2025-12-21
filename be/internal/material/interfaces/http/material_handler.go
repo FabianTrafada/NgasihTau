@@ -16,7 +16,17 @@ type UploadURLRequest struct {
 }
 
 // GetUploadURL generates a presigned URL for uploading a file.
-// POST /api/v1/materials/upload-url
+// @Summary Get presigned upload URL
+// @Description Generate a presigned URL for direct file upload to storage
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UploadURLRequest true "Upload request details"
+// @Success 200 {object} fiber.Map "Upload URL and object key"
+// @Failure 400 {object} fiber.Map "Invalid request or unsupported file type"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/upload-url [post]
 func (h *Handler) GetUploadURL(c *fiber.Ctx) error {
 	var req UploadURLRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -54,7 +64,17 @@ type ConfirmUploadRequest struct {
 }
 
 // ConfirmUpload confirms a file upload and creates a material record.
-// POST /api/v1/materials/confirm
+// @Summary Confirm file upload
+// @Description Confirm a file upload and create a material record
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body ConfirmUploadRequest true "Upload confirmation details"
+// @Success 201 {object} fiber.Map "Created material"
+// @Failure 400 {object} fiber.Map "Invalid request or upload error"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/confirm [post]
 func (h *Handler) ConfirmUpload(c *fiber.Ctx) error {
 	var req ConfirmUploadRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -89,7 +109,17 @@ func (h *Handler) ConfirmUpload(c *fiber.Ctx) error {
 }
 
 // GetMaterial retrieves a material by ID.
-// GET /api/v1/materials/:id
+// @Summary Get a material
+// @Description Get a material by ID
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 200 {object} fiber.Map "Material details"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Failure 404 {object} fiber.Map "Material not found"
+// @Router /materials/{id} [get]
 func (h *Handler) GetMaterial(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -111,7 +141,18 @@ type UpdateMaterialRequest struct {
 }
 
 // UpdateMaterial updates a material's metadata.
-// PUT /api/v1/materials/:id
+// @Summary Update a material
+// @Description Update a material's title and description
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body UpdateMaterialRequest true "Material update data"
+// @Success 200 {object} fiber.Map "Updated material"
+// @Failure 400 {object} fiber.Map "Invalid request"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/{id} [put]
 func (h *Handler) UpdateMaterial(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -136,7 +177,17 @@ func (h *Handler) UpdateMaterial(c *fiber.Ctx) error {
 }
 
 // DeleteMaterial soft-deletes a material.
-// DELETE /api/v1/materials/:id
+// @Summary Delete a material
+// @Description Soft-delete a material
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 204 "Material deleted"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/{id} [delete]
 func (h *Handler) DeleteMaterial(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -151,7 +202,18 @@ func (h *Handler) DeleteMaterial(c *fiber.Ctx) error {
 }
 
 // GetMaterialsByPod retrieves all materials in a pod.
-// GET /api/v1/pods/:podId/materials
+// @Summary List materials in a pod
+// @Description Get a paginated list of materials in a Knowledge Pod
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param podId path string true "Pod ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} fiber.Map "List of materials"
+// @Failure 400 {object} fiber.Map "Invalid pod ID"
+// @Router /pods/{podId}/materials [get]
 func (h *Handler) GetMaterialsByPod(c *fiber.Ctx) error {
 	podID, err := uuid.Parse(c.Params("podId"))
 	if err != nil {
@@ -174,7 +236,17 @@ func (h *Handler) GetMaterialsByPod(c *fiber.Ctx) error {
 }
 
 // GetPreviewURL generates a presigned URL for previewing a material.
-// GET /api/v1/materials/:id/preview
+// @Summary Get preview URL
+// @Description Generate a presigned URL for previewing a material
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 200 {object} fiber.Map "Preview URL"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Failure 404 {object} fiber.Map "Material not found"
+// @Router /materials/{id}/preview [get]
 func (h *Handler) GetPreviewURL(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -190,7 +262,17 @@ func (h *Handler) GetPreviewURL(c *fiber.Ctx) error {
 }
 
 // GetDownloadURL generates a presigned URL for downloading a material.
-// GET /api/v1/materials/:id/download
+// @Summary Get download URL
+// @Description Generate a presigned URL for downloading a material
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 200 {object} fiber.Map "Download URL"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Failure 404 {object} fiber.Map "Material not found"
+// @Router /materials/{id}/download [get]
 func (h *Handler) GetDownloadURL(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -212,7 +294,18 @@ type CreateVersionRequest struct {
 }
 
 // CreateVersion creates a new version of a material.
-// POST /api/v1/materials/:id/versions
+// @Summary Create a new version
+// @Description Upload a new version of an existing material
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body CreateVersionRequest true "Version details"
+// @Success 201 {object} fiber.Map "Created version"
+// @Failure 400 {object} fiber.Map "Invalid request"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/{id}/versions [post]
 func (h *Handler) CreateVersion(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -246,7 +339,16 @@ func (h *Handler) CreateVersion(c *fiber.Ctx) error {
 }
 
 // GetVersionHistory retrieves all versions of a material.
-// GET /api/v1/materials/:id/versions
+// @Summary Get version history
+// @Description Get all versions of a material
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 200 {object} fiber.Map "List of versions"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Router /materials/{id}/versions [get]
 func (h *Handler) GetVersionHistory(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {

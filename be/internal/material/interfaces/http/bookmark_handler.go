@@ -14,7 +14,19 @@ type BookmarkMaterialRequest struct {
 }
 
 // BookmarkMaterial bookmarks a material.
-// POST /api/v1/materials/:id/bookmark
+// @Summary Bookmark a material
+// @Description Add a material to bookmarks with optional folder
+// @Tags Bookmarks
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body BookmarkMaterialRequest false "Optional folder name"
+// @Success 201 {object} fiber.Map "Created bookmark"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Failure 409 {object} fiber.Map "Already bookmarked"
+// @Router /materials/{id}/bookmark [post]
 func (h *Handler) BookmarkMaterial(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -48,7 +60,17 @@ func (h *Handler) BookmarkMaterial(c *fiber.Ctx) error {
 }
 
 // RemoveBookmark removes a bookmark.
-// DELETE /api/v1/materials/:id/bookmark
+// @Summary Remove a bookmark
+// @Description Remove a material from bookmarks
+// @Tags Bookmarks
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Success 204 "Bookmark removed"
+// @Failure 400 {object} fiber.Map "Invalid material ID"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /materials/{id}/bookmark [delete]
 func (h *Handler) RemoveBookmark(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -68,7 +90,18 @@ func (h *Handler) RemoveBookmark(c *fiber.Ctx) error {
 }
 
 // GetBookmarks retrieves bookmarks for the current user.
-// GET /api/v1/bookmarks
+// @Summary Get bookmarks
+// @Description Get a paginated list of bookmarked materials
+// @Tags Bookmarks
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param folder query string false "Filter by folder name"
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} fiber.Map "List of bookmarked materials"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /bookmarks [get]
 func (h *Handler) GetBookmarks(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -97,7 +130,15 @@ func (h *Handler) GetBookmarks(c *fiber.Ctx) error {
 }
 
 // GetBookmarkFolders retrieves all bookmark folders for the current user.
-// GET /api/v1/bookmarks/folders
+// @Summary Get bookmark folders
+// @Description Get a list of all bookmark folders
+// @Tags Bookmarks
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} fiber.Map "List of folders"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Router /bookmarks/folders [get]
 func (h *Handler) GetBookmarkFolders(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

@@ -12,6 +12,8 @@ import (
 	"ngasihtau/internal/common/validator"
 	"ngasihtau/internal/user/application"
 	"ngasihtau/internal/user/domain"
+
+	_ "ngasihtau/docs" // Swagger docs
 )
 
 // UserHandler handles user profile and follow-related HTTP requests.
@@ -34,9 +36,9 @@ type UserResponse struct {
 	AvatarURL        *string   `json:"avatar_url,omitempty"`
 	Bio              *string   `json:"bio,omitempty"`
 	Role             string    `json:"role"`
-	EmailVerified    bool      `json:"email_verified,omitempty"` // Only included for own profile
+	EmailVerified    bool      `json:"email_verified,omitempty"`     // Only included for own profile
 	TwoFactorEnabled bool      `json:"two_factor_enabled,omitempty"` // Only included for own profile
-	Language         string    `json:"language,omitempty"` // Only included for own profile
+	Language         string    `json:"language,omitempty"`           // Only included for own profile
 	CreatedAt        time.Time `json:"created_at"`
 }
 
@@ -54,7 +56,6 @@ type UserProfileResponse struct {
 	CreatedAt      time.Time `json:"created_at"`
 	IsFollowing    bool      `json:"is_following,omitempty"` // Only when viewing another user's profile
 }
-
 
 // UpdateProfileRequest represents the request body for profile update.
 type UpdateProfileRequest struct {
@@ -78,7 +79,7 @@ func ToUserResponse(user *domain.User, includePrivate bool) *UserResponse {
 	if user == nil {
 		return nil
 	}
-	
+
 	resp := &UserResponse{
 		ID:        user.ID,
 		Name:      user.Name,
@@ -103,7 +104,7 @@ func ToUserProfileResponse(profile *domain.UserProfile) *UserProfileResponse {
 	if profile == nil {
 		return nil
 	}
-	
+
 	return &UserProfileResponse{
 		ID:             profile.ID,
 		Name:           profile.Name,
@@ -127,9 +128,16 @@ func toUserResponseList(users []*domain.User) []*UserResponse {
 	return result
 }
 
-
 // GetCurrentUser handles getting the current user's profile.
-// GET /api/v1/users/me
+// @Summary Get current user profile
+// @Description Get the authenticated user's full profile including private fields
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[UserResponse] "User profile"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me [get]
 func (h *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -149,7 +157,17 @@ func (h *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 }
 
 // UpdateCurrentUser handles updating the current user's profile.
-// PUT /api/v1/users/me
+// @Summary Update current user profile
+// @Description Update the authenticated user's profile information
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UpdateProfileRequest true "Profile update data"
+// @Success 200 {object} response.Response[UserResponse] "Updated user profile"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me [put]
 func (h *UserHandler) UpdateCurrentUser(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -188,9 +206,18 @@ func (h *UserHandler) UpdateCurrentUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, ToUserResponse(user, true)))
 }
 
-
 // GetUser handles getting a user's public profile.
-// GET /api/v1/users/:id
+// @Summary Get user public profile
+// @Description Get a user's public profile by ID. Includes follow status if authenticated.
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID" format(uuid)
+// @Success 200 {object} response.Response[UserProfileResponse] "User public profile"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID"
+// @Failure 404 {object} errors.ErrorResponse "User not found"
+// @Router /users/{id} [get]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -222,7 +249,19 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 }
 
 // FollowUser handles following a user.
-// POST /api/v1/users/:id/follow
+// @Summary Follow a user
+// @Description Follow another user to see their activities in your feed
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID to follow" format(uuid)
+// @Success 200 {object} response.Response[any] "Successfully followed user"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID or cannot follow yourself"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "User not found"
+// @Failure 409 {object} errors.ErrorResponse "Already following this user"
+// @Router /users/{id}/follow [post]
 func (h *UserHandler) FollowUser(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -248,7 +287,18 @@ func (h *UserHandler) FollowUser(c *fiber.Ctx) error {
 }
 
 // UnfollowUser handles unfollowing a user.
-// DELETE /api/v1/users/:id/follow
+// @Summary Unfollow a user
+// @Description Stop following a user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID to unfollow" format(uuid)
+// @Success 200 {object} response.Response[any] "Successfully unfollowed user"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Not following this user"
+// @Router /users/{id}/follow [delete]
 func (h *UserHandler) UnfollowUser(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -273,9 +323,19 @@ func (h *UserHandler) UnfollowUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response.Empty(requestID))
 }
 
-
 // GetFollowers handles getting a user's followers.
-// GET /api/v1/users/:id/followers
+// @Summary Get user's followers
+// @Description Get a paginated list of users following the specified user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[UserResponse] "List of followers"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID"
+// @Failure 404 {object} errors.ErrorResponse "User not found"
+// @Router /users/{id}/followers [get]
 func (h *UserHandler) GetFollowers(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
@@ -306,7 +366,18 @@ func (h *UserHandler) GetFollowers(c *fiber.Ctx) error {
 }
 
 // GetFollowing handles getting users that a user is following.
-// GET /api/v1/users/:id/following
+// @Summary Get users being followed
+// @Description Get a paginated list of users that the specified user is following
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID" format(uuid)
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[UserResponse] "List of followed users"
+// @Failure 400 {object} errors.ErrorResponse "Invalid user ID"
+// @Failure 404 {object} errors.ErrorResponse "User not found"
+// @Router /users/{id}/following [get]
 func (h *UserHandler) GetFollowing(c *fiber.Ctx) error {
 	requestID := middleware.GetRequestID(c)
 
