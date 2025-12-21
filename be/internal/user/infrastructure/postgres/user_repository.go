@@ -4,6 +4,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -198,6 +199,7 @@ func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 
 	var exists bool
 	err := r.db.QueryRow(ctx, query, email).Scan(&exists)
+	fmt.Printf("%v\n", err)
 	if err != nil {
 		return false, errors.Internal("failed to check email existence", err)
 	}

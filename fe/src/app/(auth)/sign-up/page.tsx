@@ -1,19 +1,78 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
+/**
+ * Sign Up Page Component
+ * 
+ * REGISTRATION FLOW:
+ * 1. User fills in name, email, password
+ * 2. Form submits to useAuth().register()
+ * 3. On success → Redirect to dashboard
+ * 4. On error → Display error message
+ */
 export default function SignUpPage() {
+    const router = useRouter();
+    const { register, loading, error, clearError } = useAuth();
+
+    // Form state
     const [showPassword, setShowPassword] = useState(false);
-    const [username, setUsername] = useState("");
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Handle registration logic here
-        console.log({ username, email, password });
+    // Local validation errors
+    const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+    /**
+     * Validate form before submission
+     */
+    const validateForm = (): boolean => {
+        const errors: { [key: string]: string } = {};
+
+        if (name.length < 2) {
+            errors.name = "Name must be at least 2 characters";
+        }
+
+        if (!email.includes("@")) {
+            errors.email = "Please enter a valid email";
+        }
+
+        if (password.length < 8) {
+            errors.password = "Password must be at least 8 characters";
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
     };
+
+    /**
+     * Handle form submission
+     */
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        clearError();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        try {
+            await register(email, password, name);
+            // Registration successful - redirect to dashboard
+            router.push("/dashboard");
+        } catch {
+            // Error is already set in auth context
+        }
+    };
+
+    /**
+     * Get error for a specific field
+     */
+    const getFieldError = (field: string) => formErrors[field];
 
     return (
         <div className="w-full max-w-md">
@@ -40,29 +99,40 @@ export default function SignUpPage() {
                             <span className="text-[#FF8811]">Account</span>
                         </h2>
                         <p className="text-gray-500 text-sm mt-2 font-[(family-name:var(--font-inter))]">
-                            Enter your email and password to access your account.
+                            Enter your details to create a new account.
                         </p>
                     </div>
 
+                    {/* API Error Display */}
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                            {error.message}
+                        </div>
+                    )}
+
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Username Field */}
+                        {/* Name Field */}
                         <div>
                             <label
-                                htmlFor="username"
+                                htmlFor="name"
                                 className="block text-sm font-semibold text-[#2B2D42] mb-2 font-[(family-name:var(--font-plus-jakarta-sans))]"
                             >
-                                Username
+                                Full Name
                             </label>
                             <input
                                 type="text"
-                                id="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)]"
+                                id="name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className={`w-full text-[#2B2D42] px-4 py-3 border rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)] ${getFieldError("name") ? "border-red-400" : "border-gray-300"
+                                    }`}
                                 placeholder=""
                                 required
                             />
+                            {getFieldError("name") && (
+                                <p className="text-red-500 text-xs mt-1">{getFieldError("name")}</p>
+                            )}
                         </div>
 
                         {/* Email Field */}
@@ -78,10 +148,14 @@ export default function SignUpPage() {
                                 id="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)]"
+                                className={`w-full text-[#2B2D42] px-4 py-3 border rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)] ${getFieldError("email") ? "border-red-400" : "border-gray-300"
+                                    }`}
                                 placeholder=""
                                 required
                             />
+                            {getFieldError("email") && (
+                                <p className="text-red-500 text-xs mt-1">{getFieldError("email")}</p>
+                            )}
                         </div>
 
                         {/* Password Field */}
@@ -98,7 +172,8 @@ export default function SignUpPage() {
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all pr-12 font-[family-name:var(--font-inter)]"
+                                    className={`w-full text-[#2B2D42] px-4 py-3 border rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all pr-12 font-[family-name:var(--font-inter)] ${getFieldError("password") ? "border-red-400" : "border-gray-300"
+                                        }`}
                                     placeholder=""
                                     required
                                 />
@@ -119,14 +194,19 @@ export default function SignUpPage() {
                                     )}
                                 </button>
                             </div>
+                            {getFieldError("password") && (
+                                <p className="text-red-500 text-xs mt-1">{getFieldError("password")}</p>
+                            )}
+                            <p className="text-gray-400 text-xs mt-1">Must be at least 8 characters</p>
                         </div>
 
                         {/* Register Button */}
                         <button
                             type="submit"
-                            className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-sm font-semibold hover:bg-[#FF8811]/90 transition-colors font-[family-name:var(--font-plus-jakarta-sans)]"
+                            disabled={loading}
+                            className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-sm font-semibold hover:bg-[#FF8811]/90 transition-colors font-[family-name:var(--font-plus-jakarta-sans)] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Register
+                            {loading ? "Creating Account..." : "Register"}
                         </button>
                     </form>
 
