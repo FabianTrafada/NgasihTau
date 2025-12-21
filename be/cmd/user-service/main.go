@@ -170,6 +170,16 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 			eventPublisher = natspkg.NewNoOpPublisher()
 		} else {
 			log.Info().Msg("NATS client initialized")
+
+			// Ensure required streams exist for publishing
+			for streamName, subjects := range natspkg.StreamSubjects {
+				if err := natsClient.EnsureStream(ctx, streamName, subjects); err != nil {
+					log.Warn().Err(err).Str("stream", streamName).Msg("failed to ensure stream")
+				} else {
+					log.Debug().Str("stream", streamName).Msg("stream ensured")
+				}
+			}
+
 			eventPublisher = natspkg.NewPublisher(natsClient)
 		}
 	} else {
