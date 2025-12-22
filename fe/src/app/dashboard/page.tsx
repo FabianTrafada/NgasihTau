@@ -1,22 +1,49 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import RightSidebar from "@/components/dashboard/RightSidebar";
 import RecentPodCard from "@/components/dashboard/RecentPodCard";
 import ChatbotLogCard from "@/components/dashboard/ChatbotLogCard";
+import { ProtectedRoute } from "@/components/auth";
+import { useAuth } from "@/lib/auth-context";
 
+/**
+ * Dashboard Page
+ * 
+ * This is a PROTECTED page - requires authentication.
+ * The ProtectedRoute component handles:
+ * 1. Showing loading state while checking auth
+ * 2. Redirecting to /sign-in if not authenticated
+ * 3. Rendering content if authenticated
+ */
 export default function DashboardPage() {
+    return (
+        <ProtectedRoute>
+            <DashboardContent />
+        </ProtectedRoute>
+    );
+}
+
+/**
+ * Dashboard Content - only rendered when authenticated
+ */
+function DashboardContent() {
+    // Access user data from auth context
+    const { user } = useAuth();
+
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     return (
         <div className="flex min-h-full">
             {/* Main Content Area */}
-            <div className="flex-1 p-8 min-w-0">
-                <div className="max-w-4xl mx-auto flex flex-col gap-8">
-                    {/* Welcome Section */}
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
+                <div className="max-w-4xl mx-auto flex flex-col gap-6 lg:gap-8">
+                    {/* Welcome Section - Now uses real user name */}
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                            Welcome Back Tom Lembong
+                        <h1 className="text-2xl sm:text-3xl  font-bold text-gray-900 mb-1">
+                            Welcome Back {user?.name || "User"}
                         </h1>
-                        <p className="text-gray-500">lorem ipsum dolor sit ammer</p>
+                        <p className="text-sm sm:text-base text-gray-500">Ready to learn something new today?</p>
                     </div>
 
                     {/* Recent Pods */}
@@ -66,7 +93,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Right Sidebar */}
-            <RightSidebar />
+            <RightSidebar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} sidebarOpen={isSidebarOpen} />
         </div>
     );
 }
