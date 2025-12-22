@@ -9,14 +9,17 @@ import { useAuth } from "@/lib/auth-context";
  * Sign Up Page Component
  * 
  * REGISTRATION FLOW:
- * 1. User fills in name, email, password
- * 2. Form submits to useAuth().register()
+ * 1. User fills in name, email, password OR clicks Google sign-up
+ * 2. Form submits to useAuth().register() OR initiateGoogleLogin()
  * 3. On success → Redirect to dashboard
  * 4. On error → Display error message
+ * 
+ * Note: Google OAuth handles both login AND registration automatically.
+ * If the user doesn't have an account, one is created.
  */
 export default function SignUpPage() {
     const router = useRouter();
-    const { register, loading, error, clearError } = useAuth();
+    const { register, initiateGoogleLogin, loading, error, clearError } = useAuth();
 
     // Form state
     const [showPassword, setShowPassword] = useState(false);
@@ -220,7 +223,9 @@ export default function SignUpPage() {
                     {/* Google Button */}
                     <button
                         type="button"
-                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors font-[family-name:var(--font-inter)]"
+                        onClick={initiateGoogleLogin}
+                        disabled={loading}
+                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors font-[family-name:var(--font-inter)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M19.8055 10.2275C19.8055 9.51803 19.7477 8.83551 19.6399 8.17969H10.2002V12.0494H15.6006C15.3681 13.2994 14.6259 14.3578 13.5379 15.0672V17.5766H16.8055C18.7054 15.8369 19.8055 13.2713 19.8055 10.2275Z" fill="#4285F4" />

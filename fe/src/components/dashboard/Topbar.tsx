@@ -1,33 +1,58 @@
-import { Bell, Search } from 'lucide-react'
-import React from 'react'
+'use client';
+import { useAuth } from '@/lib/auth-context';
+import { Bell, PanelLeft, PanelLeftClose, Search, Users } from 'lucide-react'
 
-const Topbar = () => {
+interface TopbarProps {
+    onMenuClick?: () => void;
+    onRightMenuClick?: () => void; // New prop for right sidebar
+    sidebarOpen?: boolean;
+}
+
+const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => {
+    const { user } = useAuth();
+
     return (
-        <header className='h-20 px-8 flex items-center justify-between bg-[#fffbf7] sticky top-0 z-10'>
+        <header className='h-16 lg:h-20 px-4 lg:px-8 flex items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-gray-100 lg:border-none'>
+            {/* Left Section */}
+            <div className='flex items-center gap-4'>
+                <button
+                    onClick={onMenuClick}
+                    className='p-2 rounded-lg hover:bg-gray-100 lg:hidden'
+                    title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                >
+                    {sidebarOpen ? <PanelLeftClose className='w-6 h-6 text-gray-600' /> : <PanelLeft className='w-6 h-6 text-gray-600' />}
+                </button>
 
-            {/* searchbar */}
-            <div className='relative w-96'>
-                <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400' />
-
-                <input type="text"
-                    placeholder='search'
-                    className='w-full pl-10 pr-4 py-2.5 bg-gray-100/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8811]/20 focus:border-[#ff8811] transition-all  ' />
+                {/* Searchbar */}
+                <div className='relative w-48 sm:w-64 lg:w-96'>
+                    <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400' />
+                    <input
+                        type="text"
+                        placeholder='Search'
+                        className='w-full pl-10 pr-4 py-2 lg:py-2.5 bg-gray-100/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8811]/20 focus:border-[#ff8811] transition-all text-sm lg:text-base'
+                    />
+                </div>
             </div>
 
-            {/* right actions */}
+            {/* Right Actions */}
+            <div className='flex items-center gap-3 lg:gap-6'>
+                {/* Mobile Right Sidebar Toggle */}
+                <button
+                    onClick={onRightMenuClick}
+                    className='p-2 text-gray-600 hover:text-[#FF8811] xl:hidden'
+                >
+                    <Users className="w-6 h-6" />
+                </button>
 
-            <div className='flex items-center gap-6'>
-                <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors">
-                    <Bell className="w-6 h-6" />
+                <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors hidden sm:block">
+                    <Bell className="w-5 h-5 lg:w-6 lg:h-6" />
                     <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FFFBF7]"></span>
                 </button>
 
-                <div className="w-10 h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity">
-                    TL
+                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
-
             </div>
-
         </header>
     )
 }

@@ -28,6 +28,14 @@ export interface LoginData {
 }
 
 /**
+ * Data required for Google OAuth login
+ */
+export interface GoogleLoginData {
+    code: string;
+    redirect_uri: string;
+}
+
+/**
  * Response from successful authentication (login/register)
  * Contains user data and JWT tokens
  */
@@ -79,6 +87,45 @@ interface ApiResponse<T> {
  * Union type for login response (either full auth or 2FA required)
  */
 type LoginResponse = AuthResponse | TwoFactorRequiredResponse;
+
+// =============================================================================
+// GOOGLE OAUTH CONFIG
+// =============================================================================
+
+/**
+ * Google OAuth configuration
+ * These values must match your Google Cloud Console settings
+ */
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+const GOOGLE_REDIRECT_URI =
+    typeof window !== "undefined"
+        ? `${window.location.origin}/auth/google/callback`
+        : "";
+
+/**
+ * Google OAuth authorization URL
+ * Redirect users here to start the OAuth flow
+ */
+export function getGoogleAuthUrl(): string {
+    const params = new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        redirect_uri: GOOGLE_REDIRECT_URI,
+        response_type: "code",
+        scope: "openid email profile",
+        access_type: "offline",
+        prompt: "consent",
+    });
+
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+/**
+ * Get the redirect URI for Google OAuth
+ * Used when exchanging the code
+ */
+export function getGoogleRedirectUri(): string {
+    return GOOGLE_REDIRECT_URI;
+}
 
 // =============================================================================
 // TYPE GUARDS
@@ -145,6 +192,45 @@ export async function login(data: LoginData): Promise<LoginResponse> {
     const response = await apiClient.post<ApiResponse<LoginResponse>>(
         "/api/v1/auth/login",
         data
+    );
+
+    const loginData = response.data.data;
+
+    // Only store tokens if it's a full auth response (no 2FA required)
+    if (!isTwoFactorRequired(loginData)) {
+        TokenStorage.setTokens(loginData.access_token, loginData.refresh_token);
+        localStorage.setItem("user", JSON.stringify(loginData.user));
+    }
+
+    return loginData;
+}
+
+/**
+ * Login/Register with Google OAuth
+ *
+ * Flow:
+ * 1. User clicks "Sign in with Google" → Redirected to Google
+ * 2. User authorizes → Google redirects back with authorization code
+ * 3. Frontend catches the code → Sends to this function
+ * 4. Backend exchanges code for Google tokens → Returns our JWT tokens
+ *
+ * Note: This handles both login AND registration!
+ * If the Google email doesn't exist, backend creates a new account.
+ *
+ * @param code - Authorization code from Google OAuth redirect
+ * @param redirectUri - The redirect URI used in the OAuth flow
+ * @returns Either AuthResponse or TwoFactorRequiredResponse
+ */
+export async function googleLogin(
+    code: string,
+    redirectUri: string
+): Promise<LoginResponse> {
+    const response = await apiClient.post<ApiResponse<LoginResponse>>(
+        "/api/v1/auth/google",
+        {
+            code,
+            redirect_uri: redirectUri,
+        }
     );
 
     const loginData = response.data.data;
