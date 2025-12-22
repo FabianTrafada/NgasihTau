@@ -19,10 +19,13 @@ import {
     login as loginApi,
     register as registerApi,
     logout as logoutApi,
+    googleLogin as googleLoginApi,
     getCurrentUser,
     getStoredUser,
     verify2FALogin as verify2FALoginApi,
     isTwoFactorRequired,
+    getGoogleAuthUrl,
+    getGoogleRedirectUri,
 } from "./auth";
 import { TokenStorage } from "./api-client";
 
@@ -61,6 +64,10 @@ interface AuthContextType {
     register: (email: string, password: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
     verify2FA: (tempToken: string, code: string) => Promise<void>;
+
+    // Google OAuth
+    initiateGoogleLogin: () => void;
+    handleGoogleCallback: (code: string) => Promise<LoginResult>;
 
     // Utility
     refreshUser: () => Promise<void>;
@@ -226,6 +233,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    // ===========================================================================
+    // GOOGLE OAUTH
+    // ===========================================================================
+
+    /**
+     * Initiate Google OAuth flow
+     * Redirects user to Google's authorization page
+     */
+    const initiateGoogleLogin = useCallback(() => {
+        const authUrl = getGoogleAuthUrl();
+        window.location.href = authUrl;
+    }, []);
+
+    /**
+     * Handle Google OAuth callback
+     * Called when user returns from Google with authorization code
+     */
+    const handleGoogleCallback = useCallback(async (code: string): Promise<LoginResult> => {
+        setError(null);
+        setLoading(true);
+
+        try {
+            const redirectUri = getGoogleRedirectUri();
+            const result = await googleLoginApi(code, redirectUri);
+
+            // Check if 2FA is required
+            if (isTwoFactorRequired(result)) {
+                setLoading(false);
+                return {
+                    success: true,
+                    requires2FA: true,
+                    tempToken: result.temp_token,
+                };
+            }
+
+            // Full login successful
+            setUser(result.user);
+            setLoading(false);
+            return {
+                success: true,
+                requires2FA: false,
+            };
+        } catch (err) {
+            setError({ message: getErrorMessage(err) });
+            setLoading(false);
+            throw err;
+        }
+    }, []);
+
     /**
      * Logout current user
      */
@@ -275,6 +331,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         verify2FA,
+
+        // Google OAuth
+        initiateGoogleLogin,
+        handleGoogleCallback,
 
         // Utility
         refreshUser,

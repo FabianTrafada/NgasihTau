@@ -9,15 +9,15 @@ import { useAuth } from "@/lib/auth-context";
  * Sign In Page Component
  * 
  * AUTHENTICATION FLOW:
- * 1. User enters email + password
- * 2. Form submits to useAuth().login()
+ * 1. User enters email + password OR clicks Google sign-in
+ * 2. Form submits to useAuth().login() OR initiateGoogleLogin()
  * 3. If 2FA enabled → Show 2FA input
  * 4. If no 2FA → Redirect to dashboard
  * 5. Errors are displayed from auth context
  */
 export default function SignInPage() {
     const router = useRouter();
-    const { login, verify2FA, loading, error, clearError } = useAuth();
+    const { login, verify2FA, initiateGoogleLogin, loading, error, clearError } = useAuth();
 
     // Form state
     const [showPassword, setShowPassword] = useState(false);
@@ -291,7 +291,9 @@ export default function SignInPage() {
                     {/* Google Button */}
                     <button
                         type="button"
-                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-[#2B2D42] rounded-lg shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all font-[family-name:var(--font-inter)]"
+                        onClick={initiateGoogleLogin}
+                        disabled={loading}
+                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-[#2B2D42] rounded-lg shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all font-[family-name:var(--font-inter)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M19.8055 10.2275C19.8055 9.51803 19.7477 8.83551 19.6399 8.17969H10.2002V12.0494H15.6006C15.3681 13.2994 14.6259 14.3578 13.5379 15.0672V17.5766H16.8055C18.7054 15.8369 19.8055 13.2713 19.8055 10.2275Z" fill="#4285F4" />
