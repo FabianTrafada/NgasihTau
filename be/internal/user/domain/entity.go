@@ -26,20 +26,21 @@ const (
 // User represents a user account in the system.
 // Implements requirements 1, 2, 2.1.
 type User struct {
-	ID               uuid.UUID  `json:"id"`
-	Email            string     `json:"email"`
-	PasswordHash     string     `json:"-"` // Never expose in JSON
-	Name             string     `json:"name"`
-	AvatarURL        *string    `json:"avatar_url,omitempty"`
-	Bio              *string    `json:"bio,omitempty"`
-	Role             Role       `json:"role"`
-	EmailVerified    bool       `json:"email_verified"`
-	TwoFactorEnabled bool       `json:"two_factor_enabled"`
-	TwoFactorSecret  *string    `json:"-"` // Never expose in JSON
-	Language         string     `json:"language"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-	DeletedAt        *time.Time `json:"-"`
+	ID                  uuid.UUID  `json:"id"`
+	Email               string     `json:"email"`
+	PasswordHash        string     `json:"-"` // Never expose in JSON
+	Name                string     `json:"name"`
+	AvatarURL           *string    `json:"avatar_url,omitempty"`
+	Bio                 *string    `json:"bio,omitempty"`
+	Role                Role       `json:"role"`
+	EmailVerified       bool       `json:"email_verified"`
+	TwoFactorEnabled    bool       `json:"two_factor_enabled"`
+	TwoFactorSecret     *string    `json:"-"` // Never expose in JSON
+	Language            string     `json:"language"`
+	OnboardingCompleted bool       `json:"onboarding_completed"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
+	DeletedAt           *time.Time `json:"-"`
 }
 
 // IsVerified returns true if the user can create Knowledge Pods.
@@ -201,16 +202,17 @@ type UserStats struct {
 func NewUser(email, passwordHash, name string) *User {
 	now := time.Now()
 	return &User{
-		ID:               uuid.New(),
-		Email:            email,
-		PasswordHash:     passwordHash,
-		Name:             name,
-		Role:             RoleStudent,
-		EmailVerified:    false,
-		TwoFactorEnabled: false,
-		Language:         "id",
-		CreatedAt:        now,
-		UpdatedAt:        now,
+		ID:                  uuid.New(),
+		Email:               email,
+		PasswordHash:        passwordHash,
+		Name:                name,
+		Role:                RoleStudent,
+		EmailVerified:       false,
+		TwoFactorEnabled:    false,
+		Language:            "id",
+		OnboardingCompleted: false,
+		CreatedAt:           now,
+		UpdatedAt:           now,
 	}
 }
 
@@ -315,5 +317,80 @@ func NewVerificationToken(userID uuid.UUID, tokenHash string, tokenType TokenTyp
 		TokenType: tokenType,
 		ExpiresAt: expiresAt,
 		CreatedAt: time.Now(),
+	}
+}
+
+// PredefinedInterest represents a system-defined learning interest option.
+// These are the default interests that users can select from during onboarding.
+type PredefinedInterest struct {
+	ID           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
+	Slug         string    `json:"slug"`
+	Description  *string   `json:"description,omitempty"`
+	Icon         *string   `json:"icon,omitempty"`
+	Category     *string   `json:"category,omitempty"`
+	DisplayOrder int       `json:"display_order"`
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// UserLearningInterest represents a user's selected learning interest.
+// Can be either a predefined interest or a custom one created by the user.
+type UserLearningInterest struct {
+	ID                   uuid.UUID  `json:"id"`
+	UserID               uuid.UUID  `json:"user_id"`
+	PredefinedInterestID *uuid.UUID `json:"predefined_interest_id,omitempty"`
+	CustomInterest       *string    `json:"custom_interest,omitempty"`
+	CreatedAt            time.Time  `json:"created_at"`
+
+	// Joined fields (populated when fetching with predefined interest)
+	PredefinedInterest *PredefinedInterest `json:"predefined_interest,omitempty"`
+}
+
+// GetInterestName returns the name of the interest (either predefined or custom).
+func (u *UserLearningInterest) GetInterestName() string {
+	if u.CustomInterest != nil {
+		return *u.CustomInterest
+	}
+	if u.PredefinedInterest != nil {
+		return u.PredefinedInterest.Name
+	}
+	return ""
+}
+
+// IsPredefined returns true if this is a predefined interest.
+func (u *UserLearningInterest) IsPredefined() bool {
+	return u.PredefinedInterestID != nil
+}
+
+// InterestSummary represents a simplified view of a user's interest.
+// Used for API responses and recommendations.
+type InterestSummary struct {
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Slug     *string   `json:"slug,omitempty"`
+	Icon     *string   `json:"icon,omitempty"`
+	Category *string   `json:"category,omitempty"`
+	IsCustom bool      `json:"is_custom"`
+}
+
+// NewUserLearningInterestFromPredefined creates a new user learning interest from a predefined interest.
+func NewUserLearningInterestFromPredefined(userID, predefinedInterestID uuid.UUID) *UserLearningInterest {
+	return &UserLearningInterest{
+		ID:                   uuid.New(),
+		UserID:               userID,
+		PredefinedInterestID: &predefinedInterestID,
+		CreatedAt:            time.Now(),
+	}
+}
+
+// NewUserLearningInterestCustom creates a new custom user learning interest.
+func NewUserLearningInterestCustom(userID uuid.UUID, customInterest string) *UserLearningInterest {
+	return &UserLearningInterest{
+		ID:             uuid.New(),
+		UserID:         userID,
+		CustomInterest: &customInterest,
+		CreatedAt:      time.Now(),
 	}
 }

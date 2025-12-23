@@ -29,6 +29,18 @@ declare -A SERVICE_CONFIGS=(
     ["ngasihtau_search"]="search_svc:search_svc_password"
 )
 
+# Migration folder mappings (database -> migration folder name)
+declare -A MIGRATION_FOLDERS=(
+    ["ngasihtau_users"]="user"
+    ["ngasihtau_pods"]="pod"
+    ["ngasihtau_materials"]="material"
+    ["ngasihtau_ai"]="ai"
+    ["ngasihtau_notifications"]="notification"
+)
+
+# Base path for migrations (relative to where script runs or absolute)
+MIGRATIONS_BASE_PATH="${MIGRATIONS_BASE_PATH:-/migrations}"
+
 # ===========================================
 # Functions
 # ===========================================
@@ -127,6 +139,53 @@ function setup_extensions() {
 EOSQL
 }
 
+function run_migrations() {
+    local database=$1
+    local migration_folder=$2
+    
+    local migration_path="${MIGRATIONS_BASE_PATH}/${migration_folder}"
+    
+    # Check if migration folder exists
+    if [ ! -d "$migration_path" ]; then
+        log_info "No migrations found for $database at $migration_path, skipping..."
+        return 0
+    fi
+    
+    # Check if there are any migration files
+    if [ -z "$(ls -A "$migration_path"/*.sql 2>/dev/null)" ]; then
+        log_info "No SQL migration files in $migration_path, skipping..."
+        return 0
+    fi
+    
+    log_info "Running migrations for $database from $migration_path"
+    
+    # Build database URL
+    local db_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${database}?sslmode=disable"
+    
+    # Check if migrate tool is available
+    if command -v migrate &> /dev/null; then
+        migrate -path "$migration_path" -database "$db_url" up
+        if [ $? -eq 0 ]; then
+            log_info "Migrations completed successfully for $database"
+        else
+            log_error "Migration failed for $database"
+            return 1
+        fi
+    else
+        log_info "migrate tool not found, running SQL files directly..."
+        # Fallback: run .up.sql files in order
+        for sql_file in $(ls "$migration_path"/*.up.sql 2>/dev/null | sort); do
+            log_info "Applying migration: $(basename "$sql_file")"
+            psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" -f "$sql_file"
+            if [ $? -ne 0 ]; then
+                log_error "Failed to apply migration: $sql_file"
+                return 1
+            fi
+        done
+        log_info "All SQL migrations applied for $database"
+    fi
+}
+
 # ===========================================
 # Main Execution
 # ===========================================
@@ -164,6 +223,15 @@ for database in "${!SERVICE_CONFIGS[@]}"; do
     psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<-EOSQL
         GRANT ALL PRIVILEGES ON DATABASE $database TO $POSTGRES_USER;
 EOSQL
+done
+
+# ===========================================
+# Run Migrations
+# ===========================================
+log_info "Running database migrations..."
+for database in "${!MIGRATION_FOLDERS[@]}"; do
+    migration_folder="${MIGRATION_FOLDERS[$database]}"
+    run_migrations "$database" "$migration_folder"
 done
 
 log_info "Database initialization completed successfully!"
