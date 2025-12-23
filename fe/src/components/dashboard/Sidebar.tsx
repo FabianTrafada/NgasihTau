@@ -1,8 +1,8 @@
 'use client'
 
 import { cn } from '@/lib/utils';
-import { div } from 'framer-motion/client';
-import { LayoutDashboard, Sparkles, Users, X } from 'lucide-react';
+import { div, label } from 'framer-motion/client';
+import { Book, BookOpen, LayoutDashboard, Sparkles, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'
 
@@ -32,6 +32,17 @@ const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
         },
     ]
 
+    const KnowledgeSpot = [
+        {
+            label: "Knowledge Spot",
+            href: "/dashboard/knowledge",
+            icon: BookOpen,    
+        },
+        
+    ]
+
+   
+
 
 
     return (
@@ -51,8 +62,10 @@ const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
 
 
                 {/* Logo */}
-                <div className="mb-10">
-                    <h1 className="text-2xl font-bold text-[#FF8811]">Logo</h1>
+                <div className="text-2xl font-bold mb-10">
+                    
+                    <span className="text-[#FF8811]">Ngasih</span>
+                    <span className="text-[#2B2D42]">Tau</span>
                 </div>
 
                 {/* Navigation */}
@@ -63,6 +76,33 @@ const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
                         </p>
                         <nav className="space-y-2">
                             {navItems.map((item) => {
+                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={cn(
+                                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                                            isActive
+                                                ? "bg-[#FF8811] text-white shadow-sm"
+                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                        )}
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+
+                    <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-wider">
+                            Knowledge
+                        </p>
+                        <nav className="space-y-2">
+                            {KnowledgeSpot.map((item) => {
                                 const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
                                 return (
                                     <Link
