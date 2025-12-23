@@ -131,7 +131,7 @@ export default function SignInPage() {
                                     id="totp"
                                     value={totpCode}
                                     onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                    className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all text-center text-2xl tracking-widest"
+                                    className="w-full text-[#2B2D42] px-4 py-3 border-[2px] border-gray-300 rounded-md bg-white focus:outline-none transition-all text-center text-2xl tracking-widest focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
                                     placeholder="000000"
                                     maxLength={6}
                                     autoComplete="one-time-code"
@@ -219,7 +219,7 @@ export default function SignInPage() {
                                 id="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)] "
+                                className="w-full text-[#2B2D42] px-4 py-3 border-[2px] border-gray-300 rounded-md bg-white focus:outline-none transition-all font-[family-name:var(--font-inter)] focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
                                 placeholder=""
                                 required
                             />
@@ -239,14 +239,14 @@ export default function SignInPage() {
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full  text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all pr-12 font-[family-name:var(--font-inter)]"
+                                    className="w-full text-[#2B2D42] px-4 py-3 border-[2px] border-gray-300 rounded-md bg-white focus:outline-none transition-all pr-12 font-[family-name:var(--font-inter)] focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
                                     placeholder=""
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className=" cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                    className="cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                                 >
                                     {showPassword ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -266,7 +266,7 @@ export default function SignInPage() {
                         <div className="text-right">
                             <Link
                                 href="/forgot-password"
-                                className="text-[#FF8811] text-sm font-medium hover:text-[#FF8811]/80 transition-colors font-[family-name:var(--font-inter)] hover:underline    hover:underline-offset-2"
+                                className="text-[#FF8811] text-sm font-medium hover:text-[#FF8811]/80 transition-colors font-[family-name:var(--font-inter)] hover:underline hover:underline-offset-2"
                             >
                                 Forgot Your Password?
                             </Link>
@@ -309,7 +309,7 @@ export default function SignInPage() {
                         Don&apos;t Have An Account?{" "}
                         <Link
                             href="/sign-up"
-                            className="text-[#FF8811] font-semibold hover:text-[#FF8811]/80 transition-colors hover:underline    hover:underline-offset-2 "
+                            className="text-[#FF8811] font-semibold hover:text-[#FF8811]/80 transition-colors hover:underline hover:underline-offset-2"
                         >
                             Register Now
                         </Link>
