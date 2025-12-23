@@ -39,6 +39,19 @@ http:
       service: user-service
       priority: 90
 
+    # Learning Interests Routes (Onboarding)
+    user-service-interests:
+      rule: "PathPrefix(`/api/v1/interests`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 90
+
     # ===========================================
     # Pod Service Routes (Requirement 10)
     # ===========================================
