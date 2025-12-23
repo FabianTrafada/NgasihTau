@@ -30,16 +30,17 @@ func NewUserHandler(userService application.UserService) *UserHandler {
 
 // UserResponse represents a user in API responses.
 type UserResponse struct {
-	ID               uuid.UUID `json:"id"`
-	Email            string    `json:"email,omitempty"` // Only included for own profile
-	Name             string    `json:"name"`
-	AvatarURL        *string   `json:"avatar_url,omitempty"`
-	Bio              *string   `json:"bio,omitempty"`
-	Role             string    `json:"role"`
-	EmailVerified    bool      `json:"email_verified,omitempty"`     // Only included for own profile
-	TwoFactorEnabled bool      `json:"two_factor_enabled,omitempty"` // Only included for own profile
-	Language         string    `json:"language,omitempty"`           // Only included for own profile
-	CreatedAt        time.Time `json:"created_at"`
+	ID                  uuid.UUID `json:"id"`
+	Email               string    `json:"email,omitempty"` // Only included for own profile
+	Name                string    `json:"name"`
+	AvatarURL           *string   `json:"avatar_url,omitempty"`
+	Bio                 *string   `json:"bio,omitempty"`
+	Role                string    `json:"role"`
+	EmailVerified       bool      `json:"email_verified,omitempty"`       // Only included for own profile
+	TwoFactorEnabled    bool      `json:"two_factor_enabled,omitempty"`   // Only included for own profile
+	Language            string    `json:"language,omitempty"`             // Only included for own profile
+	OnboardingCompleted bool      `json:"onboarding_completed,omitempty"` // Only included for own profile
+	CreatedAt           time.Time `json:"created_at"`
 }
 
 // UserProfileResponse represents a user's public profile in API responses.
@@ -94,6 +95,7 @@ func ToUserResponse(user *domain.User, includePrivate bool) *UserResponse {
 		resp.EmailVerified = user.EmailVerified
 		resp.TwoFactorEnabled = user.TwoFactorEnabled
 		resp.Language = user.Language
+		resp.OnboardingCompleted = user.OnboardingCompleted
 	}
 
 	return resp

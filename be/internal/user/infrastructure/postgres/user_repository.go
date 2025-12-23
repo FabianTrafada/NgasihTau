@@ -28,8 +28,8 @@ func NewUserRepository(db DBTX) *UserRepository {
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
 		INSERT INTO users (id, email, password_hash, name, avatar_url, bio, role, 
-			email_verified, two_factor_enabled, two_factor_secret, language, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			email_verified, two_factor_enabled, two_factor_secret, language, onboarding_completed, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 
 	now := time.Now().UTC()
@@ -51,6 +51,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 		user.TwoFactorEnabled,
 		user.TwoFactorSecret,
 		user.Language,
+		user.OnboardingCompleted,
 		user.CreatedAt,
 		user.UpdatedAt,
 	)
@@ -66,7 +67,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	query := `
 		SELECT id, email, password_hash, name, avatar_url, bio, role, 
 			email_verified, two_factor_enabled, two_factor_secret, language, 
-			created_at, updated_at, deleted_at
+			onboarding_completed, created_at, updated_at, deleted_at
 		FROM users
 		WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -84,6 +85,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		&user.TwoFactorEnabled,
 		&user.TwoFactorSecret,
 		&user.Language,
+		&user.OnboardingCompleted,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&user.DeletedAt,
@@ -103,7 +105,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domain
 	query := `
 		SELECT id, email, password_hash, name, avatar_url, bio, role, 
 			email_verified, two_factor_enabled, two_factor_secret, language, 
-			created_at, updated_at, deleted_at
+			onboarding_completed, created_at, updated_at, deleted_at
 		FROM users
 		WHERE email = $1 AND deleted_at IS NULL
 	`
@@ -121,6 +123,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domain
 		&user.TwoFactorEnabled,
 		&user.TwoFactorSecret,
 		&user.Language,
+		&user.OnboardingCompleted,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&user.DeletedAt,
@@ -141,7 +144,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 		UPDATE users
 		SET email = $2, password_hash = $3, name = $4, avatar_url = $5, bio = $6,
 			role = $7, email_verified = $8, two_factor_enabled = $9, 
-			two_factor_secret = $10, language = $11, updated_at = $12
+			two_factor_secret = $10, language = $11, onboarding_completed = $12, updated_at = $13
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
@@ -159,6 +162,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 		user.TwoFactorEnabled,
 		user.TwoFactorSecret,
 		user.Language,
+		user.OnboardingCompleted,
 		user.UpdatedAt,
 	)
 	if err != nil {
@@ -356,6 +360,27 @@ func (r *UserRepository) VerifyEmail(ctx context.Context, id uuid.UUID) error {
 	tag, err := r.db.Exec(ctx, query, id, now)
 	if err != nil {
 		return errors.Internal("failed to verify email", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errors.NotFound("user", id.String())
+	}
+
+	return nil
+}
+
+// SetOnboardingCompleted marks a user's onboarding as completed or not.
+func (r *UserRepository) SetOnboardingCompleted(ctx context.Context, id uuid.UUID, completed bool) error {
+	query := `
+		UPDATE users
+		SET onboarding_completed = $2, updated_at = $3
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	now := time.Now().UTC()
+	tag, err := r.db.Exec(ctx, query, id, completed, now)
+	if err != nil {
+		return errors.Internal("failed to update onboarding status", err)
 	}
 
 	if tag.RowsAffected() == 0 {

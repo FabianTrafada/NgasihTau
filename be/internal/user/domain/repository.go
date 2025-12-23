@@ -44,6 +44,9 @@ type UserRepository interface {
 
 	// VerifyEmail marks a user's email as verified.
 	VerifyEmail(ctx context.Context, id uuid.UUID) error
+
+	// SetOnboardingCompleted marks a user's onboarding as completed.
+	SetOnboardingCompleted(ctx context.Context, id uuid.UUID, completed bool) error
 }
 
 // OAuthAccountRepository defines the interface for OAuth account data access.
@@ -172,4 +175,61 @@ type VerificationTokenRepository interface {
 
 	// DeleteExpired removes all expired verification tokens.
 	DeleteExpired(ctx context.Context) (int64, error)
+}
+
+// PredefinedInterestRepository defines the interface for predefined interest data access.
+type PredefinedInterestRepository interface {
+	// FindAll returns all active predefined interests.
+	FindAll(ctx context.Context) ([]*PredefinedInterest, error)
+
+	// FindByID finds a predefined interest by ID.
+	FindByID(ctx context.Context, id uuid.UUID) (*PredefinedInterest, error)
+
+	// FindBySlug finds a predefined interest by slug.
+	FindBySlug(ctx context.Context, slug string) (*PredefinedInterest, error)
+
+	// FindByIDs finds predefined interests by multiple IDs.
+	FindByIDs(ctx context.Context, ids []uuid.UUID) ([]*PredefinedInterest, error)
+
+	// FindByCategory returns all active predefined interests in a category.
+	FindByCategory(ctx context.Context, category string) ([]*PredefinedInterest, error)
+
+	// GetCategories returns all unique categories.
+	GetCategories(ctx context.Context) ([]string, error)
+}
+
+// UserLearningInterestRepository defines the interface for user learning interest data access.
+type UserLearningInterestRepository interface {
+	// Create creates a new user learning interest.
+	Create(ctx context.Context, interest *UserLearningInterest) error
+
+	// CreateBatch creates multiple user learning interests.
+	CreateBatch(ctx context.Context, interests []*UserLearningInterest) error
+
+	// FindByUserID returns all learning interests for a user.
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]*UserLearningInterest, error)
+
+	// FindByUserIDWithDetails returns all learning interests for a user with predefined interest details.
+	FindByUserIDWithDetails(ctx context.Context, userID uuid.UUID) ([]*UserLearningInterest, error)
+
+	// Delete removes a user learning interest.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// DeleteByUserID removes all learning interests for a user.
+	DeleteByUserID(ctx context.Context, userID uuid.UUID) error
+
+	// DeleteByUserIDAndPredefinedID removes a specific predefined interest for a user.
+	DeleteByUserIDAndPredefinedID(ctx context.Context, userID, predefinedInterestID uuid.UUID) error
+
+	// Exists checks if a user already has a specific predefined interest.
+	ExistsByUserIDAndPredefinedID(ctx context.Context, userID, predefinedInterestID uuid.UUID) (bool, error)
+
+	// ExistsByUserIDAndCustom checks if a user already has a specific custom interest.
+	ExistsByUserIDAndCustom(ctx context.Context, userID uuid.UUID, customInterest string) (bool, error)
+
+	// CountByUserID returns the number of interests for a user.
+	CountByUserID(ctx context.Context, userID uuid.UUID) (int, error)
+
+	// GetInterestSummaries returns simplified interest summaries for a user.
+	GetInterestSummaries(ctx context.Context, userID uuid.UUID) ([]*InterestSummary, error)
 }

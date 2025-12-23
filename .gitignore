@@ -169,3 +169,17 @@ protobuf/
 # Air (Go live reload)
 be/air.toml
 be/tmp/
+
+# File Processor (Python) Specific
+be/file-processor/.venv/
+be/file-processor/__pycache__/
+be/file-processor/.pytest_cache/
+be/file-processor/.python-version
+be/file-processor/*.py[cod]
+be/file-processor/*$py.class
+be/file-processor/*.so
+be/file-processor/.coverage
+be/file-processor/htmlcov/
+be/file-processor/dist/
+be/file-processor/build/
+be/file-processor/*.egg-info/

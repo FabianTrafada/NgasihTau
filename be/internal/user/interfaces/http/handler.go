@@ -12,9 +12,10 @@ import (
 
 // Handler contains all HTTP handlers for the User Service.
 type Handler struct {
-	authHandler *AuthHandler
-	userHandler *UserHandler
-	jwtManager  *jwt.Manager
+	authHandler     *AuthHandler
+	userHandler     *UserHandler
+	interestHandler *InterestHandler
+	jwtManager      *jwt.Manager
 }
 
 // NewHandler creates a new Handler with the given dependencies.
@@ -23,6 +24,20 @@ func NewHandler(userService application.UserService, jwtManager *jwt.Manager) *H
 		authHandler: NewAuthHandler(userService),
 		userHandler: NewUserHandler(userService),
 		jwtManager:  jwtManager,
+	}
+}
+
+// NewHandlerWithInterests creates a new Handler with user service and interest service.
+func NewHandlerWithInterests(
+	userService application.UserService,
+	interestService application.LearningInterestService,
+	jwtManager *jwt.Manager,
+) *Handler {
+	return &Handler{
+		authHandler:     NewAuthHandler(userService),
+		userHandler:     NewUserHandler(userService),
+		interestHandler: NewInterestHandler(interestService),
+		jwtManager:      jwtManager,
 	}
 }
 
@@ -58,6 +73,20 @@ func NewHandler(userService application.UserService, jwtManager *jwt.Manager) *H
 // Follow (protected):
 //   - POST   /api/v1/users/:id/follow
 //   - DELETE /api/v1/users/:id/follow
+//
+// Learning Interests (public):
+//   - GET  /api/v1/interests/predefined (get all predefined interests)
+//   - GET  /api/v1/interests/predefined/categories (get interests by category)
+//
+// Learning Interests (protected):
+//   - GET    /api/v1/interests/me (get user's interests)
+//   - PUT    /api/v1/interests/me (set/replace all interests - onboarding)
+//   - POST   /api/v1/interests/me (add single interest)
+//   - DELETE /api/v1/interests/me/:id (remove single interest)
+//
+// Onboarding (protected):
+//   - GET  /api/v1/interests/onboarding/status (check onboarding status)
+//   - POST /api/v1/interests/onboarding/complete (complete onboarding)
 //
 // Followers/Following (public):
 //   - GET    /api/v1/users/:id/followers
@@ -109,4 +138,24 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Public follower/following lists
 	users.Get("/:id/followers", h.userHandler.GetFollowers)
 	users.Get("/:id/following", h.userHandler.GetFollowing)
+
+	// Interest routes (only if interest handler is initialized)
+	if h.interestHandler != nil {
+		interests := api.Group("/interests")
+
+		// Public routes - get predefined interests
+		interests.Get("/predefined", h.interestHandler.GetPredefinedInterests)
+		interests.Get("/predefined/categories", h.interestHandler.GetPredefinedInterestsByCategory)
+
+		// Protected routes - user interests management
+		interestsProtected := interests.Group("", middleware.Auth(h.jwtManager))
+		interestsProtected.Get("/me", h.interestHandler.GetUserInterests)
+		interestsProtected.Put("/me", h.interestHandler.SetUserInterests)
+		interestsProtected.Post("/me", h.interestHandler.AddUserInterest)
+		interestsProtected.Delete("/me/:id", h.interestHandler.RemoveUserInterest)
+
+		// Onboarding routes
+		interestsProtected.Get("/onboarding/status", h.interestHandler.GetOnboardingStatus)
+		interestsProtected.Post("/onboarding/complete", h.interestHandler.CompleteOnboarding)
+	}
 }

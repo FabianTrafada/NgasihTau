@@ -143,6 +143,15 @@ func (m *mockUserRepo) VerifyEmail(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (m *mockUserRepo) SetOnboardingCompleted(ctx context.Context, id uuid.UUID, completed bool) error {
+	user, ok := m.users[id]
+	if !ok {
+		return errors.NotFound("user", id.String())
+	}
+	user.OnboardingCompleted = completed
+	return nil
+}
+
 type mockOAuthRepo struct{}
 
 func (m *mockOAuthRepo) Create(ctx context.Context, account *domain.OAuthAccount) error { return nil }

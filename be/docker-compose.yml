@@ -11,6 +11,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      MIGRATIONS_BASE_PATH: /migrations
       # Service database credentials (used by init script)
       # Format: database -> user:password
       # - ngasihtau_users -> user_svc:user_svc_password
@@ -22,6 +23,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ./migrations:/migrations:ro
     ports:
       - "5432:5432"
     healthcheck:
@@ -155,7 +157,7 @@ services:
       - "6333:6333"   # REST API
       - "6334:6334"   # gRPC (used by Go client)
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/readyz"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/ready"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -163,29 +165,6 @@ services:
     networks:
       - ngasihtau-network
 
-
-  # ===========================================
-  # File Processor Service (Python)
-  # ===========================================
-  file-processor:
-    build:
-      context: ./file-processor
-      dockerfile: Dockerfile
-    container_name: ngasihtau-file-processor
-    restart: unless-stopped
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8086
-    ports:
-      - "8086:8086"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - ngasihtau-network
 
   # ===========================================
   # Traefik API Gateway

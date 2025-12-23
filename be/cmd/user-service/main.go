@@ -141,6 +141,8 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	backupCodeRepo := postgres.NewBackupCodeRepository(db)
 	followRepo := postgres.NewFollowRepository(db)
 	verificationTokenRepo := postgres.NewVerificationTokenRepository(db)
+	predefinedInterestRepo := postgres.NewPredefinedInterestRepository(db)
+	userLearningInterestRepo := postgres.NewUserLearningInterestRepository(db)
 
 	// Initialize Google OAuth client (optional - may not be configured)
 	var googleClient *oauth.GoogleClient
@@ -200,8 +202,15 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		eventPublisher,
 	)
 
+	// Initialize learning interest service
+	interestService := application.NewLearningInterestService(
+		predefinedInterestRepo,
+		userLearningInterestRepo,
+		userRepo,
+	)
+
 	// Initialize HTTP handlers
-	handler := userhttp.NewHandler(userService, jwtManager)
+	handler := userhttp.NewHandlerWithInterests(userService, interestService, jwtManager)
 
 	// Initialize Fiber app
 	fiberApp := fiber.New(fiber.Config{
