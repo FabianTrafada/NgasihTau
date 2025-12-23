@@ -62,7 +62,7 @@ const KnowledgePage: React.FC = () => {
           <button className="px-4 py-2 bg-white border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-zinc-50 transition-all active:translate-x-[1px] active:translate-y-[1px]">
             Newest
           </button>
-          <button className="px-4 py-2 bg-orange-500 text-white border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-orange-600 transition-all active:translate-x-[1px] active:translate-y-[1px]">
+          <button className="px-4 py-2 bg-[#FF8811] text-white border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#ff] transition-all active:translate-x-[1px] active:translate-y-[1px]">
             Upload Pod
           </button>
         </div>

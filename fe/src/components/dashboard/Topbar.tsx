@@ -1,7 +1,10 @@
 'use client';
 import { useAuth } from '@/lib/auth-context';
-import { Bell, PanelLeft, PanelLeftClose, Search, Users } from 'lucide-react'
 
+import { Bell, LogOut, PanelLeft, PanelLeftClose, Search, Settings, User, Users } from 'lucide-react'
+import Link from 'next/link';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Separator } from '@radix-ui/react-dropdown-menu';
 interface TopbarProps {
     onMenuClick?: () => void;
     onRightMenuClick?: () => void; // New prop for right sidebar
@@ -49,9 +52,45 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => 
                     <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FFFBF7]"></span>
                 </button>
 
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
+                            {user?.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="p-4 w-64 text-3xl border  border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42]  " align="end" >
+                        <DropdownMenuLabel>
+                            <div className='flex items-center gap-2 mb-4'>
+                                <div className="w-4 h-4 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
+                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <span className='font-semibold text-xl'>Hello, {user?.name || 'User'}</span>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem>
+                                <Link href={'/dashboard/profile'} className='flex'>
+                                    <User className='size-5 mr-2' />
+                                    <span className='text-md'>Profile</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Link href={'/dashboard/settings'} className='flex'>
+                                    <Settings className='size-5 mr-2' />
+                                    <span className='text-md'>Settings</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                            <Link href={'/logout'} className='flex'>
+                                <LogOut className='size-5 mr-2' />
+                                <span className='text-md font-semibold text-red-500'>Log out</span>
+                            </Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </header>
     )

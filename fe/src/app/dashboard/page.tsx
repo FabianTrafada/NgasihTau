@@ -6,6 +6,7 @@ import RecentPodCard from "@/components/dashboard/RecentPodCard";
 import ChatbotLogCard from "@/components/dashboard/ChatbotLogCard";
 import { ProtectedRoute } from "@/components/auth";
 import { useAuth } from "@/lib/auth-context";
+import Link from "next/link";
 
 /**
  * Dashboard Page
@@ -49,7 +50,10 @@ function DashboardContent() {
                 <section>
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-base sm:text-lg font-bold text-gray-900">Recent Pods</h2>
-                        <button className="text-xs text-gray-400 hover:text-[#FF8811]">See all</button>
+
+                        <Link href={'/dashboard/knowledge'}>
+                            <button className="text-sm text-gray-400 hover:text-[#FF8811] cursor-pointer">See all</button>
+                        </Link>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <RecentPodCard
