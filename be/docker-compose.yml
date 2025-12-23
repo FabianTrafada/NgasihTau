@@ -165,6 +165,29 @@ services:
 
 
   # ===========================================
+  # File Processor Service (Python)
+  # ===========================================
+  file-processor:
+    build:
+      context: ./file-processor
+      dockerfile: Dockerfile
+    container_name: ngasihtau-file-processor
+    restart: unless-stopped
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8086
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ngasihtau-network
+
+  # ===========================================
   # Traefik API Gateway
   # ===========================================
   traefik:
