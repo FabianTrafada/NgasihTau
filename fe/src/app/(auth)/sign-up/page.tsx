@@ -84,8 +84,8 @@ export default function SignUpPage() {
                 {/* Brutalist offset shadow */}
                 <div className="absolute top-3 left-3 w-full h-full bg-[#FF8811] rounded-2xl" />
 
-                {/* Main Card */}
-                <div className="bg-white rounded-2xl p-8 relative border-2 border-[#2B2D42]/10">
+                {/* Main Card - WITH BORDER */}
+                <div className="bg-white rounded-2xl p-8 relative border-[2px] border-[#2B2D42]">
 
                     {/* Logo */}
                     <div className="text-center mb-6">
@@ -128,8 +128,9 @@ export default function SignUpPage() {
                                 id="name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className={`w-full text-[#2B2D42] px-4 py-3 border rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)] ${getFieldError("name") ? "border-red-400" : "border-gray-300"
-                                    }`}
+                                className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white ${
+                                    getFieldError("name") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                }`}
                                 placeholder=""
                                 required
                             />
@@ -151,8 +152,9 @@ export default function SignUpPage() {
                                 id="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className={`w-full text-[#2B2D42] px-4 py-3 border rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)] ${getFieldError("email") ? "border-red-400" : "border-gray-300"
-                                    }`}
+                                className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white ${
+                                    getFieldError("email") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                }`}
                                 placeholder=""
                                 required
                             />
@@ -175,8 +177,9 @@ export default function SignUpPage() {
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className={`w-full text-[#2B2D42] px-4 py-3 border rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all pr-12 font-[family-name:var(--font-inter)] ${getFieldError("password") ? "border-red-400" : "border-gray-300"
-                                        }`}
+                                    className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all pr-12 font-[family-name:var(--font-inter)] bg-white ${
+                                        getFieldError("password") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                    }`}
                                     placeholder=""
                                     required
                                 />
@@ -203,11 +206,11 @@ export default function SignUpPage() {
                             <p className="text-gray-400 text-xs mt-1">Must be at least 8 characters</p>
                         </div>
 
-                        {/* Register Button */}
+                        {/* Register Button - WITH BRUTALIST ANIMATION */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-sm font-semibold hover:bg-[#FF8811]/90 transition-colors font-[family-name:var(--font-plus-jakarta-sans)] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full cursor-pointer bg-[#FF8811] text-white py-3 rounded-lg font-semibold transition-all font-[family-name:var(--font-plus-jakarta-sans)] disabled:opacity-50 disabled:cursor-not-allowed border-[2px] border-[#2B2D42] shadow-[4px_4px_0px_0px_rgba(43,45,66,1)] hover:shadow-[2px_2px_0px_0px_rgba(43,45,66,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
                         >
                             {loading ? "Creating Account..." : "Register"}
                         </button>
@@ -220,12 +223,12 @@ export default function SignUpPage() {
                         <div className="flex-1 border-t border-gray-300"></div>
                     </div>
 
-                    {/* Google Button */}
+                    {/* Google Button - WITH BRUTALIST ANIMATION */}
                     <button
                         type="button"
                         onClick={initiateGoogleLogin}
                         disabled={loading}
-                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors font-[family-name:var(--font-inter)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-3 border-[2px] border-[#2B2D42] rounded-lg bg-white transition-all font-[family-name:var(--font-inter)] disabled:opacity-50 disabled:cursor-not-allowed shadow-[4px_4px_0px_0px_rgba(43,45,66,1)] hover:shadow-[2px_2px_0px_0px_rgba(43,45,66,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
                     >
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M19.8055 10.2275C19.8055 9.51803 19.7477 8.83551 19.6399 8.17969H10.2002V12.0494H15.6006C15.3681 13.2994 14.6259 14.3578 13.5379 15.0672V17.5766H16.8055C18.7054 15.8369 19.8055 13.2713 19.8055 10.2275Z" fill="#4285F4" />
