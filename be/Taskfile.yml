@@ -46,6 +46,13 @@ tasks:
     cmds:
       - go run ./cmd/notification-service
 
+  dev:file-processor:
+    desc: Run file processor service (Python)
+    dir: file-processor
+    dotenv: ['../.env']
+    cmds:
+      - uv run uvicorn main:app --host 0.0.0.0 --port 8086 --reload
+
   dev:all:
     desc: Run all services in separate terminal windows
     cmds:
@@ -65,6 +72,7 @@ tasks:
       - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:search'"
       - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:ai'"
       - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:notification'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:file-processor'"
       - echo "All services started in separate PowerShell windows"
 
   dev:all:darwin:
@@ -76,6 +84,7 @@ tasks:
       - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:search"'
       - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:ai"'
       - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:notification"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:file-processor"'
       - echo "All services started in separate Terminal windows"
 
   dev:all:linux:
@@ -87,6 +96,7 @@ tasks:
       - gnome-terminal --tab --title="Search Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:search; exec bash'
       - gnome-terminal --tab --title="AI Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:ai; exec bash'
       - gnome-terminal --tab --title="Notification Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:notification; exec bash'
+      - gnome-terminal --tab --title="File Processor" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:file-processor; exec bash'
       - echo "All services started in separate terminal tabs"
 
   dev:all:bg:
