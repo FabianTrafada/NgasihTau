@@ -14,7 +14,7 @@ const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, onToggleLike, 
     <div className={`p-6 flex flex-col md:flex-row md:items-start gap-4 transition-colors hover:bg-zinc-50/50 ${!isLast ? 'border-b border-black' : ''}`}>
       {/* Content Section */}
       <div className="flex-1 space-y-2">
-        <h3 className="text-xl font-bold text-orange-500 leading-tight">
+        <h3 className="text-xl font-bold text-[#FF8811] leading-tight">
           {pod.title}
         </h3>
         <p className="text-zinc-500 text-sm md:text-base leading-relaxed max-w-2xl">

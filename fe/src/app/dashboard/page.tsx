@@ -40,7 +40,7 @@ function DashboardContent() {
             <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6 lg:gap-8">
                 {/* Welcome Section - Now uses real user name */}
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#2B2D42] mb-1">
                         Welcome Back {user?.name || "User"}
                     </h1>
                     <p className="text-sm sm:text-base text-gray-500">Ready to learn something new today?</p>
@@ -49,10 +49,10 @@ function DashboardContent() {
                 {/* Recent Pods */}
                 <section>
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-base sm:text-lg font-bold text-gray-900">Recent Pods</h2>
+                        <h2 className="text-base sm:text-lg font-bold text-[#2B2D42]">Recent Pods</h2>
 
                         <Link href={'/dashboard/knowledge'}>
-                            <button className="text-sm text-gray-400 hover:text-[#FF8811] cursor-pointer">See all</button>
+                            <button className="text-sm text-gray-400 hover:text-[#FF8811] cursor-pointer font-bold">See all</button>
                         </Link>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -74,8 +74,8 @@ function DashboardContent() {
                 {/* Last Chatbot Logs */}
                 <section>
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-base sm:text-lg font-bold text-gray-900">Last Chatbot Logs</h2>
-                        <button className="text-xs text-gray-400 hover:text-[#FF8811]">See all</button>
+                        <h2 className="text-base sm:text-lg font-bold text-[#2B2D42]">Last Chatbot Logs</h2>
+                        <button className="text-xs text-gray-400 hover:text-[#FF8811] font-bold">See all</button>
                     </div>
                     <div className="space-y-3">
                         <ChatbotLogCard

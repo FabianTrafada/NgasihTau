@@ -47,7 +47,7 @@ const KnowledgePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-4 md:p-8">
+    <div className="max-w-6xl mx-auto space-y-8 md:p-8">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -58,11 +58,11 @@ const KnowledgePage: React.FC = () => {
             Explore the most shared and updated knowledge repositories.
           </p>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-white border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-zinc-50 transition-all active:translate-x-[1px] active:translate-y-[1px]">
+        <div className="flex gap-2 min-w-max">
+          <button className="px-4 py-2  border-2 text-base border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF8811] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:text-white cursor-pointer hover:translate-x-[2px] hover:translate-y-[2px] transition-all group leading-none">
             Newest
           </button>
-          <button className="px-4 py-2 bg-[#FF8811] text-white border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#ff] transition-all active:translate-x-[1px] active:translate-y-[1px]">
+          <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
             Upload Pod
           </button>
         </div>

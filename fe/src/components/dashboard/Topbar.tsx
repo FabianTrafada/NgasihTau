@@ -15,7 +15,7 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => 
     const { user } = useAuth();
 
     return (
-        <header className='h-16 lg:h-20 px-4 lg:px-8 flex items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-gray-100 lg:border-none'>
+        <header className='h-16 lg:h-20 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-gray-200'>
             {/* Left Section */}
             <div className='flex items-center gap-4'>
                 <button
@@ -54,9 +54,9 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => 
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base outline-none">
                             {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
+                        </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="p-4 w-64 text-3xl border  border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42]  " align="end" >
                         <DropdownMenuLabel>
