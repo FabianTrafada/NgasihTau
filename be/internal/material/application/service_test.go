@@ -640,7 +640,7 @@ func TestConfirmUpload_Success(t *testing.T) {
 	ctx := context.Background()
 
 	// Simulate file uploaded to MinIO
-	objectKey := "materials/2025/01/01/test-uuid_document.pdf"
+	objectKey := "2025/01/01/test-uuid_document.pdf"
 	minioClient.files[objectKey] = &FileInfo{
 		Size:        1024 * 1024,
 		ContentType: "application/pdf",
@@ -703,7 +703,7 @@ func TestConfirmUpload_FileNotFound(t *testing.T) {
 	ctx := context.Background()
 
 	input := ConfirmUploadInput{
-		ObjectKey:  "materials/nonexistent.pdf",
+		ObjectKey:  "nonexistent.pdf",
 		PodID:      uuid.New(),
 		UploaderID: uuid.New(),
 		Title:      "Test Document",
@@ -720,7 +720,7 @@ func TestConfirmUpload_UnsupportedFileType(t *testing.T) {
 	ctx := context.Background()
 
 	// Simulate file with unsupported extension
-	objectKey := "materials/2025/01/01/test-uuid_document.txt"
+	objectKey := "2025/01/01/test-uuid_document.txt"
 	minioClient.files[objectKey] = &FileInfo{
 		Size:        1024,
 		ContentType: "text/plain",

@@ -88,8 +88,8 @@ type UploadURLOutput struct {
 // GetUploadURL generates a presigned URL for uploading a file.
 // Implements requirement 5: Material Upload.
 func (s *Service) GetUploadURL(ctx context.Context, input UploadURLInput) (*UploadURLOutput, error) {
-	// Generate unique object key
-	objectKey := fmt.Sprintf("materials/%s/%s_%s",
+	// Generate unique object key (no 'materials/' prefix since bucket is already named 'materials')
+	objectKey := fmt.Sprintf("%s/%s_%s",
 		time.Now().Format("2006/01/02"),
 		uuid.New().String(),
 		sanitizeFilename(input.Filename))
