@@ -1,5 +1,14 @@
 basePath: /api/v1
 definitions:
+  application.CategoryGroup:
+    properties:
+      category:
+        type: string
+      interests:
+        items:
+          $ref: '#/definitions/domain.PredefinedInterest'
+        type: array
+    type: object
   application.CreatePodInput:
     properties:
       categories:
@@ -29,6 +38,15 @@ definitions:
     - name
     - visibility
     type: object
+  application.GroupedInterestsResult:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/application.CategoryGroup'
+        type: array
+      total:
+        type: integer
+    type: object
   application.InviteCollaboratorInput:
     properties:
       role:
@@ -43,6 +61,26 @@ definitions:
     required:
     - role
     - user_id
+    type: object
+  application.OnboardingStatus:
+    properties:
+      interests:
+        items:
+          $ref: '#/definitions/domain.InterestSummary'
+        type: array
+      interests_count:
+        type: integer
+      onboarding_completed:
+        type: boolean
+    type: object
+  application.PredefinedInterestsResult:
+    properties:
+      interests:
+        items:
+          $ref: '#/definitions/domain.PredefinedInterest'
+        type: array
+      total:
+        type: integer
     type: object
   application.UpdatePodInput:
     properties:
@@ -69,6 +107,15 @@ definitions:
         enum:
         - public
         - private
+    type: object
+  application.UserInterestsResult:
+    properties:
+      interests:
+        items:
+          $ref: '#/definitions/domain.InterestSummary'
+        type: array
+      total:
+        type: integer
     type: object
   docs.ErrorBody:
     properties:
@@ -216,6 +263,21 @@ definitions:
     - CollaboratorStatusPending
     - CollaboratorStatusPendingVerification
     - CollaboratorStatusVerified
+  domain.InterestSummary:
+    properties:
+      category:
+        type: string
+      icon:
+        type: string
+      id:
+        type: string
+      is_custom:
+        type: boolean
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
   domain.Pod:
     properties:
       categories:
@@ -250,6 +312,29 @@ definitions:
         type: integer
       visibility:
         $ref: '#/definitions/domain.Visibility'
+    type: object
+  domain.PredefinedInterest:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      display_order:
+        type: integer
+      icon:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
     type: object
   domain.Visibility:
     enum:
@@ -306,6 +391,15 @@ definitions:
         type: string
     required:
     - content
+    type: object
+  http.AddInterestRequest:
+    properties:
+      custom_interest:
+        maxLength: 100
+        minLength: 2
+        type: string
+      predefined_interest_id:
+        type: string
     type: object
   http.AuthResponse:
     properties:
@@ -462,6 +556,17 @@ definitions:
     - name
     - password
     type: object
+  http.SetInterestsRequest:
+    properties:
+      custom_interests:
+        items:
+          type: string
+        type: array
+      predefined_interest_ids:
+        items:
+          type: string
+        type: array
+    type: object
   http.TwoFactorRequiredResponse:
     properties:
       temp_token:
@@ -592,6 +697,9 @@ definitions:
         type: string
       name:
         type: string
+      onboarding_completed:
+        description: Only included for own profile
+        type: boolean
       role:
         type: string
       two_factor_enabled:
@@ -717,6 +825,42 @@ definitions:
       success:
         type: boolean
     type: object
+  response.Response-application_GroupedInterestsResult:
+    properties:
+      data:
+        $ref: '#/definitions/application.GroupedInterestsResult'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-application_OnboardingStatus:
+    properties:
+      data:
+        $ref: '#/definitions/application.OnboardingStatus'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-application_PredefinedInterestsResult:
+    properties:
+      data:
+        $ref: '#/definitions/application.PredefinedInterestsResult'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-application_UserInterestsResult:
+    properties:
+      data:
+        $ref: '#/definitions/application.UserInterestsResult'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
   response.Response-array_domain_Collaborator:
     properties:
       data:
@@ -732,6 +876,15 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/domain.Collaborator'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_InterestSummary:
+    properties:
+      data:
+        $ref: '#/definitions/domain.InterestSummary'
       meta:
         $ref: '#/definitions/response.Meta'
       success:
@@ -832,6 +985,238 @@ info:
   title: NgasihTau API
   version: "1.0"
 paths:
+  /api/v1/interests/me:
+    get:
+      consumes:
+      - application/json
+      description: Returns all learning interests selected by the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-application_UserInterestsResult'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user's learning interests
+      tags:
+      - Interests
+    post:
+      consumes:
+      - application/json
+      description: Adds a predefined or custom interest to the authenticated user's
+        interest list
+      parameters:
+      - description: Interest to add
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.AddInterestRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_InterestSummary'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a single interest to user's list
+      tags:
+      - Interests
+    put:
+      consumes:
+      - application/json
+      description: Sets or replaces all learning interests for the authenticated user.
+        Used during onboarding.
+      parameters:
+      - description: Interests to set
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.SetInterestsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set user's learning interests (onboarding)
+      tags:
+      - Interests
+  /api/v1/interests/me/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a specific interest from the authenticated user's interest
+        list
+      parameters:
+      - description: Interest ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove an interest from user's list
+      tags:
+      - Interests
+  /api/v1/interests/onboarding/complete:
+    post:
+      consumes:
+      - application/json
+      description: Marks the user's onboarding as complete. User must have selected
+        at least one interest.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Complete user onboarding
+      tags:
+      - Interests
+  /api/v1/interests/onboarding/status:
+    get:
+      consumes:
+      - application/json
+      description: Returns whether the user has completed onboarding and their current
+        interests
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-application_OnboardingStatus'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user onboarding status
+      tags:
+      - Interests
+  /api/v1/interests/predefined:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all active predefined learning interests that
+        users can select from
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-application_PredefinedInterestsResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get all predefined learning interests
+      tags:
+      - Interests
+  /api/v1/interests/predefined/categories:
+    get:
+      consumes:
+      - application/json
+      description: Returns predefined learning interests organized by their categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-application_GroupedInterestsResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get predefined interests grouped by category
+      tags:
+      - Interests
   /auth/2fa/disable:
     post:
       consumes:
