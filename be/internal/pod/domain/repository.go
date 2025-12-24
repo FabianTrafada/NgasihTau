@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -151,4 +152,101 @@ type ActivityRepository interface {
 
 	// DeleteByPodID deletes all activities for a pod.
 	DeleteByPodID(ctx context.Context, podID uuid.UUID) error
+}
+
+// ===========================================
+// Recommendation System Repositories
+// ===========================================
+
+// InteractionRepository defines the interface for tracking user interactions.
+type InteractionRepository interface {
+	// Create records a new interaction.
+	Create(ctx context.Context, interaction *PodInteraction) error
+
+	// CreateBatch records multiple interactions at once.
+	CreateBatch(ctx context.Context, interactions []*PodInteraction) error
+
+	// FindByUserID finds interactions for a user.
+	FindByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*PodInteraction, error)
+
+	// FindByUserAndPod finds interactions for a user on a specific pod.
+	FindByUserAndPod(ctx context.Context, userID, podID uuid.UUID, limit int) ([]*PodInteraction, error)
+
+	// CountByUserID returns the total interaction count for a user.
+	CountByUserID(ctx context.Context, userID uuid.UUID) (int, error)
+
+	// GetRecentInteractionTypes returns distinct recent interaction types for a user-pod pair.
+	GetRecentInteractionTypes(ctx context.Context, userID, podID uuid.UUID, since time.Time) ([]InteractionType, error)
+
+	// GetUserInteractedPodIDs returns pod IDs the user has interacted with.
+	GetUserInteractedPodIDs(ctx context.Context, userID uuid.UUID, limit int) ([]uuid.UUID, error)
+}
+
+// UserCategoryScoreRepository manages aggregated category preferences.
+type UserCategoryScoreRepository interface {
+	// Upsert creates or updates a category score.
+	Upsert(ctx context.Context, score *UserCategoryScore) error
+
+	// FindByUserID returns all category scores for a user, ordered by score.
+	FindByUserID(ctx context.Context, userID uuid.UUID, limit int) ([]*UserCategoryScore, error)
+
+	// FindByUserAndCategory returns a specific category score.
+	FindByUserAndCategory(ctx context.Context, userID uuid.UUID, category string) (*UserCategoryScore, error)
+
+	// IncrementScore increments the score for a category.
+	IncrementScore(ctx context.Context, userID uuid.UUID, category string, delta float64, interactionType InteractionType) error
+
+	// ApplyDecay applies time decay to scores older than the threshold.
+	ApplyDecay(ctx context.Context, decayFactor float64, olderThan time.Time) error
+}
+
+// UserTagScoreRepository manages aggregated tag preferences.
+type UserTagScoreRepository interface {
+	// Upsert creates or updates a tag score.
+	Upsert(ctx context.Context, score *UserTagScore) error
+
+	// FindByUserID returns all tag scores for a user, ordered by score.
+	FindByUserID(ctx context.Context, userID uuid.UUID, limit int) ([]*UserTagScore, error)
+
+	// IncrementScore increments the score for a tag.
+	IncrementScore(ctx context.Context, userID uuid.UUID, tag string, delta float64) error
+
+	// IncrementScoreBatch increments scores for multiple tags.
+	IncrementScoreBatch(ctx context.Context, userID uuid.UUID, tags []string, delta float64) error
+}
+
+// PodPopularityRepository manages pod popularity metrics.
+type PodPopularityRepository interface {
+	// Upsert creates or updates popularity score.
+	Upsert(ctx context.Context, score *PodPopularityScore) error
+
+	// FindByPodID returns popularity score for a pod.
+	FindByPodID(ctx context.Context, podID uuid.UUID) (*PodPopularityScore, error)
+
+	// GetTrendingPods returns pods ordered by trending score.
+	GetTrendingPods(ctx context.Context, limit, offset int) ([]*PodPopularityScore, error)
+
+	// RecalculateForPod recalculates popularity metrics for a specific pod.
+	RecalculateForPod(ctx context.Context, podID uuid.UUID) error
+
+	// RecalculateAll recalculates popularity metrics for all pods.
+	RecalculateAll(ctx context.Context) error
+}
+
+// RecommendationRepository provides methods for generating recommendations.
+type RecommendationRepository interface {
+	// GetPersonalizedFeed returns personalized pod recommendations for a user.
+	GetPersonalizedFeed(ctx context.Context, userID uuid.UUID, config *RecommendationConfig, limit, offset int) ([]*RecommendedPod, error)
+
+	// GetTrendingFeed returns trending pods (for cold start or anonymous users).
+	GetTrendingFeed(ctx context.Context, limit, offset int) ([]*Pod, error)
+
+	// GetSimilarPods returns pods similar to a given pod.
+	GetSimilarPods(ctx context.Context, podID uuid.UUID, limit int) ([]*Pod, error)
+
+	// GetUserPreferenceProfile returns aggregated user preferences.
+	GetUserPreferenceProfile(ctx context.Context, userID uuid.UUID) (*UserPreferenceProfile, error)
+
+	// ExcludePods allows filtering out specific pods (e.g., already seen).
+	GetPersonalizedFeedExcluding(ctx context.Context, userID uuid.UUID, excludePodIDs []uuid.UUID, config *RecommendationConfig, limit int) ([]*RecommendedPod, error)
 }

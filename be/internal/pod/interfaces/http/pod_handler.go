@@ -16,15 +16,17 @@ import (
 
 // PodHandler handles HTTP requests for pod operations.
 type PodHandler struct {
-	podService application.PodService
-	validator  *validator.Validator
+	podService            application.PodService
+	recommendationService application.RecommendationService
+	validator             *validator.Validator
 }
 
 // NewPodHandler creates a new PodHandler.
-func NewPodHandler(podService application.PodService) *PodHandler {
+func NewPodHandler(podService application.PodService, recommendationService application.RecommendationService) *PodHandler {
 	return &PodHandler{
-		podService: podService,
-		validator:  validator.Get(),
+		podService:            podService,
+		recommendationService: recommendationService,
+		validator:             validator.Get(),
 	}
 }
 
@@ -101,6 +103,11 @@ func (h *PodHandler) GetPod(c *fiber.Ctx) error {
 	pod, err := h.podService.GetPod(c.Context(), podID, viewerID)
 	if err != nil {
 		return err
+	}
+
+	// Auto-track view interaction for authenticated users
+	if viewerID != nil {
+		go h.recommendationService.TrackView(c.Context(), *viewerID, podID)
 	}
 
 	requestID := middleware.GetRequestID(c)
@@ -269,6 +276,13 @@ func (h *PodHandler) ForkPod(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Auto-track fork interaction (on source pod, not the new fork)
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionFork,
+	})
+
 	requestID := middleware.GetRequestID(c)
 	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, pod))
 }
@@ -306,6 +320,13 @@ func (h *PodHandler) StarPod(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Auto-track star interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionStar,
+	})
+
 	requestID := middleware.GetRequestID(c)
 	return c.JSON(response.OK(requestID, fiber.Map{"starred": true}))
 }
@@ -341,6 +362,13 @@ func (h *PodHandler) UnstarPod(c *fiber.Ctx) error {
 	if err := h.podService.UnstarPod(c.Context(), podID, userID); err != nil {
 		return err
 	}
+
+	// Auto-track unstar interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionUnstar,
+	})
 
 	requestID := middleware.GetRequestID(c)
 	return c.JSON(response.OK(requestID, fiber.Map{"starred": false}))
@@ -378,6 +406,13 @@ func (h *PodHandler) FollowPod(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Auto-track follow interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionFollow,
+	})
+
 	requestID := middleware.GetRequestID(c)
 	return c.JSON(response.OK(requestID, fiber.Map{"following": true}))
 }
@@ -413,6 +448,13 @@ func (h *PodHandler) UnfollowPod(c *fiber.Ctx) error {
 	if err := h.podService.UnfollowPod(c.Context(), podID, userID); err != nil {
 		return err
 	}
+
+	// Auto-track unfollow interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionUnfollow,
+	})
 
 	requestID := middleware.GetRequestID(c)
 	return c.JSON(response.OK(requestID, fiber.Map{"following": false}))
