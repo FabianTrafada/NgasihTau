@@ -72,10 +72,16 @@ export const getUserInterests = async (): Promise<UserInterest[]> => {
 /**
  * Set user interests in batch (replaces all existing interests)
  * Endpoint: PUT /api/v1/interests/me
+ * @param predefinedInterestIds - Array of predefined interest UUIDs
+ * @param customInterests - Array of custom interest names (strings)
  */
-export const setUserInterests = async (interests: string[]): Promise<void> => {
+export const setUserInterests = async (
+    predefinedInterestIds: string[],
+    customInterests: string[] = []
+): Promise<void> => {
     await apiClient.put('/api/v1/interests/me', {
-        predefined_interest_ids: interests
+        predefined_interest_ids: predefinedInterestIds,
+        custom_interests: customInterests
     });
 };
 
