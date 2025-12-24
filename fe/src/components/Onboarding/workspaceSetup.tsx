@@ -125,13 +125,26 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
             setIsSaving(true);
             setError(null);
 
-            // Filter out temporary interests (those starting with 'temp-')
-            const validInterestIds = selectedInterestIds.filter(
+            // Separate predefined interests from custom interests
+            const predefinedInterestIds = selectedInterestIds.filter(
                 (id) => !id.startsWith("temp-")
             );
 
-            // Save selected interests
-            await setUserInterests(validInterestIds);
+            // Get custom interest names from temp IDs
+            const customInterests: string[] = [];
+            selectedInterestIds
+                .filter((id) => id.startsWith("temp-"))
+                .forEach((tempId) => {
+                    // Find the custom interest in the "Custom" category
+                    const customCategory = interests["Custom"] || [];
+                    const customInterest = customCategory.find((i) => i.id === tempId);
+                    if (customInterest) {
+                        customInterests.push(customInterest.name);
+                    }
+                });
+
+            // Save selected interests (both predefined and custom)
+            await setUserInterests(predefinedInterestIds, customInterests);
 
             // Mark onboarding as complete
             await completeOnboarding();
