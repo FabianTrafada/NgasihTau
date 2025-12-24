@@ -167,14 +167,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      * Returns LoginResult indicating if 2FA is required
      */
     const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+        console.log('[AuthContext] ========== LOGIN ==========');
+        console.log('[AuthContext] Email:', email);
+
         setError(null);
         setLoading(true);
 
         try {
+            console.log('[AuthContext] Calling loginApi...');
             const result = await loginApi({ email, password });
+            console.log('[AuthContext] Login API result:', result);
 
             // Check if 2FA is required
             if (isTwoFactorRequired(result)) {
+                console.log('[AuthContext] 2FA is required');
                 setLoading(false);
                 return {
                     success: true,
@@ -184,13 +190,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             // Full login successful
+            console.log('[AuthContext] ✅ Login successful! User:', result.user);
+            console.log('[AuthContext] Setting user state...');
             setUser(result.user);
+
+            // Verify tokens are saved
+            const savedTokens = {
+                access: localStorage.getItem('access_token'),
+                refresh: localStorage.getItem('refresh_token'),
+                user: localStorage.getItem('user')
+            };
+            console.log('[AuthContext] Tokens saved in localStorage:', {
+                hasAccessToken: !!savedTokens.access,
+                hasRefreshToken: !!savedTokens.refresh,
+                hasUser: !!savedTokens.user
+            });
+
             setLoading(false);
+            console.log('[AuthContext] ========== LOGIN SUCCESS ==========');
             return {
                 success: true,
                 requires2FA: false,
             };
         } catch (err) {
+            console.error('[AuthContext] ❌ Login failed:', err);
             setError({ message: getErrorMessage(err) });
             setLoading(false);
             throw err;

@@ -2,24 +2,29 @@
 
 import { cn } from '@/lib/utils';
 import { div, label } from 'framer-motion/client';
-import { Book, BookOpen, LayoutDashboard, Sparkles, Users, X } from 'lucide-react';
+import { Book, BookOpen, LayoutDashboard, Sparkles, Users, X, Folder, LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'
 
-
+export interface NavItem {
+    label: string;
+    href: string;
+    icon: LucideIcon;
+}
 
 interface sidebarProps {
     isOpen?: boolean;
     onClose?: () => void;
-
+    navItems?: NavItem[];
+    knowledgeItems?: NavItem[];
 }
 
-const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
+const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: propKnowledgeItems }: sidebarProps) => {
 
 
     const pathname = usePathname();
 
-    const navItems = [
+    const defaultNavItems = [
         {
             label: "Home",
             href: "/dashboard",
@@ -30,18 +35,26 @@ const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
             href: "/dashboard/ngasihtau-ai",
             icon: Sparkles,
         },
+        {
+            label: "Assets",
+            href: "/dashboard/assets",
+            icon: Folder,
+        },
     ]
 
-    const KnowledgeSpot = [
+    const defaultKnowledgeItems = [
         {
             label: "Knowledge Spot",
             href: "/dashboard/knowledge",
-            icon: BookOpen,    
+            icon: BookOpen,
         },
-        
+
     ]
 
-   
+    const navItems = propNavItems || defaultNavItems;
+    const knowledgeItems = propKnowledgeItems || defaultKnowledgeItems;
+
+
 
 
 
@@ -63,7 +76,7 @@ const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
 
                 {/* Logo */}
                 <div className="text-2xl font-bold mb-10">
-                    
+
                     <span className="text-[#FF8811]">Ngasih</span>
                     <span className="text-[#2B2D42]">Tau</span>
                 </div>
@@ -102,7 +115,7 @@ const Sidebar = ({ isOpen, onClose }: sidebarProps) => {
                             Knowledge
                         </p>
                         <nav className="space-y-2">
-                            {KnowledgeSpot.map((item) => {
+                            {knowledgeItems.map((item) => {
                                 const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
                                 return (
                                     <Link

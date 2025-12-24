@@ -4,6 +4,33 @@ import RightSidebar from '@/components/dashboard/RightSidebar'
 import Topbar from '@/components/dashboard/Topbar'
 import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
+import { LayoutDashboard, Sparkles, Folder, BookOpen } from 'lucide-react';
+
+const navItems = [
+  {
+    label: "Home",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "NgasihTau AI",
+    href: "/dashboard/ngasihtau-ai",
+    icon: Sparkles,
+  },
+  {
+    label: "Assets",
+    href: "/dashboard/assets",
+    icon: Folder,
+  },
+]
+
+const knowledgeItems = [
+  {
+    label: "Knowledge Spot",
+    href: "/dashboard/knowledge",
+    icon: BookOpen,
+  },
+]
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -12,7 +39,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className='flex min-h-screen bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
       {/* Left Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        navItems={navItems}
+        knowledgeItems={knowledgeItems}
+      />
 
       {/* Main Content Wrapper */}
       <div className={cn(
@@ -32,7 +64,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           </main>
 
           {/* Right Sidebar - Now part of layout */}
-          <RightSidebar 
+          <RightSidebar
             isOpen={rightSidebarOpen}
             onClose={() => setRightSidebarOpen(false)}
           />

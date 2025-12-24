@@ -69,17 +69,28 @@ export function ProtectedRoute({
     redirectTo = "/sign-in",
 }: ProtectedRouteProps) {
     const router = useRouter();
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading, user } = useAuth();
 
     useEffect(() => {
+        console.log('[ProtectedRoute] Auth state:', {
+            loading,
+            isAuthenticated,
+            hasUser: !!user,
+            userEmail: user?.email
+        });
+
         // Wait for loading to complete before making redirect decision
         if (!loading && !isAuthenticated) {
+            console.warn('[ProtectedRoute] ⚠️ Not authenticated - redirecting to sign-in');
             // Save the current URL to redirect back after login
             const currentPath = window.location.pathname;
             const redirectUrl = `${redirectTo}?redirect=${encodeURIComponent(currentPath)}`;
+            console.log('[ProtectedRoute] Redirect URL:', redirectUrl);
             router.push(redirectUrl);
+        } else if (!loading && isAuthenticated) {
+            console.log('[ProtectedRoute] ✅ Authenticated - rendering protected content');
         }
-    }, [loading, isAuthenticated, router, redirectTo]);
+    }, [loading, isAuthenticated, router, redirectTo, user]);
 
     // Show loading state while checking auth
     if (loading) {
@@ -146,13 +157,23 @@ export function PublicOnlyRoute({
     redirectTo = "/dashboard",
 }: PublicOnlyRouteProps) {
     const router = useRouter();
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading, user } = useAuth();
 
     useEffect(() => {
+        console.log('[PublicOnlyRoute] Auth state:', {
+            loading,
+            isAuthenticated,
+            hasUser: !!user,
+            redirectTo
+        });
+
         if (!loading && isAuthenticated) {
+            console.log('[PublicOnlyRoute] ✅ User is authenticated - redirecting to:', redirectTo);
             router.push(redirectTo);
+        } else if (!loading && !isAuthenticated) {
+            console.log('[PublicOnlyRoute] User not authenticated - showing public page');
         }
-    }, [loading, isAuthenticated, router, redirectTo]);
+    }, [loading, isAuthenticated, router, redirectTo, user]);
 
     // Show loading while checking auth
     if (loading) {
