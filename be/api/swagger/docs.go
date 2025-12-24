@@ -22,6 +22,361 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/interests/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all learning interests selected by the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Get current user's learning interests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-application_UserInterestsResult"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets or replaces all learning interests for the authenticated user. Used during onboarding.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Set user's learning interests (onboarding)",
+                "parameters": [
+                    {
+                        "description": "Interests to set",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SetInterestsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a predefined or custom interest to the authenticated user's interest list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Add a single interest to user's list",
+                "parameters": [
+                    {
+                        "description": "Interest to add",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.AddInterestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_InterestSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interests/me/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a specific interest from the authenticated user's interest list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Remove an interest from user's list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Interest ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interests/onboarding/complete": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks the user's onboarding as complete. User must have selected at least one interest.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Complete user onboarding",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interests/onboarding/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns whether the user has completed onboarding and their current interests",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Get user onboarding status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-application_OnboardingStatus"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interests/predefined": {
+            "get": {
+                "description": "Returns a list of all active predefined learning interests that users can select from",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Get all predefined learning interests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-application_PredefinedInterestsResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interests/predefined/categories": {
+            "get": {
+                "description": "Returns predefined learning interests organized by their categories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interests"
+                ],
+                "summary": "Get predefined interests grouped by category",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-application_GroupedInterestsResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/2fa/disable": {
             "post": {
                 "security": [
@@ -4061,6 +4416,20 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "application.CategoryGroup": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.PredefinedInterest"
+                    }
+                }
+            }
+        },
         "application.CreatePodInput": {
             "type": "object",
             "required": [
@@ -4104,6 +4473,20 @@ const docTemplate = `{
                 }
             }
         },
+        "application.GroupedInterestsResult": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/application.CategoryGroup"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "application.InviteCollaboratorInput": {
             "type": "object",
             "required": [
@@ -4125,6 +4508,37 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "application.OnboardingStatus": {
+            "type": "object",
+            "properties": {
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.InterestSummary"
+                    }
+                },
+                "interests_count": {
+                    "type": "integer"
+                },
+                "onboarding_completed": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "application.PredefinedInterestsResult": {
+            "type": "object",
+            "properties": {
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.PredefinedInterest"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -4164,6 +4578,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/domain.Visibility"
                         }
                     ]
+                }
+            }
+        },
+        "application.UserInterestsResult": {
+            "type": "object",
+            "properties": {
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.InterestSummary"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -4375,6 +4803,29 @@ const docTemplate = `{
                 "CollaboratorStatusVerified"
             ]
         },
+        "domain.InterestSummary": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_custom": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Pod": {
             "type": "object",
             "properties": {
@@ -4425,6 +4876,41 @@ const docTemplate = `{
                 },
                 "visibility": {
                     "$ref": "#/definitions/domain.Visibility"
+                }
+            }
+        },
+        "domain.PredefinedInterest": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display_order": {
+                    "type": "integer"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4508,6 +4994,19 @@ const docTemplate = `{
                     "maxLength": 2000
                 },
                 "parent_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.AddInterestRequest": {
+            "type": "object",
+            "properties": {
+                "custom_interest": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "predefined_interest_id": {
                     "type": "string"
                 }
             }
@@ -4741,6 +5240,23 @@ const docTemplate = `{
                 }
             }
         },
+        "http.SetInterestsRequest": {
+            "type": "object",
+            "properties": {
+                "custom_interests": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "predefined_interest_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "http.TwoFactorRequiredResponse": {
             "type": "object",
             "properties": {
@@ -4932,6 +5448,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "onboarding_completed": {
+                    "description": "Only included for own profile",
+                    "type": "boolean"
+                },
                 "role": {
                     "type": "string"
                 },
@@ -5121,6 +5641,62 @@ const docTemplate = `{
                 }
             }
         },
+        "response.Response-application_GroupedInterestsResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/application.GroupedInterestsResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-application_OnboardingStatus": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/application.OnboardingStatus"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-application_PredefinedInterestsResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/application.PredefinedInterestsResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-application_UserInterestsResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/application.UserInterestsResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "response.Response-array_domain_Collaborator": {
             "type": "object",
             "properties": {
@@ -5143,6 +5719,20 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/domain.Collaborator"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_InterestSummary": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/domain.InterestSummary"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"

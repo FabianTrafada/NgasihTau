@@ -65,8 +65,8 @@ export default function SignUpPage() {
 
         try {
             await register(email, password, name);
-            // Registration successful - redirect to dashboard
-            router.push("/dashboard");
+            // Registration successful - redirect to email verification waiting page
+            router.push(`/verify-waiting?email=${encodeURIComponent(email)}`);
         } catch {
             // Error is already set in auth context
         }
@@ -128,9 +128,8 @@ export default function SignUpPage() {
                                 id="name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white ${
-                                    getFieldError("name") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
-                                }`}
+                                className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white ${getFieldError("name") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                    }`}
                                 placeholder=""
                                 required
                             />
@@ -152,9 +151,8 @@ export default function SignUpPage() {
                                 id="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white ${
-                                    getFieldError("email") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
-                                }`}
+                                className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white ${getFieldError("email") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                    }`}
                                 placeholder=""
                                 required
                             />
@@ -177,9 +175,8 @@ export default function SignUpPage() {
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all pr-12 font-[family-name:var(--font-inter)] bg-white ${
-                                        getFieldError("password") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
-                                    }`}
+                                    className={`w-full text-[#2B2D42] px-4 py-3 border-[2px] rounded-md focus:outline-none transition-all pr-12 font-[family-name:var(--font-inter)] bg-white ${getFieldError("password") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                        }`}
                                     placeholder=""
                                     required
                                 />
