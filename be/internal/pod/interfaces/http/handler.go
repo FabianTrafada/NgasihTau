@@ -12,17 +12,23 @@ import (
 
 // Handler contains all HTTP handlers for the Pod Service.
 type Handler struct {
-	podHandler    *PodHandler
-	jwtManager    *jwt.Manager
-	podPermission *PodPermissionMiddleware
+	podHandler            *PodHandler
+	recommendationHandler *RecommendationHandler
+	jwtManager            *jwt.Manager
+	podPermission         *PodPermissionMiddleware
 }
 
 // NewHandler creates a new Handler with the given dependencies.
-func NewHandler(podService application.PodService, jwtManager *jwt.Manager) *Handler {
+func NewHandler(
+	podService application.PodService,
+	recommendationService application.RecommendationService,
+	jwtManager *jwt.Manager,
+) *Handler {
 	return &Handler{
-		podHandler:    NewPodHandler(podService),
-		jwtManager:    jwtManager,
-		podPermission: NewPodPermissionMiddleware(podService),
+		podHandler:            NewPodHandler(podService, recommendationService),
+		recommendationHandler: NewRecommendationHandler(recommendationService),
+		jwtManager:            jwtManager,
+		podPermission:         NewPodPermissionMiddleware(podService),
 	}
 }
 
@@ -56,6 +62,14 @@ func NewHandler(podService application.PodService, jwtManager *jwt.Manager) *Han
 // Activity (public with optional auth):
 //   - GET    /api/v1/pods/:id/activity (requires read access)
 //   - GET    /api/v1/feed (protected - user's activity feed)
+//
+// Recommendations (mixed auth):
+//   - POST   /api/v1/pods/:id/track (protected - track interaction)
+//   - POST   /api/v1/pods/:id/track/time (protected - track time spent)
+//   - GET    /api/v1/pods/:id/similar (public - similar pods)
+//   - GET    /api/v1/feed/recommended (protected - personalized feed)
+//   - GET    /api/v1/feed/trending (public - trending feed)
+//   - GET    /api/v1/users/me/preferences (protected - user preferences)
 //
 // User's pods and starred (public):
 //   - GET    /api/v1/users/:id/pods
@@ -171,11 +185,45 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 		h.podHandler.RemoveCollaborator,
 	)
 
+	// === Recommendation routes ===
+	// Track interaction (protected)
+	pods.Post("/:id/track",
+		middleware.Auth(h.jwtManager),
+		h.recommendationHandler.TrackInteraction,
+	)
+
+	// Track time spent (protected)
+	pods.Post("/:id/track/time",
+		middleware.Auth(h.jwtManager),
+		h.recommendationHandler.TrackTimeSpent,
+	)
+
+	// Get similar pods (public)
+	pods.Get("/:id/similar",
+		h.recommendationHandler.GetSimilarPods,
+	)
+
+	// === Feed routes ===
 	// Activity feed (protected)
 	api.Get("/feed", middleware.Auth(h.jwtManager), h.podHandler.GetUserFeed)
+
+	// Personalized feed (protected)
+	api.Get("/feed/recommended",
+		middleware.Auth(h.jwtManager),
+		h.recommendationHandler.GetPersonalizedFeed,
+	)
+
+	// Trending feed (public)
+	api.Get("/feed/trending", h.recommendationHandler.GetTrendingFeed)
 
 	// User-related pod routes (public)
 	users := api.Group("/users")
 	users.Get("/:id/pods", h.podHandler.GetUserPods)
 	users.Get("/:id/starred", h.podHandler.GetUserStarredPods)
+
+	// User preferences (protected)
+	users.Get("/me/preferences",
+		middleware.Auth(h.jwtManager),
+		h.recommendationHandler.GetUserPreferences,
+	)
 }

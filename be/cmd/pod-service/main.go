@@ -161,6 +161,20 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	followRepo := postgres.NewPodFollowRepository(db)
 	activityRepo := postgres.NewActivityRepository(db)
 
+	// Initialize recommendation repositories
+	interactionRepo := postgres.NewInteractionRepository(db)
+	userCategoryScoreRepo := postgres.NewUserCategoryScoreRepository(db)
+	userTagScoreRepo := postgres.NewUserTagScoreRepository(db)
+	podPopularityRepo := postgres.NewPodPopularityRepository(db)
+	recommendationRepo := postgres.NewRecommendationRepository(
+		db,
+		podRepo,
+		userCategoryScoreRepo,
+		userTagScoreRepo,
+		podPopularityRepo,
+		interactionRepo,
+	)
+
 	// Initialize services
 	podService := application.NewPodService(
 		podRepo,
@@ -171,8 +185,18 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		eventPublisher,
 	)
 
+	recommendationService := application.NewRecommendationService(
+		interactionRepo,
+		userCategoryScoreRepo,
+		userTagScoreRepo,
+		podPopularityRepo,
+		recommendationRepo,
+		podRepo,
+		log.Logger,
+	)
+
 	// Initialize HTTP handlers
-	handler := podhttp.NewHandler(podService, jwtManager)
+	handler := podhttp.NewHandler(podService, recommendationService, jwtManager)
 
 	// Initialize Fiber app
 	fiberApp := fiber.New(fiber.Config{

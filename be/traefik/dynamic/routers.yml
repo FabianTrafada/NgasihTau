@@ -55,6 +55,19 @@ http:
     # ===========================================
     # Pod Service Routes (Requirement 10)
     # ===========================================
+    # User preferences for recommendation (handled by Pod Service)
+    pod-service-user-preferences:
+      rule: "Path(`/api/v1/users/me/preferences`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 100
+
     pod-service-feed:
       rule: "PathPrefix(`/api/v1/feed`)"
       entryPoints:
