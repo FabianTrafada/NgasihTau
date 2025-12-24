@@ -73,17 +73,12 @@ func (c *Client) EnsureBucket(ctx context.Context) error {
 
 // GeneratePresignedPutURL generates a presigned URL for uploading a file.
 // The URL is valid for the specified duration.
+// Note: contentType parameter is kept for interface compatibility but MinIO presigned PUT
+// URLs don't enforce content-type. The client should set the correct Content-Type header.
 func (c *Client) GeneratePresignedPutURL(ctx context.Context, objectKey string, contentType string, expiry time.Duration) (string, error) {
 	presignedURL, err := c.client.PresignedPutObject(ctx, c.bucket, objectKey, expiry)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate presigned PUT URL: %w", err)
-	}
-
-	// Add content-type header requirement if specified
-	if contentType != "" {
-		q := presignedURL.Query()
-		q.Set("Content-Type", contentType)
-		presignedURL.RawQuery = q.Encode()
 	}
 
 	return presignedURL.String(), nil
