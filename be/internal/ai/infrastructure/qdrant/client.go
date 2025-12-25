@@ -103,7 +103,11 @@ func (c *Client) Upsert(ctx context.Context, chunks []domain.MaterialChunk) erro
 		Points:         points,
 	})
 
-	return err
+	if err != nil {
+		return fmt.Errorf("qdrant upsert failed: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Client) Search(ctx context.Context, embedding []float32, materialID *uuid.UUID, podID *uuid.UUID, limit int) ([]domain.MaterialChunk, error) {

@@ -159,10 +159,18 @@ func (w *Worker) processMaterial(ctx context.Context, data natspkg.MaterialUploa
 		return fmt.Errorf("failed to generate embeddings: %w", err)
 	}
 
+	// Debug: log embedding dimensions
+	if len(embeddings) > 0 {
+		log.Debug().
+			Int("embedding_count", len(embeddings)).
+			Int("embedding_dimension", len(embeddings[0])).
+			Msg("generated embeddings")
+	}
+
 	var materialChunks []domain.MaterialChunk
 	for i, chunk := range chunks {
 		materialChunks = append(materialChunks, domain.MaterialChunk{
-			ID:         fmt.Sprintf("%s_%d", data.MaterialID.String(), chunk.Index),
+			ID:         uuid.New().String(),
 			MaterialID: data.MaterialID,
 			PodID:      data.PodID,
 			ChunkIndex: chunk.Index,

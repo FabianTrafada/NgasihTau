@@ -147,7 +147,7 @@ func NewChatMessage(sessionID uuid.UUID, role MessageRole, content string, sourc
 
 func NewMaterialChunk(materialID, podID uuid.UUID, chunkIndex int, text string, embedding []float32, metadata map[string]string) *MaterialChunk {
 	return &MaterialChunk{
-		ID:         fmt.Sprintf("%s_%d", materialID.String(), chunkIndex),
+		ID:         uuid.New().String(),
 		MaterialID: materialID,
 		PodID:      podID,
 		ChunkIndex: chunkIndex,
