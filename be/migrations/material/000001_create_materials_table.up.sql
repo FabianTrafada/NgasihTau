@@ -46,12 +46,12 @@ CREATE INDEX idx_materials_pod_id_created_at ON materials(pod_id, created_at DES
 
 -- Trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_materials_updated_at_column()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 CREATE TRIGGER update_materials_updated_at
     BEFORE UPDATE ON materials

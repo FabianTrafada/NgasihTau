@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { uploadMaterial } from '@/lib/api/uploadMaterial';
+import { uploadMaterial, Material } from '@/lib/api/uploadMaterial';
 
 // =============================================================================
 // TYPES
@@ -15,7 +15,7 @@ export interface UploadItem {
     progress: number;
     status: UploadStatus;
     error?: string;
-    materialId?: number;
+    materialId?: string;  // Changed from number to string (UUID)
     type: 'video' | 'pdf' | 'image' | 'doc' | 'other';
 }
 
@@ -137,7 +137,7 @@ export function useFileUpload() {
         try {
             console.log('[useFileUpload] 🚀 Calling uploadMaterial API...');
 
-            const materialId = await uploadMaterial(
+            const material = await uploadMaterial(
                 upload.file,
                 options.podId,
                 options.title || upload.fileName,
@@ -152,10 +152,10 @@ export function useFileUpload() {
                 }
             );
 
-            console.log('[useFileUpload] ✅ Upload successful! Material ID:', materialId);
+            console.log('[useFileUpload] ✅ Upload successful! Material ID:', material.id);
 
             // Update ref
-            const updatedItem = { ...upload, status: 'success' as UploadStatus, progress: 100, materialId };
+            const updatedItem = { ...upload, status: 'success' as UploadStatus, progress: 100, materialId: material.id };
             uploadsRef.current.set(uploadId, updatedItem);
 
             // Update state

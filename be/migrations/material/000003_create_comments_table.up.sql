@@ -27,12 +27,12 @@ CREATE INDEX idx_comments_material_id_parent_id ON comments(material_id, parent_
 
 -- Trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_comments_updated_at_column()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 CREATE TRIGGER update_comments_updated_at
     BEFORE UPDATE ON comments

@@ -25,12 +25,12 @@ CREATE INDEX idx_ratings_material_id_created_at ON ratings(material_id, created_
 
 -- Trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_ratings_updated_at_column()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 CREATE TRIGGER update_ratings_updated_at
     BEFORE UPDATE ON ratings
