@@ -25,6 +25,7 @@ be/file-processor
 be/notification-service
 be/search-service
 be/pod-service
+be/ai-service
 be/main
 be/app
 

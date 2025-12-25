@@ -29,7 +29,9 @@ type Config struct {
 	MinIO         MinIOConfig         `mapstructure:"minio"`
 	Meilisearch   MeilisearchConfig   `mapstructure:"meilisearch"`
 	Qdrant        QdrantConfig        `mapstructure:"qdrant"`
+	AI            AIConfig            `mapstructure:"ai"`
 	OpenAI        OpenAIConfig        `mapstructure:"openai"`
+	Gemini        GeminiConfig        `mapstructure:"gemini"`
 	SMTP          SMTPConfig          `mapstructure:"smtp"`
 	Email         EmailConfig         `mapstructure:"email"`
 	RateLimit     RateLimitConfig     `mapstructure:"rate_limit"`
@@ -145,14 +147,26 @@ type QdrantConfig struct {
 	Collection string `mapstructure:"collection" validate:"required"`
 }
 
+// AIConfig holds AI provider selection settings.
+type AIConfig struct {
+	Provider string `mapstructure:"provider" validate:"required,oneof=openai gemini"`
+}
+
 // OpenAIConfig holds OpenAI API settings.
 type OpenAIConfig struct {
 	APIKey         string `mapstructure:"api_key"`
-	EmbeddingModel string `mapstructure:"embedding_model" validate:"required"`
-	ChatModel      string `mapstructure:"chat_model" validate:"required"`
+	EmbeddingModel string `mapstructure:"embedding_model"`
+	ChatModel      string `mapstructure:"chat_model"`
 	ChunkSizeMin   int    `mapstructure:"chunk_size_min" validate:"min=100"`
 	ChunkSizeMax   int    `mapstructure:"chunk_size_max" validate:"min=100"`
 	ChunkOverlap   int    `mapstructure:"chunk_overlap" validate:"min=0"`
+}
+
+// GeminiConfig holds Google Gemini API settings.
+type GeminiConfig struct {
+	APIKey         string `mapstructure:"api_key"`
+	ChatModel      string `mapstructure:"chat_model"`
+	EmbeddingModel string `mapstructure:"embedding_model"`
 }
 
 // SMTPConfig holds email SMTP settings.

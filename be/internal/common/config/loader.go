@@ -122,12 +122,19 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("qdrant.port", 6333)
 	v.SetDefault("qdrant.collection", "material_chunks")
 
+	// AI provider defaults
+	v.SetDefault("ai.provider", "openai")
+
 	// OpenAI defaults
 	v.SetDefault("openai.embedding_model", "text-embedding-3-small")
 	v.SetDefault("openai.chat_model", "gpt-4")
 	v.SetDefault("openai.chunk_size_min", 500)
 	v.SetDefault("openai.chunk_size_max", 1000)
 	v.SetDefault("openai.chunk_overlap", 100)
+
+	// Gemini defaults
+	v.SetDefault("gemini.chat_model", "gemini-1.5-flash")
+	v.SetDefault("gemini.embedding_model", "text-embedding-004")
 
 	// Rate limit defaults (requests per minute)
 	v.SetDefault("rate_limit.auth", 10)
@@ -251,6 +258,9 @@ func bindEnvVars(v *viper.Viper) {
 	_ = v.BindEnv("qdrant.port", "QDRANT_PORT")
 	_ = v.BindEnv("qdrant.collection", "QDRANT_COLLECTION")
 
+	// AI Provider
+	_ = v.BindEnv("ai.provider", "AI_PROVIDER")
+
 	// OpenAI
 	_ = v.BindEnv("openai.api_key", "OPENAI_API_KEY")
 	_ = v.BindEnv("openai.embedding_model", "OPENAI_EMBEDDING_MODEL")
@@ -258,6 +268,11 @@ func bindEnvVars(v *viper.Viper) {
 	_ = v.BindEnv("openai.chunk_size_min", "CHUNK_SIZE_MIN")
 	_ = v.BindEnv("openai.chunk_size_max", "CHUNK_SIZE_MAX")
 	_ = v.BindEnv("openai.chunk_overlap", "CHUNK_OVERLAP")
+
+	// Gemini
+	_ = v.BindEnv("gemini.api_key", "GEMINI_API_KEY")
+	_ = v.BindEnv("gemini.chat_model", "GEMINI_CHAT_MODEL")
+	_ = v.BindEnv("gemini.embedding_model", "GEMINI_EMBEDDING_MODEL")
 
 	// SMTP
 	_ = v.BindEnv("smtp.host", "SMTP_HOST")

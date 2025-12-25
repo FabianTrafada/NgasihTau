@@ -16,6 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"ngasihtau/internal/ai/application"
+	"ngasihtau/internal/ai/infrastructure/gemini"
 	"ngasihtau/internal/ai/infrastructure/openai"
 	"ngasihtau/internal/ai/infrastructure/postgres"
 	"ngasihtau/internal/ai/infrastructure/qdrant"
@@ -127,12 +128,40 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 	log.Info().Msg("connected to Qdrant")
 
-	openaiClient := openai.NewClient(openai.Config{
-		APIKey:         cfg.OpenAI.APIKey,
-		EmbeddingModel: cfg.OpenAI.EmbeddingModel,
-		ChatModel:      cfg.OpenAI.ChatModel,
-	})
-	log.Info().Msg("OpenAI client initialized")
+	// Initialize AI clients based on provider config
+	var embeddingClient application.EmbeddingClient
+	var chatClient application.ChatClient
+
+	switch cfg.AI.Provider {
+	case "gemini":
+		geminiClient, err := gemini.NewClient(ctx, gemini.Config{
+			APIKey:         cfg.Gemini.APIKey,
+			ChatModel:      cfg.Gemini.ChatModel,
+			EmbeddingModel: cfg.Gemini.EmbeddingModel,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+		}
+		embeddingClient = geminiClient
+		chatClient = geminiClient
+		log.Info().
+			Str("chat_model", cfg.Gemini.ChatModel).
+			Str("embedding_model", cfg.Gemini.EmbeddingModel).
+			Msg("using Gemini as AI provider")
+	default:
+		// Default to OpenAI
+		openaiClient := openai.NewClient(openai.Config{
+			APIKey:         cfg.OpenAI.APIKey,
+			EmbeddingModel: cfg.OpenAI.EmbeddingModel,
+			ChatModel:      cfg.OpenAI.ChatModel,
+		})
+		embeddingClient = openaiClient
+		chatClient = openaiClient
+		log.Info().
+			Str("chat_model", cfg.OpenAI.ChatModel).
+			Str("embedding_model", cfg.OpenAI.EmbeddingModel).
+			Msg("using OpenAI as AI provider")
+	}
 
 	var natsClient *natspkg.Client
 	if cfg.NATS.URL != "" {
@@ -164,8 +193,8 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		chatSessionRepo,
 		chatMessageRepo,
 		qdrantClient,
-		openaiClient,
-		openaiClient,
+		embeddingClient,
+		chatClient,
 		cfg.FileProcSvc.URL,
 	)
 

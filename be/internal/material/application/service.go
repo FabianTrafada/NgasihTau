@@ -177,10 +177,22 @@ func (s *Service) ConfirmUpload(ctx context.Context, input ConfirmUploadInput) (
 		if material.Description != nil {
 			description = *material.Description
 		}
+
+		// Generate presigned URL for AI Service to download the file
+		// Use longer expiry (1 hour) to allow for processing time
+		fileURL, err := s.minioClient.GeneratePresignedGetURL(ctx, material.FileURL, time.Hour)
+		if err != nil {
+			log.Error().Err(err).
+				Str("material_id", material.ID.String()).
+				Msg("failed to generate presigned URL for event")
+			// Fallback to object key if presigned URL generation fails
+			fileURL = material.FileURL
+		}
+
 		event := nats.MaterialUploadedEvent{
 			MaterialID:  material.ID,
 			PodID:       material.PodID,
-			FileURL:     material.FileURL,
+			FileURL:     fileURL,
 			FileType:    string(material.FileType),
 			UploaderID:  material.UploaderID,
 			Title:       material.Title,
