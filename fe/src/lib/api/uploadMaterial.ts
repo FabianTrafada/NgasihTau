@@ -155,7 +155,7 @@ export async function uploadToMinio(
     try {
         new URL(uploadUrl);
         console.log('[uploadToMinio] ✅ Upload URL is valid');
-    } catch (e) {
+    } catch {
         console.error('[uploadToMinio] ❌ Malformed upload URL:', uploadUrl);
         throw new Error('Malformed presigned upload URL');
     }
