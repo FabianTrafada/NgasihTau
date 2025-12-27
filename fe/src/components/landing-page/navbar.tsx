@@ -16,16 +16,17 @@ export function Navbar() {
             className="w-full max-w-7xl mx-auto px-6 md:px-12 py-6 flex items-center justify-between relative z-50"
         >
             {/* Logo */}
-            <div className="text-2xl font-bold">
-                <span className="text-[#FF8811]">Ngasih</span>
-                <span className="text-[#2B2D42]">Tau</span>
-            </div>
-
+            <Link href="/">
+                <div className="text-2xl font-bold">
+                    <span className="text-[#FF8811]">Ngasih</span>
+                    <span className="text-[#2B2D42]">Tau</span>
+                </div>
+            </Link>
             {/* Desktop Links */}
             <div className="hidden md:flex items-center gap-8 font-semibold text-[#2B2D42]">
-                <Link href="/explore" className="hover:text-[#FF8811] transition-colors">Explore</Link>
+                <Link href="#features" className="hover:text-[#FF8811] transition-colors">Features</Link>
                 <Link href="/mentors" className="hover:text-[#FF8811] transition-colors">About</Link>
-                <Link href="/community" className="hover:text-[#FF8811] transition-colors">testimonials</Link>
+                <Link href="#testimonials" className="hover:text-[#FF8811] transition-colors">testimonials</Link>
             </div>
 
             {/* CTA Button */}
@@ -51,9 +52,9 @@ export function Navbar() {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="absolute top-full left-0 w-full bg-[#FFFBF7] shadow-lg p-6 flex flex-col gap-4 md:hidden border-b border-gray-200"
+                        className="absolute top-full left-0 w-full bg-[#FFFBF7] font-family-name:var(--font-plus-jakarta-sans) shadow-lg p-6 flex flex-col gap-4 md:hidden border-b border-gray-200"
                     >
-                        <Link href="/explore" className="font-semibold text-[#2B2D42] hover:text-[#FF8811] transition-colors" onClick={() => setIsOpen(false)}>Explore</Link>
+                        <Link href="/explore" className="font-semibold text-[#2B2D42] hover:text-[#FF8811] transition-colors" onClick={() => setIsOpen(false)}>Features</Link>
                         <Link href="/mentors" className="font-semibold text-[#2B2D42] hover:text-[#FF8811] transition-colors" onClick={() => setIsOpen(false)}>About</Link>
                         <Link href="/community" className="font-semibold text-[#2B2D42] hover:text-[#FF8811] transition-colors" onClick={() => setIsOpen(false)}>testimonials</Link>
                         <Link

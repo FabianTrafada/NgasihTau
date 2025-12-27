@@ -2,7 +2,7 @@
 
 import { LoadingScreen } from "@/components/Onboarding/LoadingScreen";
 import { WorkspaceSetup } from "@/components/Onboarding/workspaceSetup";
-import { getOnboardingStatus } from "@/lib/interests";
+import { getOnboardingStatus } from "@/lib/api/interests";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";

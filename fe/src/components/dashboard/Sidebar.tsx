@@ -75,12 +75,13 @@ const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: prop
 
 
                 {/* Logo */}
-                <div className="text-2xl font-bold mb-10">
+                <Link href="/dashboard">
+                    <div className="text-2xl font-bold mb-10">
 
-                    <span className="text-[#FF8811]">Ngasih</span>
-                    <span className="text-[#2B2D42]">Tau</span>
-                </div>
-
+                        <span className="text-[#FF8811]">Ngasih</span>
+                        <span className="text-[#2B2D42]">Tau</span>
+                    </div>
+                </Link>
                 {/* Navigation */}
                 <div className="space-y-6">
                     <div>

@@ -4,7 +4,7 @@
 // This module handles all authentication-related API calls and token management.
 // It's the "service layer" that communicates with the backend.
 
-import apiClient, { TokenStorage } from "./api-client";
+import apiClient, { TokenStorage } from "../api-client";
 
 // =============================================================================
 // TYPES & INTERFACES

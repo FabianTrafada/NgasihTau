@@ -32,15 +32,27 @@ const TokenStorage = {
 
     setTokens: (accessToken: string, refreshToken: string): void => {
         if (typeof window === "undefined") return;
+
+        // Store in localStorage
         localStorage.setItem("access_token", accessToken);
         localStorage.setItem("refresh_token", refreshToken);
+
+        // ALSO store in cookies for middleware
+        document.cookie = `access_token=${accessToken};path=/;max-age=${7 * 24 * 60 * 60};SameSite=Lax`;
+        document.cookie = `refresh_token=${refreshToken};path=/;max-age=${30 * 24 * 60 * 60};SameSite=Lax`;
     },
 
     clearAll: (): void => {
         if (typeof window === "undefined") return;
+
+        // Clear localStorage
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
+
+        // Clear cookies
+        document.cookie = "access_token=;path=/;max-age=0";
+        document.cookie = "refresh_token=;path=/;max-age=0";
     },
 };
 
@@ -189,7 +201,7 @@ apiClient.interceptors.response.use(
             TokenStorage.clearAll();
 
             if (typeof window !== "undefined") {
-                window.location.href = "/sign-in";
+                window.location.href = "/";
             }
 
             return Promise.reject(refreshError);

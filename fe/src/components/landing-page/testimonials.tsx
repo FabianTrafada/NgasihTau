@@ -24,7 +24,7 @@ const ReviewCard = ({
                 "shadow-[4px_4px_0px_0px_#2B2D42]"
             )}
         >
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-2" id="testimonials">
                 <img className="rounded-full" width="32" height="32" alt="" src={img} />
                 <div className="flex flex-col">
                     <figcaption className="text-sm font-bold text-[#2B2D42]">
