@@ -1,18 +1,33 @@
 'use client';
 import { useAuth } from '@/lib/auth-context';
 
-import { Bell, LogOut, PanelLeft, PanelLeftClose, Search, Settings, User, Users } from 'lucide-react'
+import { Bell, LogOut, PanelLeft, PanelLeftClose,  Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { Separator } from '@radix-ui/react-dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { useRouter } from 'next/navigation';
 interface TopbarProps {
     onMenuClick?: () => void;
     onRightMenuClick?: () => void; // New prop for right sidebar
     sidebarOpen?: boolean;
 }
 
-const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => {
-    const { user } = useAuth();
+const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) => {
+    const { user, logout } = useAuth();
+
+    const router = useRouter();
+
+
+
+    const handleLogout = async () => {
+        try {
+
+            await logout();
+            router.push('/');
+        } catch (error) {
+            console.error('Logout failed:', error);
+            router.push('/');
+        }
+    }
 
     return (
         <header className='h-16 lg:h-20 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-gray-200'>
@@ -47,7 +62,7 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => 
                     <Users className="w-6 h-6" />
                 </button>
 
-                
+
 
                 <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors hidden sm:block">
                     <Bell className="w-5 h-5 lg:w-6 lg:h-6" />
@@ -63,10 +78,10 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => 
                     <DropdownMenuContent className="p-4 w-64 text-3xl border  border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42]  " align="end" >
                         <DropdownMenuLabel>
                             <div className='flex items-center gap-2 mb-4'>
-                                <div className="w-4 h-4 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
+                                <div className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
                                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                                 </div>
-                                <span className='font-semibold text-xl'>Hello, {user?.name || 'User'}</span>
+                                <span className='text-gray-400 text-sm'>Hello, {user?.name || 'User'}</span>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
@@ -86,10 +101,10 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen }: TopbarProps) => 
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                            <Link href={'/logout'} className='flex'>
+                            <button onClick={handleLogout} className='flex cursor-pointer'>
                                 <LogOut className='size-5 mr-2' />
                                 <span className='text-md font-semibold text-red-500'>Log out</span>
-                            </Link>
+                            </button>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

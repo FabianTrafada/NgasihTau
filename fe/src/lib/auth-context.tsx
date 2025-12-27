@@ -26,7 +26,7 @@ import {
     isTwoFactorRequired,
     getGoogleAuthUrl,
     getGoogleRedirectUri,
-} from "./auth";
+} from "./api/auth";
 import { TokenStorage } from "./api-client";
 
 // =============================================================================
@@ -181,6 +181,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Check if 2FA is required
             if (isTwoFactorRequired(result)) {
                 console.log('[AuthContext] 2FA is required');
+
+                
+
                 setLoading(false);
                 return {
                     success: true,

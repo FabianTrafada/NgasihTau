@@ -11,13 +11,7 @@ export default function TeacherDashboardPage() {
     const [podId] = useState("550e8400-e29b-41d4-a716-446655440000"); // Example UUID - replace with real pod ID
 
     const handleFileSelect = (files: File[]) => {
-        console.log('[TeacherDashboard] ========================================');
-        console.log('[TeacherDashboard] Files selected:', files.length);
-        console.log('[TeacherDashboard] Files:', files.map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.type
-        })));
+
 
         // addFiles returns array of upload IDs immediately
         const uploadIds = addFiles(files);

@@ -46,15 +46,15 @@ export function Hero() {
 
                 {/* Subtext */}
                 <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mb-12 font-[family-name:var(--font-inter)] leading-relaxed">
-                    lorem ipsum dolor sit ammet lorem <br className="hidden md:block" />
-                    ipsum dolor sit ammet <br className="hidden md:block" />
-                    lorem ipsum dolor sit ammet
+                    Unlock the power of collaborative learning. Create Knowledge Pods, <br className="hidden md:block" />
+                    interact with AI-driven insights, and engage in meaningful <br className="hidden md:block" />
+                    conversations to master any subject.
                 </motion.p>
 
                 {/* Buttons */}
                 <motion.div variants={fadeInUp} className="flex flex-col md:flex-row items-center gap-6">
                     <Link
-                        href="/learn"
+                        href="/sign-up"
                         className="bg-[#FF8811] text-white px-10 py-4 text-lg font-bold rounded-md border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                     >
                         Start Learn

@@ -5,8 +5,7 @@ import { Plus, X, Check, Loader2, ChevronDown, ChevronRight } from "lucide-react
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Interest } from "@/types";
-import { completeOnboarding, getAllInterests, setUserInterests } from "@/lib/interests";
+import { completeOnboarding, getAllInterests, Interest, setUserInterests } from "@/lib/api/interests";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface WorkspaceSetupProps {
