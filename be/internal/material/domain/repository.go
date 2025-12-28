@@ -41,6 +41,9 @@ type MaterialRepository interface {
 
 	// IncrementVersion increments the current version number.
 	IncrementVersion(ctx context.Context, id uuid.UUID) error
+
+	// RestoreVersion updates the material's current version and file URL to a specific version.
+	RestoreVersion(ctx context.Context, id uuid.UUID, version int, fileURL string) error
 }
 
 // MaterialVersionRepository defines the interface for material version data access.

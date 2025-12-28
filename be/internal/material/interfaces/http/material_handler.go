@@ -362,3 +362,45 @@ func (h *Handler) GetVersionHistory(c *fiber.Ctx) error {
 
 	return successResponse(c, versions)
 }
+
+// RestoreVersion restores a material to a specific version.
+// @Summary Restore a version
+// @Description Restore a material to a specific previous version
+// @Tags Materials
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param version path int true "Version number to restore"
+// @Success 200 {object} fiber.Map "Restored material"
+// @Failure 400 {object} fiber.Map "Invalid material ID or version"
+// @Failure 401 {object} fiber.Map "Authentication required"
+// @Failure 404 {object} fiber.Map "Version not found"
+// @Router /materials/{id}/versions/{version}/restore [post]
+func (h *Handler) RestoreVersion(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return errorResponse(c, fiber.StatusBadRequest, "VALIDATION_ERROR", "Invalid material ID")
+	}
+
+	version, err := c.ParamsInt("version")
+	if err != nil || version < 1 {
+		return errorResponse(c, fiber.StatusBadRequest, "VALIDATION_ERROR", "Invalid version number")
+	}
+
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return errorResponse(c, fiber.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+	}
+
+	material, err := h.service.RestoreVersion(c.Context(), application.RestoreVersionInput{
+		MaterialID: id,
+		Version:    version,
+		UserID:     userID,
+	})
+	if err != nil {
+		return errorResponse(c, fiber.StatusNotFound, "NOT_FOUND", err.Error())
+	}
+
+	return successResponse(c, material)
+}
