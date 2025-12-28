@@ -45,6 +45,21 @@ const (
 	CollaboratorStatusVerified CollaboratorStatus = "verified"
 )
 
+// UploadRequestStatus represents the status of an upload request.
+// Implements requirement 4.1.
+type UploadRequestStatus string
+
+const (
+	// UploadRequestStatusPending means the request is awaiting approval.
+	UploadRequestStatusPending UploadRequestStatus = "pending"
+	// UploadRequestStatusApproved means the request has been approved.
+	UploadRequestStatusApproved UploadRequestStatus = "approved"
+	// UploadRequestStatusRejected means the request has been rejected.
+	UploadRequestStatusRejected UploadRequestStatus = "rejected"
+	// UploadRequestStatusRevoked means the permission has been revoked.
+	UploadRequestStatusRevoked UploadRequestStatus = "revoked"
+)
+
 // ActivityAction represents the type of activity in a pod.
 type ActivityAction string
 
@@ -61,6 +76,7 @@ const (
 
 // Pod represents a Knowledge Pod in the system.
 // Implements requirements 3, 3.1, 3.2.
+// Extended for student-teacher roles: requirements 1.4, 2.4, 6.1, 6.2.
 type Pod struct {
 	ID           uuid.UUID  `json:"id"`
 	OwnerID      uuid.UUID  `json:"owner_id"`
@@ -73,6 +89,8 @@ type Pod struct {
 	StarCount    int        `json:"star_count"`
 	ForkCount    int        `json:"fork_count"`
 	ViewCount    int        `json:"view_count"`
+	IsVerified   bool       `json:"is_verified"`  // True if created by teacher (Req 1.4, 2.4, 6.1)
+	UpvoteCount  int        `json:"upvote_count"` // Trust indicator (Req 6.2)
 	ForkedFromID *uuid.UUID `json:"forked_from_id,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
@@ -125,12 +143,60 @@ type PodStar struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// PodUpvote represents a user's upvote on a Knowledge Pod (trust indicator).
+// This is distinct from PodStar which is for bookmarking/favorites.
+// Implements requirements 5.1, 5.2.
+type PodUpvote struct {
+	UserID    uuid.UUID `json:"user_id"`
+	PodID     uuid.UUID `json:"pod_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // PodFollow represents a follow relationship with a Knowledge Pod.
 // Implements requirement 12.
 type PodFollow struct {
 	UserID    uuid.UUID `json:"user_id"`
 	PodID     uuid.UUID `json:"pod_id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// UploadRequest represents a teacher's request to upload to another teacher's pod.
+// This enables teacher-to-teacher collaboration for quality educational content.
+// Implements requirement 4.1.
+type UploadRequest struct {
+	ID              uuid.UUID           `json:"id"`
+	RequesterID     uuid.UUID           `json:"requester_id"` // Teacher requesting access
+	PodID           uuid.UUID           `json:"pod_id"`       // Target pod
+	PodOwnerID      uuid.UUID           `json:"pod_owner_id"` // Pod owner (for quick lookup)
+	Status          UploadRequestStatus `json:"status"`
+	Message         *string             `json:"message,omitempty"`          // Request message
+	RejectionReason *string             `json:"rejection_reason,omitempty"` // If rejected
+	ExpiresAt       *time.Time          `json:"expires_at,omitempty"`       // Permission expiry
+	CreatedAt       time.Time           `json:"created_at"`
+	UpdatedAt       time.Time           `json:"updated_at"`
+}
+
+// IsPending returns true if the upload request is pending.
+func (ur *UploadRequest) IsPending() bool {
+	return ur.Status == UploadRequestStatusPending
+}
+
+// IsApproved returns true if the upload request is approved.
+func (ur *UploadRequest) IsApproved() bool {
+	return ur.Status == UploadRequestStatusApproved
+}
+
+// IsExpired returns true if the upload request permission has expired.
+func (ur *UploadRequest) IsExpired() bool {
+	if ur.ExpiresAt == nil {
+		return false
+	}
+	return time.Now().After(*ur.ExpiresAt)
+}
+
+// CanUpload returns true if the requester can upload based on this request.
+func (ur *UploadRequest) CanUpload() bool {
+	return ur.IsApproved() && !ur.IsExpired()
 }
 
 // ActivityMetadata represents additional data for an activity.
@@ -200,19 +266,23 @@ type ActivityWithDetails struct {
 }
 
 // NewPod creates a new Pod with default values.
-func NewPod(ownerID uuid.UUID, name, slug string, visibility Visibility) *Pod {
+// isCreatorTeacher should be true if the creator has teacher role (sets is_verified).
+// Implements requirements 1.4 (student pods unverified), 2.4 (teacher pods verified).
+func NewPod(ownerID uuid.UUID, name, slug string, visibility Visibility, isCreatorTeacher bool) *Pod {
 	now := time.Now()
 	return &Pod{
-		ID:         uuid.New(),
-		OwnerID:    ownerID,
-		Name:       name,
-		Slug:       slug,
-		Visibility: visibility,
-		StarCount:  0,
-		ForkCount:  0,
-		ViewCount:  0,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:          uuid.New(),
+		OwnerID:     ownerID,
+		Name:        name,
+		Slug:        slug,
+		Visibility:  visibility,
+		StarCount:   0,
+		ForkCount:   0,
+		ViewCount:   0,
+		IsVerified:  isCreatorTeacher, // Verified if created by teacher
+		UpvoteCount: 0,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 }
 
@@ -240,12 +310,38 @@ func NewPodStar(userID, podID uuid.UUID) *PodStar {
 	}
 }
 
+// NewPodUpvote creates a new PodUpvote (trust indicator).
+// Implements requirements 5.1, 5.2.
+func NewPodUpvote(userID, podID uuid.UUID) *PodUpvote {
+	return &PodUpvote{
+		UserID:    userID,
+		PodID:     podID,
+		CreatedAt: time.Now(),
+	}
+}
+
 // NewPodFollow creates a new PodFollow.
 func NewPodFollow(userID, podID uuid.UUID) *PodFollow {
 	return &PodFollow{
 		UserID:    userID,
 		PodID:     podID,
 		CreatedAt: time.Now(),
+	}
+}
+
+// NewUploadRequest creates a new UploadRequest with pending status.
+// Implements requirement 4.1.
+func NewUploadRequest(requesterID, podID, podOwnerID uuid.UUID, message *string) *UploadRequest {
+	now := time.Now()
+	return &UploadRequest{
+		ID:          uuid.New(),
+		RequesterID: requesterID,
+		PodID:       podID,
+		PodOwnerID:  podOwnerID,
+		Status:      UploadRequestStatusPending,
+		Message:     message,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 }
 
@@ -259,4 +355,39 @@ func NewActivity(podID, userID uuid.UUID, action ActivityAction, metadata Activi
 		Metadata:  metadata,
 		CreatedAt: time.Now(),
 	}
+}
+
+// SharedPod represents a pod shared by a teacher to a student.
+// This enables teachers to recommend specific pods to their students.
+// Implements requirement 7.2.
+type SharedPod struct {
+	ID        uuid.UUID `json:"id"`
+	PodID     uuid.UUID `json:"pod_id"`
+	TeacherID uuid.UUID `json:"teacher_id"` // Teacher who shared
+	StudentID uuid.UUID `json:"student_id"` // Student receiving share
+	Message   *string   `json:"message,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// NewSharedPod creates a new SharedPod.
+// Implements requirement 7.2.
+func NewSharedPod(podID, teacherID, studentID uuid.UUID, message *string) *SharedPod {
+	return &SharedPod{
+		ID:        uuid.New(),
+		PodID:     podID,
+		TeacherID: teacherID,
+		StudentID: studentID,
+		Message:   message,
+		CreatedAt: time.Now(),
+	}
+}
+
+// SharedPodWithDetails represents a shared pod with additional details for API responses.
+// Implements requirement 7.2.
+type SharedPodWithDetails struct {
+	SharedPod
+	PodName       string  `json:"pod_name"`
+	PodSlug       string  `json:"pod_slug"`
+	TeacherName   string  `json:"teacher_name"`
+	TeacherAvatar *string `json:"teacher_avatar,omitempty"`
 }

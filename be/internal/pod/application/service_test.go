@@ -516,7 +516,7 @@ func TestInviteCollaborator_Success(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -568,7 +568,7 @@ func TestInviteCollaborator_NotOwner(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -602,7 +602,7 @@ func TestInviteCollaborator_AlreadyCollaborator(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -641,7 +641,7 @@ func TestInviteCollaborator_CannotInviteOwner(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -673,7 +673,7 @@ func TestVerifyCollaborator_Success(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -703,7 +703,7 @@ func TestVerifyCollaborator_NotOwner(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -743,7 +743,7 @@ func TestForkPod_Success(t *testing.T) {
 
 	// Create original pod
 	originalOwnerID := uuid.New()
-	originalPod := domain.NewPod(originalOwnerID, "Original Pod", "original-pod", domain.VisibilityPublic)
+	originalPod := domain.NewPod(originalOwnerID, "Original Pod", "original-pod", domain.VisibilityPublic, false)
 	desc := "Original description"
 	originalPod.Description = &desc
 	originalPod.Categories = []string{"math"}
@@ -803,7 +803,7 @@ func TestForkPod_PrivatePodNoAccess(t *testing.T) {
 
 	// Create private pod
 	originalOwnerID := uuid.New()
-	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate)
+	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
 	podRepo.pods[originalPod.ID] = originalPod
 	podRepo.slugIndex[originalPod.Slug] = originalPod
 
@@ -829,7 +829,7 @@ func TestForkPod_PrivatePodWithAccess(t *testing.T) {
 
 	// Create private pod
 	originalOwnerID := uuid.New()
-	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate)
+	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
 	podRepo.pods[originalPod.ID] = originalPod
 	podRepo.slugIndex[originalPod.Slug] = originalPod
 
@@ -882,7 +882,7 @@ func TestCanUserAccessPod_PublicPod(t *testing.T) {
 
 	// Create public pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Public Pod", "public-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Public Pod", "public-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -912,7 +912,7 @@ func TestCanUserAccessPod_PrivatePod(t *testing.T) {
 
 	// Create private pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Private Pod", "private-pod", domain.VisibilityPrivate)
+	pod := domain.NewPod(ownerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -966,7 +966,7 @@ func TestCanUserUploadToPod_VerifiedContributor(t *testing.T) {
 
 	// Create pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -994,7 +994,7 @@ func TestCanUserUploadToPod_UnverifiedContributor(t *testing.T) {
 
 	// Create pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 

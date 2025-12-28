@@ -63,7 +63,7 @@ func (r *PodStarRepository) GetStarredPods(ctx context.Context, userID uuid.UUID
 
 	query := `
 		SELECT p.id, p.owner_id, p.name, p.slug, p.description, p.visibility, p.categories, p.tags,
-			p.star_count, p.fork_count, p.view_count, p.forked_from_id, p.created_at, p.updated_at, p.deleted_at
+			p.star_count, p.fork_count, p.view_count, p.is_verified, p.upvote_count, p.forked_from_id, p.created_at, p.updated_at, p.deleted_at
 		FROM pods p
 		JOIN pod_stars s ON p.id = s.pod_id
 		WHERE s.user_id = $1 AND p.deleted_at IS NULL
@@ -82,7 +82,7 @@ func (r *PodStarRepository) GetStarredPods(ctx context.Context, userID uuid.UUID
 		err := rows.Scan(
 			&pod.ID, &pod.OwnerID, &pod.Name, &pod.Slug, &pod.Description, &pod.Visibility,
 			&categories, &tags,
-			&pod.StarCount, &pod.ForkCount, &pod.ViewCount, &pod.ForkedFromID,
+			&pod.StarCount, &pod.ForkCount, &pod.ViewCount, &pod.IsVerified, &pod.UpvoteCount, &pod.ForkedFromID,
 			&pod.CreatedAt, &pod.UpdatedAt, &pod.DeletedAt,
 		)
 		if err != nil {

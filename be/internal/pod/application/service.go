@@ -197,7 +197,9 @@ func (s *podService) CreatePod(ctx context.Context, input CreatePodInput) (*doma
 	}
 
 	// Create pod
-	pod := domain.NewPod(input.OwnerID, input.Name, slug, input.Visibility)
+	// Note: isCreatorTeacher is set to false by default here.
+	// Task 13.1 will update this to check the actual user role.
+	pod := domain.NewPod(input.OwnerID, input.Name, slug, input.Visibility, false)
 	pod.Description = input.Description
 	pod.Categories = input.Categories
 	pod.Tags = input.Tags
@@ -425,7 +427,9 @@ func (s *podService) ForkPod(ctx context.Context, podID, userID uuid.UUID) (*dom
 	}
 
 	// Create forked pod
-	forkedPod := domain.NewPod(userID, originalPod.Name, slug, domain.VisibilityPublic)
+	// Note: isCreatorTeacher is set to false by default here.
+	// Task 13.1 will update this to check the actual user role.
+	forkedPod := domain.NewPod(userID, originalPod.Name, slug, domain.VisibilityPublic, false)
 	forkedPod.Description = originalPod.Description
 	forkedPod.Categories = originalPod.Categories
 	forkedPod.Tags = originalPod.Tags
