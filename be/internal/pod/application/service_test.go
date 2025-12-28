@@ -128,6 +128,22 @@ func (m *mockPodRepo) IncrementViewCount(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
+func (m *mockPodRepo) IncrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	pod, ok := m.pods[id]
+	if ok {
+		pod.UpvoteCount++
+	}
+	return nil
+}
+
+func (m *mockPodRepo) DecrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	pod, ok := m.pods[id]
+	if ok && pod.UpvoteCount > 0 {
+		pod.UpvoteCount--
+	}
+	return nil
+}
+
 func (m *mockPodRepo) Search(ctx context.Context, query string, filters domain.PodFilters, limit, offset int) ([]*domain.Pod, int, error) {
 	var result []*domain.Pod
 	for _, pod := range m.pods {

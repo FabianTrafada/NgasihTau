@@ -7,9 +7,12 @@ import (
 
 // Ensure repository implementations satisfy their interfaces.
 var (
-	_ domain.PodRepository          = (*PodRepository)(nil)
-	_ domain.CollaboratorRepository = (*CollaboratorRepository)(nil)
-	_ domain.PodStarRepository      = (*PodStarRepository)(nil)
-	_ domain.PodFollowRepository    = (*PodFollowRepository)(nil)
-	_ domain.ActivityRepository     = (*ActivityRepository)(nil)
+	_ domain.PodRepository           = (*PodRepository)(nil)
+	_ domain.CollaboratorRepository  = (*CollaboratorRepository)(nil)
+	_ domain.PodStarRepository       = (*PodStarRepository)(nil)
+	_ domain.PodFollowRepository     = (*PodFollowRepository)(nil)
+	_ domain.ActivityRepository      = (*ActivityRepository)(nil)
+	_ domain.PodUpvoteRepository     = (*PodUpvoteRepository)(nil)
+	_ domain.UploadRequestRepository = (*UploadRequestRepository)(nil)
+	_ domain.SharedPodRepository     = (*SharedPodRepository)(nil)
 )
