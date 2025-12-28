@@ -233,3 +233,34 @@ type UserLearningInterestRepository interface {
 	// GetInterestSummaries returns simplified interest summaries for a user.
 	GetInterestSummaries(ctx context.Context, userID uuid.UUID) ([]*InterestSummary, error)
 }
+
+// TeacherVerificationRepository defines the interface for teacher verification data access.
+// Implements requirements 2.1, 2.5, 3.1, 3.2, 3.3.
+type TeacherVerificationRepository interface {
+	// Create creates a new teacher verification request.
+	Create(ctx context.Context, verification *TeacherVerification) error
+
+	// FindByID finds a teacher verification by ID.
+	FindByID(ctx context.Context, id uuid.UUID) (*TeacherVerification, error)
+
+	// FindByUserID finds a teacher verification by user ID.
+	// Returns the most recent verification for the user.
+	FindByUserID(ctx context.Context, userID uuid.UUID) (*TeacherVerification, error)
+
+	// FindPending returns paginated pending verification requests.
+	// Used by admins to review pending verifications.
+	FindPending(ctx context.Context, limit, offset int) ([]*TeacherVerification, int, error)
+
+	// Update updates an existing teacher verification.
+	Update(ctx context.Context, verification *TeacherVerification) error
+
+	// UpdateStatus updates the status of a verification request.
+	// Used when approving or rejecting a verification.
+	UpdateStatus(ctx context.Context, id uuid.UUID, status VerificationStatus, reviewedBy uuid.UUID, reason *string) error
+
+	// ExistsByUserID checks if a verification request exists for a user.
+	ExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error)
+
+	// ExistsPendingByUserID checks if a pending verification request exists for a user.
+	ExistsPendingByUserID(ctx context.Context, userID uuid.UUID) (bool, error)
+}
