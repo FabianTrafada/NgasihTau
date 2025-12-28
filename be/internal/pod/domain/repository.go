@@ -43,6 +43,14 @@ type PodRepository interface {
 	// IncrementViewCount increments the view count for a pod.
 	IncrementViewCount(ctx context.Context, id uuid.UUID) error
 
+	// IncrementUpvoteCount increments the upvote count for a pod.
+	// Implements requirement 5.1.
+	IncrementUpvoteCount(ctx context.Context, id uuid.UUID) error
+
+	// DecrementUpvoteCount decrements the upvote count for a pod.
+	// Implements requirement 5.2.
+	DecrementUpvoteCount(ctx context.Context, id uuid.UUID) error
+
 	// Search searches pods with filters.
 	Search(ctx context.Context, query string, filters PodFilters, limit, offset int) ([]*Pod, int, error)
 

@@ -173,6 +173,28 @@ func (r *PodRepository) IncrementViewCount(ctx context.Context, id uuid.UUID) er
 	return nil
 }
 
+// IncrementUpvoteCount increments the upvote count for a pod.
+// Implements requirement 5.1.
+func (r *PodRepository) IncrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE pods SET upvote_count = upvote_count + 1 WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return errors.Internal("failed to increment upvote count", err)
+	}
+	return nil
+}
+
+// DecrementUpvoteCount decrements the upvote count for a pod.
+// Implements requirement 5.2.
+func (r *PodRepository) DecrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE pods SET upvote_count = GREATEST(upvote_count - 1, 0) WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return errors.Internal("failed to decrement upvote count", err)
+	}
+	return nil
+}
+
 // Search searches pods with filters.
 func (r *PodRepository) Search(ctx context.Context, query string, filters domain.PodFilters, limit, offset int) ([]*domain.Pod, int, error) {
 	var conditions []string
