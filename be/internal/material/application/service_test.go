@@ -126,6 +126,15 @@ func (m *mockMaterialRepo) IncrementVersion(ctx context.Context, id uuid.UUID) e
 	return nil
 }
 
+func (m *mockMaterialRepo) RestoreVersion(ctx context.Context, id uuid.UUID, version int, fileURL string) error {
+	mat, ok := m.materials[id]
+	if ok {
+		mat.CurrentVersion = version
+		mat.FileURL = fileURL
+	}
+	return nil
+}
+
 // Mock Version Repository
 type mockVersionRepo struct {
 	versions  map[uuid.UUID]*domain.MaterialVersion

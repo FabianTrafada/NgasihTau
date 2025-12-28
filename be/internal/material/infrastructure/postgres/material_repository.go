@@ -267,3 +267,10 @@ func (r *MaterialRepository) IncrementVersion(ctx context.Context, id uuid.UUID)
 	_, err := r.db.Exec(ctx, query, id, time.Now())
 	return err
 }
+
+// RestoreVersion updates the material's current version and file URL to a specific version.
+func (r *MaterialRepository) RestoreVersion(ctx context.Context, id uuid.UUID, version int, fileURL string) error {
+	query := `UPDATE materials SET current_version = $2, file_url = $3, updated_at = $4 WHERE id = $1 AND deleted_at IS NULL`
+	_, err := r.db.Exec(ctx, query, id, version, fileURL, time.Now())
+	return err
+}

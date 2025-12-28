@@ -358,6 +358,12 @@ func (s *Service) CreateVersion(ctx context.Context, input CreateVersionInput) (
 		return nil, fmt.Errorf("file not found or upload incomplete")
 	}
 
+	// Get material to access metadata for event publishing
+	material, err := s.materialRepo.FindByID(ctx, input.MaterialID)
+	if err != nil {
+		return nil, fmt.Errorf("material not found: %w", err)
+	}
+
 	// Get latest version number
 	latestVersion, err := s.versionRepo.GetLatestVersion(ctx, input.MaterialID)
 	if err != nil {
@@ -389,12 +395,132 @@ func (s *Service) CreateVersion(ctx context.Context, input CreateVersionInput) (
 		Int("version", newVersion).
 		Msg("new version created")
 
+	// Publish material.uploaded event for background processing (AI Service, Search Service)
+	// New version needs to be re-processed for updated content extraction and re-indexing
+	if s.eventPublisher != nil {
+		description := ""
+		if material.Description != nil {
+			description = *material.Description
+		}
+
+		// Generate presigned URL for AI Service to download the new version file
+		fileURL, err := s.minioClient.GeneratePresignedGetURL(ctx, input.ObjectKey, time.Hour)
+		if err != nil {
+			log.Error().Err(err).
+				Str("material_id", input.MaterialID.String()).
+				Int("version", newVersion).
+				Msg("failed to generate presigned URL for version event")
+			fileURL = input.ObjectKey
+		}
+
+		event := nats.MaterialUploadedEvent{
+			MaterialID:  material.ID,
+			PodID:       material.PodID,
+			FileURL:     fileURL,
+			FileType:    string(material.FileType),
+			UploaderID:  input.UploaderID,
+			Title:       material.Title,
+			Description: description,
+		}
+		if err := s.eventPublisher.PublishMaterialUploaded(ctx, event); err != nil {
+			log.Error().Err(err).
+				Str("material_id", input.MaterialID.String()).
+				Int("version", newVersion).
+				Msg("failed to publish material.uploaded event for new version")
+		} else {
+			log.Debug().
+				Str("material_id", input.MaterialID.String()).
+				Int("version", newVersion).
+				Msg("published material.uploaded event for new version")
+		}
+	}
+
 	return version, nil
 }
 
 // GetVersionHistory retrieves all versions of a material.
 func (s *Service) GetVersionHistory(ctx context.Context, materialID uuid.UUID) ([]*domain.MaterialVersion, error) {
 	return s.versionRepo.FindByMaterialID(ctx, materialID)
+}
+
+// RestoreVersionInput represents input for restoring a material to a specific version.
+type RestoreVersionInput struct {
+	MaterialID uuid.UUID
+	Version    int
+	UserID     uuid.UUID
+}
+
+// RestoreVersion restores a material to a specific version.
+// Implements requirement 5.1: Material Versioning - rollback capability.
+func (s *Service) RestoreVersion(ctx context.Context, input RestoreVersionInput) (*domain.Material, error) {
+	// Get the target version
+	targetVersion, err := s.versionRepo.FindByMaterialIDAndVersion(ctx, input.MaterialID, input.Version)
+	if err != nil {
+		return nil, fmt.Errorf("version not found: %w", err)
+	}
+
+	// Get material to verify it exists and get metadata
+	material, err := s.materialRepo.FindByID(ctx, input.MaterialID)
+	if err != nil {
+		return nil, fmt.Errorf("material not found: %w", err)
+	}
+
+	// Update material's current version and file URL
+	if err := s.materialRepo.RestoreVersion(ctx, input.MaterialID, input.Version, targetVersion.FileURL); err != nil {
+		return nil, fmt.Errorf("failed to restore version: %w", err)
+	}
+
+	// Update local material object for response
+	material.CurrentVersion = input.Version
+	material.FileURL = targetVersion.FileURL
+
+	log.Info().
+		Str("material_id", input.MaterialID.String()).
+		Int("restored_version", input.Version).
+		Str("user_id", input.UserID.String()).
+		Msg("material version restored")
+
+	// Publish material.uploaded event for re-processing (AI Service, Search Service)
+	// Restored version needs to be re-processed for updated content
+	if s.eventPublisher != nil {
+		description := ""
+		if material.Description != nil {
+			description = *material.Description
+		}
+
+		// Generate presigned URL for AI Service to download the restored version file
+		fileURL, err := s.minioClient.GeneratePresignedGetURL(ctx, targetVersion.FileURL, time.Hour)
+		if err != nil {
+			log.Error().Err(err).
+				Str("material_id", input.MaterialID.String()).
+				Int("version", input.Version).
+				Msg("failed to generate presigned URL for restore event")
+			fileURL = targetVersion.FileURL
+		}
+
+		event := nats.MaterialUploadedEvent{
+			MaterialID:  material.ID,
+			PodID:       material.PodID,
+			FileURL:     fileURL,
+			FileType:    string(material.FileType),
+			UploaderID:  input.UserID,
+			Title:       material.Title,
+			Description: description,
+		}
+		if err := s.eventPublisher.PublishMaterialUploaded(ctx, event); err != nil {
+			log.Error().Err(err).
+				Str("material_id", input.MaterialID.String()).
+				Int("version", input.Version).
+				Msg("failed to publish material.uploaded event for restored version")
+		} else {
+			log.Debug().
+				Str("material_id", input.MaterialID.String()).
+				Int("version", input.Version).
+				Msg("published material.uploaded event for restored version")
+		}
+	}
+
+	return material, nil
 }
 
 // AddCommentInput represents input for adding a comment.
