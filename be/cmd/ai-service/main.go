@@ -113,17 +113,11 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 	log.Info().Msg("connected to database")
 
-	// Determine vector size based on AI provider
-	vectorSize := 1536 // OpenAI default
-	if cfg.AI.Provider == "gemini" {
-		vectorSize = 3072 // Gemini embedding-001 dimension
-	}
-
 	qdrantClient, err := qdrant.NewClient(qdrant.Config{
 		Host:           cfg.Qdrant.Host,
 		Port:           cfg.Qdrant.Port,
 		CollectionName: cfg.Qdrant.Collection,
-		VectorSize:     vectorSize,
+		VectorSize:     1536,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Qdrant client: %w", err)
