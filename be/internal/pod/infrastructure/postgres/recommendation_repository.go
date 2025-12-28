@@ -379,6 +379,8 @@ func (r *RecommendationRepository) buildRecommendationQuery(profile *domain.User
 				p.star_count,
 				p.fork_count,
 				p.view_count,
+				p.is_verified,
+				p.upvote_count,
 				p.forked_from_id,
 				p.created_at,
 				p.updated_at,
@@ -440,6 +442,8 @@ func (r *RecommendationRepository) scanRecommendedPods(ctx context.Context, rows
 			&pod.StarCount,
 			&pod.ForkCount,
 			&pod.ViewCount,
+			&pod.IsVerified,
+			&pod.UpvoteCount,
 			&pod.ForkedFromID,
 			&pod.CreatedAt,
 			&pod.UpdatedAt,
@@ -477,7 +481,7 @@ func (r *RecommendationRepository) GetTrendingFeed(ctx context.Context, limit, o
 	query := `
 		SELECT p.id, p.owner_id, p.name, p.slug, p.description, p.visibility,
 			   p.categories, p.tags, p.star_count, p.fork_count, p.view_count,
-			   p.forked_from_id, p.created_at, p.updated_at
+			   p.is_verified, p.upvote_count, p.forked_from_id, p.created_at, p.updated_at
 		FROM pods p
 		LEFT JOIN pod_popularity_scores pop ON p.id = pop.pod_id
 		WHERE p.visibility = 'public' AND p.deleted_at IS NULL
@@ -506,6 +510,8 @@ func (r *RecommendationRepository) GetTrendingFeed(ctx context.Context, limit, o
 			&pod.StarCount,
 			&pod.ForkCount,
 			&pod.ViewCount,
+			&pod.IsVerified,
+			&pod.UpvoteCount,
 			&pod.ForkedFromID,
 			&pod.CreatedAt,
 			&pod.UpdatedAt,
@@ -528,7 +534,7 @@ func (r *RecommendationRepository) GetSimilarPods(ctx context.Context, podID uui
 		)
 		SELECT p.id, p.owner_id, p.name, p.slug, p.description, p.visibility,
 			   p.categories, p.tags, p.star_count, p.fork_count, p.view_count,
-			   p.forked_from_id, p.created_at, p.updated_at,
+			   p.is_verified, p.upvote_count, p.forked_from_id, p.created_at, p.updated_at,
 			   -- Similarity score based on overlapping categories and tags
 			   (
 				   COALESCE(array_length(p.categories & (SELECT categories FROM target_pod), 1), 0) * 2 +
@@ -568,6 +574,8 @@ func (r *RecommendationRepository) GetSimilarPods(ctx context.Context, podID uui
 			&pod.StarCount,
 			&pod.ForkCount,
 			&pod.ViewCount,
+			&pod.IsVerified,
+			&pod.UpvoteCount,
 			&pod.ForkedFromID,
 			&pod.CreatedAt,
 			&pod.UpdatedAt,
