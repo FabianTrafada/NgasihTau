@@ -160,6 +160,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	starRepo := postgres.NewPodStarRepository(db)
 	upvoteRepo := postgres.NewPodUpvoteRepository(db)
 	uploadReqRepo := postgres.NewUploadRequestRepository(db)
+	sharedPodRepo := postgres.NewSharedPodRepository(db)
 	followRepo := postgres.NewPodFollowRepository(db)
 	activityRepo := postgres.NewActivityRepository(db)
 
@@ -184,6 +185,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		starRepo,
 		upvoteRepo,
 		uploadReqRepo,
+		sharedPodRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
