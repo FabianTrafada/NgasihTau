@@ -159,6 +159,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	collaboratorRepo := postgres.NewCollaboratorRepository(db)
 	starRepo := postgres.NewPodStarRepository(db)
 	upvoteRepo := postgres.NewPodUpvoteRepository(db)
+	uploadReqRepo := postgres.NewUploadRequestRepository(db)
 	followRepo := postgres.NewPodFollowRepository(db)
 	activityRepo := postgres.NewActivityRepository(db)
 
@@ -182,9 +183,11 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		collaboratorRepo,
 		starRepo,
 		upvoteRepo,
+		uploadReqRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
+		nil, // UserRoleChecker - will be initialized when user DB connection is available
 	)
 
 	recommendationService := application.NewRecommendationService(

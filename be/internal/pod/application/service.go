@@ -42,6 +42,15 @@ type PodService interface {
 	HasUpvoted(ctx context.Context, podID, userID uuid.UUID) (bool, error)
 	GetUpvotedPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error)
 
+	// Upload Request operations (Requirements 4.1, 4.3, 4.4, 4.6)
+	// Enables teacher-to-teacher collaboration for quality educational content
+	CreateUploadRequest(ctx context.Context, requesterID, podID uuid.UUID, message *string) (*domain.UploadRequest, error)
+	ApproveUploadRequest(ctx context.Context, requestID, ownerID uuid.UUID) error
+	RejectUploadRequest(ctx context.Context, requestID, ownerID uuid.UUID, reason *string) error
+	RevokeUploadPermission(ctx context.Context, requestID, ownerID uuid.UUID) error
+	GetUploadRequestsForOwner(ctx context.Context, ownerID uuid.UUID, status *domain.UploadRequestStatus, page, perPage int) (*UploadRequestListResult, error)
+	GetUploadRequestsByRequester(ctx context.Context, requesterID uuid.UUID, page, perPage int) (*UploadRequestListResult, error)
+
 	// Collaborator operations (Requirement 4)
 	InviteCollaborator(ctx context.Context, input InviteCollaboratorInput) (*domain.Collaborator, error)
 	AcceptInvitation(ctx context.Context, podID, userID uuid.UUID) error
@@ -112,15 +121,27 @@ type ActivityListResult struct {
 	TotalPages int                           `json:"total_pages"`
 }
 
+// UploadRequestListResult contains a paginated list of upload requests.
+// Implements requirements 4.1, 4.3.
+type UploadRequestListResult struct {
+	UploadRequests []*domain.UploadRequest `json:"upload_requests"`
+	Total          int                     `json:"total"`
+	Page           int                     `json:"page"`
+	PerPage        int                     `json:"per_page"`
+	TotalPages     int                     `json:"total_pages"`
+}
+
 // podService implements the PodService interface.
 type podService struct {
 	podRepo          domain.PodRepository
 	collaboratorRepo domain.CollaboratorRepository
 	starRepo         domain.PodStarRepository
 	upvoteRepo       domain.PodUpvoteRepository
+	uploadReqRepo    domain.UploadRequestRepository
 	followRepo       domain.PodFollowRepository
 	activityRepo     domain.ActivityRepository
 	eventPublisher   EventPublisher
+	userRoleChecker  UserRoleChecker
 }
 
 // EventPublisher defines the interface for publishing pod events.
@@ -128,6 +149,16 @@ type EventPublisher interface {
 	PublishPodCreated(ctx context.Context, pod *domain.Pod) error
 	PublishPodUpdated(ctx context.Context, pod *domain.Pod) error
 	PublishCollaboratorInvited(ctx context.Context, collaborator *domain.Collaborator, podName string) error
+	PublishUploadRequestCreated(ctx context.Context, request *domain.UploadRequest, podName string, requesterName string) error
+	PublishUploadRequestRejected(ctx context.Context, request *domain.UploadRequest, podName string, reason *string) error
+}
+
+// UserRoleChecker defines the interface for checking user roles.
+// This allows the pod service to validate teacher roles without direct dependency on user repository.
+// Implements requirement 4.1: Validate requester is teacher, target pod owner is teacher.
+type UserRoleChecker interface {
+	// IsTeacher checks if the user with the given ID has the teacher role.
+	IsTeacher(ctx context.Context, userID uuid.UUID) (bool, error)
 }
 
 // NewPodService creates a new PodService instance.
@@ -136,18 +167,22 @@ func NewPodService(
 	collaboratorRepo domain.CollaboratorRepository,
 	starRepo domain.PodStarRepository,
 	upvoteRepo domain.PodUpvoteRepository,
+	uploadReqRepo domain.UploadRequestRepository,
 	followRepo domain.PodFollowRepository,
 	activityRepo domain.ActivityRepository,
 	eventPublisher EventPublisher,
+	userRoleChecker UserRoleChecker,
 ) PodService {
 	return &podService{
 		podRepo:          podRepo,
 		collaboratorRepo: collaboratorRepo,
 		starRepo:         starRepo,
 		upvoteRepo:       upvoteRepo,
+		uploadReqRepo:    uploadReqRepo,
 		followRepo:       followRepo,
 		activityRepo:     activityRepo,
 		eventPublisher:   eventPublisher,
+		userRoleChecker:  userRoleChecker,
 	}
 }
 
@@ -625,6 +660,212 @@ func (s *podService) GetUpvotedPods(ctx context.Context, userID uuid.UUID, page,
 	}, nil
 }
 
+// CreateUploadRequest creates a new upload request from a teacher to another teacher's pod.
+// Implements requirement 4.1: WHEN a teacher submits upload request to another teacher's pod.
+// Implements requirement 4.2: WHEN a pod owner receives an upload request, THE Notification Service SHALL send a notification.
+func (s *podService) CreateUploadRequest(ctx context.Context, requesterID, podID uuid.UUID, message *string) (*domain.UploadRequest, error) {
+	// Get the pod to verify it exists and get owner info
+	pod, err := s.podRepo.FindByID(ctx, podID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cannot request upload to own pod
+	if pod.IsOwner(requesterID) {
+		return nil, errors.BadRequest("cannot request upload permission to your own pod")
+	}
+
+	// Validate requester is a teacher (Requirement 4.1)
+	if s.userRoleChecker != nil {
+		isRequesterTeacher, err := s.userRoleChecker.IsTeacher(ctx, requesterID)
+		if err != nil {
+			return nil, errors.Internal("failed to check requester role", err)
+		}
+		if !isRequesterTeacher {
+			return nil, errors.Forbidden("only teachers can request upload permission to other teachers' pods")
+		}
+
+		// Validate pod owner is a teacher (Requirement 4.1)
+		isOwnerTeacher, err := s.userRoleChecker.IsTeacher(ctx, pod.OwnerID)
+		if err != nil {
+			return nil, errors.Internal("failed to check pod owner role", err)
+		}
+		if !isOwnerTeacher {
+			return nil, errors.BadRequest("upload requests can only be made to pods owned by teachers")
+		}
+	}
+
+	// Check if an upload request already exists for this requester and pod
+	existingRequest, err := s.uploadReqRepo.FindByRequesterAndPod(ctx, requesterID, podID)
+	if err == nil && existingRequest != nil {
+		// If there's a pending or approved request, don't allow creating a new one
+		if existingRequest.Status == domain.UploadRequestStatusPending {
+			return nil, errors.Conflict("upload_request", "a pending upload request already exists for this pod")
+		}
+		if existingRequest.Status == domain.UploadRequestStatusApproved {
+			return nil, errors.Conflict("upload_request", "you already have upload permission for this pod")
+		}
+	}
+
+	// Create the upload request
+	uploadRequest := domain.NewUploadRequest(requesterID, podID, pod.OwnerID, message)
+	if err := s.uploadReqRepo.Create(ctx, uploadRequest); err != nil {
+		return nil, err
+	}
+
+	// Publish upload request created event for notification (Requirement 4.2)
+	if s.eventPublisher != nil {
+		go func() {
+			// Note: requesterName would ideally be fetched, but for now we pass empty string
+			// The notification service can look up the name from the requester ID
+			if err := s.eventPublisher.PublishUploadRequestCreated(context.Background(), uploadRequest, pod.Name, ""); err != nil {
+				// Log error but don't fail the request - event publishing is best-effort
+			}
+		}()
+	}
+
+	return uploadRequest, nil
+}
+
+// ApproveUploadRequest approves an upload request, granting upload permission.
+// Implements requirement 4.3: WHEN a pod owner approves an upload request.
+func (s *podService) ApproveUploadRequest(ctx context.Context, requestID, ownerID uuid.UUID) error {
+	// Get the upload request
+	request, err := s.uploadReqRepo.FindByID(ctx, requestID)
+	if err != nil {
+		return err
+	}
+
+	// Verify the owner is the pod owner
+	if request.PodOwnerID != ownerID {
+		return errors.Forbidden("only the pod owner can approve upload requests")
+	}
+
+	// Check if the request is pending
+	if !request.IsPending() {
+		return errors.BadRequest("upload request is not pending")
+	}
+
+	// Update status to approved
+	return s.uploadReqRepo.UpdateStatus(ctx, requestID, domain.UploadRequestStatusApproved, nil)
+}
+
+// RejectUploadRequest rejects an upload request with an optional reason.
+// Implements requirement 4.4: WHEN a pod owner rejects an upload request.
+func (s *podService) RejectUploadRequest(ctx context.Context, requestID, ownerID uuid.UUID, reason *string) error {
+	// Get the upload request
+	request, err := s.uploadReqRepo.FindByID(ctx, requestID)
+	if err != nil {
+		return err
+	}
+
+	// Verify the owner is the pod owner
+	if request.PodOwnerID != ownerID {
+		return errors.Forbidden("only the pod owner can reject upload requests")
+	}
+
+	// Check if the request is pending
+	if !request.IsPending() {
+		return errors.BadRequest("upload request is not pending")
+	}
+
+	// Update status to rejected with reason
+	if err := s.uploadReqRepo.UpdateStatus(ctx, requestID, domain.UploadRequestStatusRejected, reason); err != nil {
+		return err
+	}
+
+	// Get pod name for notification
+	pod, err := s.podRepo.FindByID(ctx, request.PodID)
+	if err != nil {
+		// Log error but don't fail - the rejection was successful
+		return nil
+	}
+
+	// Publish upload request rejected event for notification (Requirement 4.4)
+	// Notify the requesting teacher with optional rejection reason
+	if s.eventPublisher != nil {
+		go func() {
+			if err := s.eventPublisher.PublishUploadRequestRejected(context.Background(), request, pod.Name, reason); err != nil {
+				// Log error but don't fail the request - event publishing is best-effort
+			}
+		}()
+	}
+
+	return nil
+}
+
+// RevokeUploadPermission revokes an approved upload permission.
+// Implements requirement 4.6: THE Pod Service SHALL allow pod owners to revoke upload permissions.
+func (s *podService) RevokeUploadPermission(ctx context.Context, requestID, ownerID uuid.UUID) error {
+	// Get the upload request
+	request, err := s.uploadReqRepo.FindByID(ctx, requestID)
+	if err != nil {
+		return err
+	}
+
+	// Verify the owner is the pod owner
+	if request.PodOwnerID != ownerID {
+		return errors.Forbidden("only the pod owner can revoke upload permissions")
+	}
+
+	// Check if the request is approved (can only revoke approved permissions)
+	if !request.IsApproved() {
+		return errors.BadRequest("can only revoke approved upload permissions")
+	}
+
+	// Update status to revoked
+	return s.uploadReqRepo.UpdateStatus(ctx, requestID, domain.UploadRequestStatusRevoked, nil)
+}
+
+// GetUploadRequestsForOwner returns upload requests for a pod owner with optional status filter.
+// Implements requirement 4.3: Pod owner can view and manage upload requests.
+func (s *podService) GetUploadRequestsForOwner(ctx context.Context, ownerID uuid.UUID, status *domain.UploadRequestStatus, page, perPage int) (*UploadRequestListResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	offset := (page - 1) * perPage
+
+	requests, total, err := s.uploadReqRepo.FindByPodOwner(ctx, ownerID, status, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UploadRequestListResult{
+		UploadRequests: requests,
+		Total:          total,
+		Page:           page,
+		PerPage:        perPage,
+		TotalPages:     calculateTotalPages(total, perPage),
+	}, nil
+}
+
+// GetUploadRequestsByRequester returns upload requests made by a requester.
+func (s *podService) GetUploadRequestsByRequester(ctx context.Context, requesterID uuid.UUID, page, perPage int) (*UploadRequestListResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	offset := (page - 1) * perPage
+
+	requests, total, err := s.uploadReqRepo.FindByRequester(ctx, requesterID, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UploadRequestListResult{
+		UploadRequests: requests,
+		Total:          total,
+		Page:           page,
+		PerPage:        perPage,
+		TotalPages:     calculateTotalPages(total, perPage),
+	}, nil
+}
+
 // InviteCollaborator invites a user to collaborate on a pod.
 // Implements requirement 4: Knowledge Pod Collaboration.
 func (s *podService) InviteCollaborator(ctx context.Context, input InviteCollaboratorInput) (*domain.Collaborator, error) {
@@ -953,6 +1194,8 @@ func (s *podService) CanUserEditPod(ctx context.Context, podID, userID uuid.UUID
 }
 
 // CanUserUploadToPod checks if a user can upload materials to a pod.
+// Extended to check for approved upload requests (teacher-to-teacher collaboration).
+// Implements requirements 1.3, 4.5.
 func (s *podService) CanUserUploadToPod(ctx context.Context, podID, userID uuid.UUID) (bool, error) {
 	pod, err := s.podRepo.FindByID(ctx, podID)
 	if err != nil {
@@ -967,12 +1210,24 @@ func (s *podService) CanUserUploadToPod(ctx context.Context, podID, userID uuid.
 	// Check if user is a verified contributor or admin
 	collaborator, err := s.collaboratorRepo.FindByPodAndUser(ctx, podID, userID)
 	if err != nil {
-		// Not found means no permission
+		// Not found means no permission via collaborator
 		if appErr, ok := err.(*errors.AppError); ok && appErr.Code == errors.CodeNotFound {
-			return false, nil
+			// Continue to check upload requests
+		} else {
+			return false, err
 		}
-		return false, err
+	} else if collaborator.CanUpload() {
+		return true, nil
 	}
 
-	return collaborator.CanUpload(), nil
+	// Check if user has approved upload request (teacher-to-teacher collaboration)
+	// Implements requirement 4.5: WHILE an upload request is approved, THE Material Service SHALL allow the requesting teacher to upload.
+	if s.uploadReqRepo != nil {
+		uploadReq, err := s.uploadReqRepo.FindApprovedByRequesterAndPod(ctx, userID, podID)
+		if err == nil && uploadReq != nil && uploadReq.CanUpload() {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
