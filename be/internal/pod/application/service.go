@@ -15,7 +15,7 @@ import (
 )
 
 // PodService defines the interface for pod-related business operations.
-// Implements requirements 3, 3.1, 3.2, 4, 12.
+// Implements requirements 3, 3.1, 3.2, 4, 5, 12.
 type PodService interface {
 	// Pod CRUD operations (Requirement 3)
 	CreatePod(ctx context.Context, input CreatePodInput) (*domain.Pod, error)
@@ -34,6 +34,13 @@ type PodService interface {
 	UnstarPod(ctx context.Context, podID, userID uuid.UUID) error
 	GetStarredPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error)
 	IsStarred(ctx context.Context, podID, userID uuid.UUID) (bool, error)
+
+	// Upvote operations (Requirements 5.1, 5.2, 5.3, 5.4)
+	// Upvotes are trust indicators, distinct from stars (bookmarks/favorites)
+	UpvotePod(ctx context.Context, podID, userID uuid.UUID) error
+	RemoveUpvote(ctx context.Context, podID, userID uuid.UUID) error
+	HasUpvoted(ctx context.Context, podID, userID uuid.UUID) (bool, error)
+	GetUpvotedPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error)
 
 	// Collaborator operations (Requirement 4)
 	InviteCollaborator(ctx context.Context, input InviteCollaboratorInput) (*domain.Collaborator, error)
@@ -110,6 +117,7 @@ type podService struct {
 	podRepo          domain.PodRepository
 	collaboratorRepo domain.CollaboratorRepository
 	starRepo         domain.PodStarRepository
+	upvoteRepo       domain.PodUpvoteRepository
 	followRepo       domain.PodFollowRepository
 	activityRepo     domain.ActivityRepository
 	eventPublisher   EventPublisher
@@ -127,6 +135,7 @@ func NewPodService(
 	podRepo domain.PodRepository,
 	collaboratorRepo domain.CollaboratorRepository,
 	starRepo domain.PodStarRepository,
+	upvoteRepo domain.PodUpvoteRepository,
 	followRepo domain.PodFollowRepository,
 	activityRepo domain.ActivityRepository,
 	eventPublisher EventPublisher,
@@ -135,6 +144,7 @@ func NewPodService(
 		podRepo:          podRepo,
 		collaboratorRepo: collaboratorRepo,
 		starRepo:         starRepo,
+		upvoteRepo:       upvoteRepo,
 		followRepo:       followRepo,
 		activityRepo:     activityRepo,
 		eventPublisher:   eventPublisher,
@@ -529,6 +539,90 @@ func (s *podService) GetStarredPods(ctx context.Context, userID uuid.UUID, page,
 // IsStarred checks if a user has starred a pod.
 func (s *podService) IsStarred(ctx context.Context, podID, userID uuid.UUID) (bool, error) {
 	return s.starRepo.Exists(ctx, userID, podID)
+}
+
+// UpvotePod adds an upvote to a pod (trust indicator).
+// Implements requirement 5.1: WHEN a user upvotes a knowledge pod.
+// Implements requirement 5.3: Each user can upvote a pod only once.
+func (s *podService) UpvotePod(ctx context.Context, podID, userID uuid.UUID) error {
+	// Check if pod exists and user can access it
+	canAccess, err := s.CanUserAccessPod(ctx, podID, &userID)
+	if err != nil {
+		return err
+	}
+	if !canAccess {
+		return errors.Forbidden("you do not have access to this pod")
+	}
+
+	// Check if already upvoted (requirement 5.3)
+	exists, err := s.upvoteRepo.Exists(ctx, userID, podID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return errors.Conflict("upvote", "already upvoted")
+	}
+
+	// Create upvote
+	upvote := domain.NewPodUpvote(userID, podID)
+	if err := s.upvoteRepo.Create(ctx, upvote); err != nil {
+		return err
+	}
+
+	// Increment upvote count (requirement 5.1)
+	return s.podRepo.IncrementUpvoteCount(ctx, podID)
+}
+
+// RemoveUpvote removes an upvote from a pod.
+// Implements requirement 5.2: WHEN a user removes their upvote.
+func (s *podService) RemoveUpvote(ctx context.Context, podID, userID uuid.UUID) error {
+	// Check if upvoted
+	exists, err := s.upvoteRepo.Exists(ctx, userID, podID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.NotFound("upvote", "not upvoted")
+	}
+
+	// Delete upvote
+	if err := s.upvoteRepo.Delete(ctx, userID, podID); err != nil {
+		return err
+	}
+
+	// Decrement upvote count (requirement 5.2)
+	return s.podRepo.DecrementUpvoteCount(ctx, podID)
+}
+
+// HasUpvoted checks if a user has upvoted a pod.
+// Implements requirement 5.3: Each user can upvote a pod only once.
+func (s *podService) HasUpvoted(ctx context.Context, podID, userID uuid.UUID) (bool, error) {
+	return s.upvoteRepo.Exists(ctx, userID, podID)
+}
+
+// GetUpvotedPods returns pods upvoted by a user.
+// Implements requirement 5.4: Show total upvote count when displaying pod details.
+func (s *podService) GetUpvotedPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	offset := (page - 1) * perPage
+
+	pods, total, err := s.upvoteRepo.GetUpvotedPods(ctx, userID, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PodListResult{
+		Pods:       pods,
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: calculateTotalPages(total, perPage),
+	}, nil
 }
 
 // InviteCollaborator invites a user to collaborate on a pod.

@@ -353,6 +353,47 @@ func (m *mockFollowRepo) CountByPodID(ctx context.Context, podID uuid.UUID) (int
 	return 0, nil
 }
 
+type mockUpvoteRepo struct {
+	upvotes map[string]bool
+}
+
+func newMockUpvoteRepo() *mockUpvoteRepo {
+	return &mockUpvoteRepo{
+		upvotes: make(map[string]bool),
+	}
+}
+
+func (m *mockUpvoteRepo) Create(ctx context.Context, upvote *domain.PodUpvote) error {
+	key := upvote.UserID.String() + ":" + upvote.PodID.String()
+	m.upvotes[key] = true
+	return nil
+}
+
+func (m *mockUpvoteRepo) Delete(ctx context.Context, userID, podID uuid.UUID) error {
+	key := userID.String() + ":" + podID.String()
+	delete(m.upvotes, key)
+	return nil
+}
+
+func (m *mockUpvoteRepo) Exists(ctx context.Context, userID, podID uuid.UUID) (bool, error) {
+	key := userID.String() + ":" + podID.String()
+	return m.upvotes[key], nil
+}
+
+func (m *mockUpvoteRepo) CountByPodID(ctx context.Context, podID uuid.UUID) (int, error) {
+	count := 0
+	for key := range m.upvotes {
+		if key[37:] == podID.String() {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *mockUpvoteRepo) GetUpvotedPods(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*domain.Pod, int, error) {
+	return nil, 0, nil
+}
+
 type mockActivityRepo struct {
 	activities map[uuid.UUID]*domain.Activity
 }
@@ -400,6 +441,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 	podRepo := newMockPodRepo()
 	collaboratorRepo := newMockCollaboratorRepo()
 	starRepo := newMockStarRepo()
+	upvoteRepo := newMockUpvoteRepo()
 	followRepo := newMockFollowRepo()
 	activityRepo := newMockActivityRepo()
 	eventPublisher := NewNoOpEventPublisher()
@@ -408,6 +450,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 		podRepo,
 		collaboratorRepo,
 		starRepo,
+		upvoteRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
@@ -1029,5 +1072,240 @@ func TestCanUserUploadToPod_UnverifiedContributor(t *testing.T) {
 	}
 	if canUpload {
 		t.Error("Expected unverified contributor to NOT upload")
+	}
+}
+
+// Test: Upvote Functionality
+// Implements requirements 5.1, 5.3
+
+func TestUpvotePod_Success(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Upvote the pod
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("UpvotePod failed: %v", err)
+	}
+
+	// Verify upvote count was incremented (requirement 5.1)
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+
+	// Verify user has upvoted
+	hasUpvoted, err := svc.HasUpvoted(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("HasUpvoted failed: %v", err)
+	}
+	if !hasUpvoted {
+		t.Error("Expected HasUpvoted to return true")
+	}
+}
+
+func TestUpvotePod_DuplicateUpvote(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// First upvote
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("First UpvotePod failed: %v", err)
+	}
+
+	// Try to upvote again (requirement 5.3: each user can upvote only once)
+	err = svc.UpvotePod(ctx, pod.ID, userID)
+	if err == nil {
+		t.Fatal("Expected error when upvoting twice")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeConflict {
+		t.Errorf("Expected conflict error code, got %s", appErr.Code)
+	}
+
+	// Verify upvote count is still 1
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+}
+
+func TestUpvotePod_PrivatePodNoAccess(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a private pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to upvote as non-collaborator
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err == nil {
+		t.Fatal("Expected error when upvoting private pod without access")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeForbidden {
+		t.Errorf("Expected forbidden error code, got %s", appErr.Code)
+	}
+}
+
+func TestUpvotePod_PodNotFound(t *testing.T) {
+	svc, _, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Try to upvote non-existent pod
+	userID := uuid.New()
+	nonExistentPodID := uuid.New()
+	err := svc.UpvotePod(ctx, nonExistentPodID, userID)
+	if err == nil {
+		t.Fatal("Expected error when upvoting non-existent pod")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+func TestUpvotePod_OwnerCanUpvote(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Owner can upvote their own pod
+	err := svc.UpvotePod(ctx, pod.ID, ownerID)
+	if err != nil {
+		t.Fatalf("UpvotePod by owner failed: %v", err)
+	}
+
+	// Verify upvote count was incremented
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+}
+
+// Test: RemoveUpvote Functionality
+// Implements requirement 5.2: WHEN a user removes their upvote
+
+func TestRemoveUpvote_Success(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// First upvote the pod
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("UpvotePod failed: %v", err)
+	}
+
+	// Verify upvote count is 1
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+
+	// Remove the upvote (requirement 5.2)
+	err = svc.RemoveUpvote(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("RemoveUpvote failed: %v", err)
+	}
+
+	// Verify upvote count was decremented (requirement 5.2)
+	if pod.UpvoteCount != 0 {
+		t.Errorf("Expected upvote count 0, got %d", pod.UpvoteCount)
+	}
+
+	// Verify user no longer has upvoted
+	hasUpvoted, err := svc.HasUpvoted(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("HasUpvoted failed: %v", err)
+	}
+	if hasUpvoted {
+		t.Error("Expected HasUpvoted to return false after removing upvote")
+	}
+}
+
+func TestRemoveUpvote_NotUpvoted(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to remove upvote without having upvoted
+	userID := uuid.New()
+	err := svc.RemoveUpvote(ctx, pod.ID, userID)
+	if err == nil {
+		t.Fatal("Expected error when removing upvote that doesn't exist")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+func TestRemoveUpvote_PodNotFound(t *testing.T) {
+	svc, _, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Try to remove upvote from non-existent pod
+	userID := uuid.New()
+	nonExistentPodID := uuid.New()
+	err := svc.RemoveUpvote(ctx, nonExistentPodID, userID)
+	if err == nil {
+		t.Fatal("Expected error when removing upvote from non-existent pod")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	// The error could be NotFound for the upvote check
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
 	}
 }
