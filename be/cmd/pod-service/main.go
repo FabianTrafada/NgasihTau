@@ -158,6 +158,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	podRepo := postgres.NewPodRepository(db)
 	collaboratorRepo := postgres.NewCollaboratorRepository(db)
 	starRepo := postgres.NewPodStarRepository(db)
+	upvoteRepo := postgres.NewPodUpvoteRepository(db)
 	followRepo := postgres.NewPodFollowRepository(db)
 	activityRepo := postgres.NewActivityRepository(db)
 
@@ -180,6 +181,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		podRepo,
 		collaboratorRepo,
 		starRepo,
+		upvoteRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
