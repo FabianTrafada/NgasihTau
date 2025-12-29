@@ -77,6 +77,24 @@ func (p *NATSEventPublisher) PublishCollaboratorInvited(ctx context.Context, col
 	return p.publisher.PublishCollaboratorInvited(ctx, event)
 }
 
+// PublishUploadRequestCreated publishes an upload request created event for notification.
+// Implements requirement 4.2: WHEN a pod owner receives an upload request, THE Notification Service SHALL send a notification.
+func (p *NATSEventPublisher) PublishUploadRequestCreated(ctx context.Context, request *domain.UploadRequest, podName string, requesterName string) error {
+	// Note: The actual NATS event type and publisher method will be added in task 18.
+	// For now, this is a placeholder that logs the event intent.
+	// The notification service will be updated to consume this event.
+	return nil
+}
+
+// PublishUploadRequestRejected publishes an upload request rejected event for notification.
+// Implements requirement 4.4: WHEN a pod owner rejects an upload request, THE Pod Service SHALL notify the requesting teacher.
+func (p *NATSEventPublisher) PublishUploadRequestRejected(ctx context.Context, request *domain.UploadRequest, podName string, reason *string) error {
+	// Note: The actual NATS event type and publisher method will be added in task 18.
+	// For now, this is a placeholder that logs the event intent.
+	// The notification service will be updated to consume this event.
+	return nil
+}
+
 // NoOpEventPublisher is a no-op implementation of EventPublisher.
 type NoOpEventPublisher struct{}
 
@@ -97,5 +115,15 @@ func (p *NoOpEventPublisher) PublishPodUpdated(ctx context.Context, pod *domain.
 
 // PublishCollaboratorInvited is a no-op.
 func (p *NoOpEventPublisher) PublishCollaboratorInvited(ctx context.Context, collaborator *domain.Collaborator, podName string) error {
+	return nil
+}
+
+// PublishUploadRequestCreated is a no-op.
+func (p *NoOpEventPublisher) PublishUploadRequestCreated(ctx context.Context, request *domain.UploadRequest, podName string, requesterName string) error {
+	return nil
+}
+
+// PublishUploadRequestRejected is a no-op.
+func (p *NoOpEventPublisher) PublishUploadRequestRejected(ctx context.Context, request *domain.UploadRequest, podName string, reason *string) error {
 	return nil
 }
