@@ -520,6 +520,100 @@ func (m *mockActivityRepo) DeleteByPodID(ctx context.Context, podID uuid.UUID) e
 	return nil
 }
 
+// mockSharedPodRepo implements domain.SharedPodRepository for testing
+type mockSharedPodRepo struct {
+	sharedPods    map[uuid.UUID]*domain.SharedPod
+	podStudentIdx map[string]*domain.SharedPod // podID:studentID -> sharedPod
+	studentShares map[uuid.UUID][]*domain.SharedPod
+}
+
+func newMockSharedPodRepo() *mockSharedPodRepo {
+	return &mockSharedPodRepo{
+		sharedPods:    make(map[uuid.UUID]*domain.SharedPod),
+		podStudentIdx: make(map[string]*domain.SharedPod),
+		studentShares: make(map[uuid.UUID][]*domain.SharedPod),
+	}
+}
+
+func (m *mockSharedPodRepo) Create(ctx context.Context, share *domain.SharedPod) error {
+	m.sharedPods[share.ID] = share
+	key := share.PodID.String() + ":" + share.StudentID.String()
+	m.podStudentIdx[key] = share
+	m.studentShares[share.StudentID] = append(m.studentShares[share.StudentID], share)
+	return nil
+}
+
+func (m *mockSharedPodRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	share, ok := m.sharedPods[id]
+	if !ok {
+		return errors.NotFound("shared pod", id.String())
+	}
+	key := share.PodID.String() + ":" + share.StudentID.String()
+	delete(m.podStudentIdx, key)
+	delete(m.sharedPods, id)
+	// Remove from studentShares
+	shares := m.studentShares[share.StudentID]
+	for i, s := range shares {
+		if s.ID == id {
+			m.studentShares[share.StudentID] = append(shares[:i], shares[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
+func (m *mockSharedPodRepo) FindByStudent(ctx context.Context, studentID uuid.UUID, limit, offset int) ([]*domain.SharedPod, int, error) {
+	shares := m.studentShares[studentID]
+	total := len(shares)
+	if offset >= total {
+		return []*domain.SharedPod{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return shares[offset:end], total, nil
+}
+
+func (m *mockSharedPodRepo) FindByStudentWithDetails(ctx context.Context, studentID uuid.UUID, limit, offset int) ([]*domain.SharedPodWithDetails, int, error) {
+	shares := m.studentShares[studentID]
+	total := len(shares)
+	if offset >= total {
+		return []*domain.SharedPodWithDetails{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	var result []*domain.SharedPodWithDetails
+	for _, share := range shares[offset:end] {
+		result = append(result, &domain.SharedPodWithDetails{
+			SharedPod:     *share,
+			PodName:       "Test Pod",
+			PodSlug:       "test-pod",
+			TeacherName:   "Test Teacher",
+			TeacherAvatar: nil,
+		})
+	}
+	return result, total, nil
+}
+
+func (m *mockSharedPodRepo) FindByTeacherAndStudent(ctx context.Context, teacherID, studentID uuid.UUID) ([]*domain.SharedPod, error) {
+	var result []*domain.SharedPod
+	for _, share := range m.sharedPods {
+		if share.TeacherID == teacherID && share.StudentID == studentID {
+			result = append(result, share)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockSharedPodRepo) Exists(ctx context.Context, podID, studentID uuid.UUID) (bool, error) {
+	key := podID.String() + ":" + studentID.String()
+	_, ok := m.podStudentIdx[key]
+	return ok, nil
+}
+
 // Helper to create a test service
 func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockActivityRepo) {
 	podRepo := newMockPodRepo()
@@ -527,6 +621,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 	starRepo := newMockStarRepo()
 	upvoteRepo := newMockUpvoteRepo()
 	uploadReqRepo := newMockUploadRequestRepo()
+	sharedPodRepo := newMockSharedPodRepo()
 	followRepo := newMockFollowRepo()
 	activityRepo := newMockActivityRepo()
 	eventPublisher := NewNoOpEventPublisher()
@@ -537,6 +632,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 		starRepo,
 		upvoteRepo,
 		uploadReqRepo,
+		sharedPodRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
@@ -1521,6 +1617,7 @@ func newTestServiceWithRoleChecker(roleChecker UserRoleChecker) (PodService, *mo
 	starRepo := newMockStarRepo()
 	upvoteRepo := newMockUpvoteRepo()
 	uploadReqRepo := newMockUploadRequestRepo()
+	sharedPodRepo := newMockSharedPodRepo()
 	followRepo := newMockFollowRepo()
 	activityRepo := newMockActivityRepo()
 	eventPublisher := NewNoOpEventPublisher()
@@ -1531,6 +1628,7 @@ func newTestServiceWithRoleChecker(roleChecker UserRoleChecker) (PodService, *mo
 		starRepo,
 		upvoteRepo,
 		uploadReqRepo,
+		sharedPodRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
