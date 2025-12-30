@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { ProtectedRoute } from "@/components/auth";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, Download, Loader, Plus, Search } from "lucide-react";
+import { Bell, ChevronLeft, Download, Loader, Plus, Search, Send } from "lucide-react";
 import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, getMaterialPreviewUrl } from "@/lib/api/material";
 import { Material, ChatMessage } from "@/types/material";
 import { FormattedMessage } from "@/components/FormattedMessage";
+import { div } from "framer-motion/client";
 
 interface PageProps {
   params: Promise<{
@@ -256,9 +257,9 @@ export default function MaterialDetailPage({ params }: PageProps) {
               </div>
 
               {/* Input Area */}
-              <div className="border-t-2 border-gray-200 pt-3">
+              <div className="border-t-2 border-gray-200 mt-3 border-2 border-[#2B2D42] rounded-lg">
                 <textarea
-                  className="w-full h-20 resize-none text-xs p-2 border-2 border-[#2B2D42] rounded-lg focus:outline-none focus:border-[#FF8811]"
+                  className="w-full h-12 resize-none text-xs p-2 rounded-lg focus:outline-none"
                   placeholder="Type your question..."
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
@@ -271,15 +272,14 @@ export default function MaterialDetailPage({ params }: PageProps) {
                 <button
                   onClick={handleSendMessage}
                   disabled={sendingMessage || !messageInput.trim()}
-                  className="w-full px-4 py-2 bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                  className="flex justify-end w-full px-4 py-2 text-sm font-bold text-[#2B2D42] transition-all"
                 >
                   {sendingMessage ? (
                     <>
                       <Loader size={14} className="animate-spin" />
-                      Sending...
                     </>
                   ) : (
-                    "Send Message"
+                    <Send size={16} className="rotate-45 fill-[#2B2D42] hover:stroke-[#FF8811] hover:fill-[#FF8811]"/>
                   )}
                 </button>
               </div>
