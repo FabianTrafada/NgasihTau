@@ -38,17 +38,23 @@ func GetPodID(c *fiber.Ctx) (uuid.UUID, bool) {
 // It stores the parsed UUID in context for downstream handlers.
 func (m *PodPermissionMiddleware) ExtractPodID() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		println("=== MIDDLEWARE: ExtractPodID ===")
 		idParam := c.Params("id")
+		println("ID param from URL:", idParam)
 		if idParam == "" {
+			println("ERROR: pod ID is required")
 			return errors.BadRequest("pod ID is required")
 		}
 
 		podID, err := uuid.Parse(idParam)
 		if err != nil {
-			return errors.BadRequest("invalid pod ID format")
+			println("ERROR: invalid pod ID format, expected UUID format (e.g., 550e8400-e29b-41d4-a716-446655440000), got:", idParam)
+			return errors.BadRequest("invalid pod ID format - expected UUID")
 		}
+		println("Parsed podID:", podID.String())
 
 		c.Locals(PodIDKey, podID)
+		println("Stored podID in context, calling next middleware")
 		return c.Next()
 	}
 }
@@ -59,25 +65,36 @@ func (m *PodPermissionMiddleware) ExtractPodID() fiber.Handler {
 // Implements requirement 3 for pod visibility access control.
 func (m *PodPermissionMiddleware) RequireReadAccess() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		println("=== MIDDLEWARE: RequireReadAccess ===")
 		podID, ok := GetPodID(c)
 		if !ok {
+			println("ERROR: pod ID not found in context")
 			return errors.Internal("pod ID not found in context", nil)
 		}
+		println("Got podID from context:", podID.String())
 
 		var userID *uuid.UUID
 		if uid, ok := middleware.GetUserID(c); ok && uid != uuid.Nil {
 			userID = &uid
+			println("Got userID:", uid.String())
+		} else {
+			println("No userID (public access)")
 		}
 
+		println("Calling CanUserAccessPod...")
 		canAccess, err := m.podService.CanUserAccessPod(c.Context(), podID, userID)
 		if err != nil {
+			println("ERROR from CanUserAccessPod:", err.Error())
 			return err
 		}
+		println("CanUserAccessPod result:", canAccess)
 
 		if !canAccess {
+			println("Access denied")
 			return errors.Forbidden("you do not have access to this pod")
 		}
 
+		println("Access granted, calling next middleware")
 		return c.Next()
 	}
 }

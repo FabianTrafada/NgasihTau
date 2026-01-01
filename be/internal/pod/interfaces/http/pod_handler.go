@@ -83,14 +83,19 @@ func (h *PodHandler) CreatePod(c *fiber.Ctx) error {
 // @Failure 404 {object} errors.ErrorResponse "Pod not found"
 // @Router /pods/{id} [get]
 func (h *PodHandler) GetPod(c *fiber.Ctx) error {
+	println("=== HANDLER START: GetPod ===")
+	
 	// Pod ID is extracted and validated by middleware
 	podID, ok := GetPodID(c)
+	println("GetPodID result:", ok, "podID:", podID.String())
 	if !ok {
 		// Fallback to parsing from params if middleware not used
 		idParam := c.Params("id")
+		println("Parsing podID from params:", idParam)
 		var err error
 		podID, err = uuid.Parse(idParam)
 		if err != nil {
+			println("ERROR: Invalid pod ID:", err.Error())
 			return errors.BadRequest("invalid pod ID")
 		}
 	}
@@ -98,12 +103,20 @@ func (h *PodHandler) GetPod(c *fiber.Ctx) error {
 	var viewerID *uuid.UUID
 	if uid, ok := middleware.GetUserID(c); ok && uid != uuid.Nil {
 		viewerID = &uid
+		println("Got viewerID:", uid.String())
+	} else {
+		println("No viewerID (public request)")
 	}
 
+	println("Calling podService.GetPod with podID:", podID.String())
 	pod, err := h.podService.GetPod(c.Context(), podID, viewerID)
 	if err != nil {
+		println("ERROR from GetPod service:", err.Error())
+		// Log the actual error for debugging
+		c.App().Config().ErrorHandler(c, err)
 		return err
 	}
+	println("Got pod successfully:", pod.Name)
 
 	// Auto-track view interaction for authenticated users
 	if viewerID != nil {

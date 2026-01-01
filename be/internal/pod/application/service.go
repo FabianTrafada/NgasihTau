@@ -306,8 +306,8 @@ func (s *podService) GetPod(ctx context.Context, id uuid.UUID, viewerID *uuid.UU
 		return nil, err
 	}
 
-	// Check access permission
-	canAccess, err := s.CanUserAccessPod(ctx, id, viewerID)
+	// Check access permission using pod already fetched (avoid double query)
+	canAccess, err := s.CanUserAccessPodWithData(ctx, pod, viewerID)
 	if err != nil {
 		return nil, err
 	}
@@ -330,8 +330,8 @@ func (s *podService) GetPodBySlug(ctx context.Context, slug string, viewerID *uu
 		return nil, err
 	}
 
-	// Check access permission
-	canAccess, err := s.CanUserAccessPod(ctx, pod.ID, viewerID)
+	// Check access permission using pod already fetched (avoid double query)
+	canAccess, err := s.CanUserAccessPodWithData(ctx, pod, viewerID)
 	if err != nil {
 		return nil, err
 	}
@@ -1364,6 +1364,12 @@ func (s *podService) CanUserAccessPod(ctx context.Context, podID uuid.UUID, user
 		return false, err
 	}
 
+	return s.CanUserAccessPodWithData(ctx, pod, userID)
+}
+
+// CanUserAccessPodWithData checks if a user can access a pod given pod data.
+// Use this when pod is already fetched to avoid duplicate database queries.
+func (s *podService) CanUserAccessPodWithData(ctx context.Context, pod *domain.Pod, userID *uuid.UUID) (bool, error) {
 	// Public pods are accessible to everyone
 	if pod.IsPublic() {
 		return true, nil
@@ -1380,7 +1386,7 @@ func (s *podService) CanUserAccessPod(ctx context.Context, podID uuid.UUID, user
 	}
 
 	// Check if user is a collaborator
-	exists, err := s.collaboratorRepo.Exists(ctx, podID, *userID)
+	exists, err := s.collaboratorRepo.Exists(ctx, pod.ID, *userID)
 	if err != nil {
 		return false, err
 	}

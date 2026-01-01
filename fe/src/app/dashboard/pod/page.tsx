@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import KnowledgePodCard from '@/components/knowledge-pod/KnowledgePodCard';
-import { KnowledgePod } from '@/types';
+import { KnowledgePod } from '@/types/knowledgePods';
 
-const KnowledgePage: React.FC = () => {
+const MyKnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
     {
       id: '1',
@@ -12,7 +12,7 @@ const KnowledgePage: React.FC = () => {
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ...',
       fileCount: 12,
       date: '2 Jan 25',
-      isLiked: false
+      isLiked: true,
     },
     {
       id: '2',
@@ -20,7 +20,7 @@ const KnowledgePage: React.FC = () => {
       description: 'Panduan lengkap memahami component, props, dan state dalam React modern menggunakan TypeScript.',
       fileCount: 8,
       date: '5 Jan 25',
-      isLiked: true
+      isLiked: true,
     },
     {
       id: '3',
@@ -28,7 +28,7 @@ const KnowledgePage: React.FC = () => {
       description: 'Tips dan trik mengelola jadwal skripsi tanpa mengabaikan kesehatan mental dan kehidupan sosial.',
       fileCount: 5,
       date: '10 Jan 25',
-      isLiked: false
+      isLiked: true,
     },
     {
       id: '4',
@@ -36,7 +36,7 @@ const KnowledgePage: React.FC = () => {
       description: 'Cara mengambil foto makanan yang estetik hanya dengan modal kamera HP dan cahaya matahari.',
       fileCount: 20,
       date: '12 Jan 25',
-      isLiked: false
+      isLiked: true,
     }
   ]);
 
@@ -51,11 +51,11 @@ const KnowledgePage: React.FC = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-black tracking-tight mb-2">
-            Top Knowledge Pod
+          <h1 className="text-2xl font-black text-black tracking-tight mb-2">
+            My Knowledge Pods
           </h1>
           <p className="text-zinc-500 font-medium">
-            Explore the most shared and updated knowledge repositories.
+            Manage and explore your personal collection of knowledge repositories.
           </p>
         </div>
         <div className="flex gap-2 min-w-max">
@@ -69,7 +69,7 @@ const KnowledgePage: React.FC = () => {
       </div>
 
       {/* Main Container - Industrial / Neo-brutalism Style */}
-      <div className="bg-white border-2 border-black rounded-[12px] overflow-hidden shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+      <div className="bg-white border-2 border-r-4 border-black rounded-[12px] overflow-hidden shadow-[6px_6px_0px_0px_#FF8811]">
         <div className="flex flex-col">
           {pods.map((pod, index) => (
             <KnowledgePodCard 
@@ -77,6 +77,7 @@ const KnowledgePage: React.FC = () => {
               pod={pod} 
               onToggleLike={handleToggleLike}
               isLast={index === pods.length - 1}
+              isPersonal={true}
             />
           ))}
         </div>
@@ -101,4 +102,4 @@ const KnowledgePage: React.FC = () => {
   );
 };
 
-export default KnowledgePage;
+export default MyKnowledgePage;
