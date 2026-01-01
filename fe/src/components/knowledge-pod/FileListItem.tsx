@@ -11,7 +11,7 @@ interface FileListItemProps {
 
 const FileListItem: React.FC<FileListItemProps> = ({ title, description, likes, date, isLast }) => {
   return (
-    <div className={`p-4 py-4 flex items-center gap-4 cursor-pointer transition-colors hover:bg-zinc-50 ${!isLast ? 'border-b border-black' : ''}`}>
+    <a className={`p-4 py-4 flex items-center gap-4 cursor-pointer transition-colors hover:bg-zinc-50 ${!isLast ? 'border-b border-black' : ''}`}>
       {/* File Icon */}
       <div className="shrink-0">
         <div className="w-8 h-10 border-2 border-black rounded-sm flex items-center justify-center bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
@@ -37,7 +37,7 @@ const FileListItem: React.FC<FileListItemProps> = ({ title, description, likes, 
         </div>
         <span className="font-mono text-xs font-bold text-zinc-400">{date}</span>
       </div>
-    </div>
+    </a>
   );
 };
 
