@@ -4,20 +4,23 @@ import React, { useState, useEffect } from "react";
 import { ProtectedRoute } from "@/components/auth";
 import { useRouter } from "next/navigation";
 import { Bell, ChevronLeft, Download, Loader, Plus, Search, Send } from "lucide-react";
-import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, getMaterialPreviewUrl } from "@/lib/api/material";
+import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, getMaterialPreviewUrl, } from "@/lib/api/material";
+import { getUserDetail } from "@/lib/api/user";
 import { Material, ChatMessage } from "@/types/material";
 import { FormattedMessage } from "@/components/FormattedMessage";
 import { div } from "framer-motion/client";
 
 interface PageProps {
   params: Promise<{
+    username: string;
+    pod_id: string;
     material_id: string;
   }>;
 }
 
 export default function MaterialDetailPage({ params }: PageProps) {
   const router = useRouter();
-  const { material_id } = React.use(params);
+  const { username, pod_id, material_id } = React.use(params);
 
   // State untuk material data
   const [material, setMaterial] = useState<Material | null>(null);
@@ -27,6 +30,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
   const [messageInput, setMessageInput] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [docUrl, setDocUrl] = useState("");
+  const [isNotFound, setIsNotFound] = useState(false);
 
   // Fetch material detail dan chat history
   useEffect(() => {
@@ -34,12 +38,33 @@ export default function MaterialDetailPage({ params }: PageProps) {
       try {
         setLoading(true);
         setError(null);
+        setIsNotFound(false);
 
         // Fetch material detail
         const materialData = await getMaterialDetail(material_id);
         console.log("Material Detail API Response:", materialData);
         console.log("File URL:", materialData.file_url);
         console.log("File Type:", materialData.file_type);
+
+        // Validate: pod_id dari URL harus sesuai dengan material.pod_id
+        if (materialData.pod_id !== pod_id) {
+          console.warn("Pod ID mismatch:", { urlPodId: pod_id, materialPodId: materialData.pod_id });
+          setIsNotFound(true);
+          setLoading(false);  
+        }
+
+        // Fetch user detail untuk validasi username
+        const userData = await getUserDetail(materialData.uploader_id);
+        console.log("User Detail:", userData);
+
+        // Validate: username dari URL harus sesuai dengan user.username
+        // if (userData.username !== username) {
+        //   console.warn("Username mismatch:", { urlUsername: username, userUsername: userData.name });
+        //   setIsNotFound(true);
+        //   setLoading(false);
+        //   return;
+        // }
+
         setMaterial(materialData);
 
         // Fetch preview URL
@@ -86,7 +111,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
     };
 
     fetchData();
-  }, [material_id]);
+  }, [material_id, username, pod_id]);
 
   // Handle send chat message
   const handleSendMessage = async () => {
@@ -111,6 +136,22 @@ export default function MaterialDetailPage({ params }: PageProps) {
       <ProtectedRoute>
         <div className="flex h-screen items-center justify-center">
           <Loader className="animate-spin text-[#FF8811]" size={40} />
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Show 404 state
+  if (isNotFound) {
+    return (
+      <ProtectedRoute>
+        <div className="flex h-screen flex-col items-center justify-center gap-4 text-[#2B2D42]">
+          <div className="text-6xl font-bold">404</div>
+          <div className="text-lg font-bold">Material Not Found</div>
+          <div className="text-sm text-gray-500">The material you are looking for does not exist or has been moved.</div>
+          <button onClick={() => router.back()} className="px-4 py-2 bg-[#FF8811] text-white rounded-lg font-bold hover:bg-[#e67a0f]">
+            Go Back
+          </button>
         </div>
       </ProtectedRoute>
     );
@@ -269,17 +310,13 @@ export default function MaterialDetailPage({ params }: PageProps) {
                     }
                   }}
                 ></textarea>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={sendingMessage || !messageInput.trim()}
-                  className="flex justify-end w-full px-4 py-2 text-sm font-bold text-[#2B2D42] transition-all"
-                >
+                <button onClick={handleSendMessage} disabled={sendingMessage || !messageInput.trim()} className="flex justify-end w-full px-4 py-2 text-sm font-bold text-[#2B2D42] transition-all">
                   {sendingMessage ? (
                     <>
                       <Loader size={14} className="animate-spin" />
                     </>
                   ) : (
-                    <Send size={16} className="rotate-45 fill-[#2B2D42] hover:stroke-[#FF8811] hover:fill-[#FF8811]"/>
+                    <Send size={16} className="rotate-45 fill-[#2B2D42] hover:stroke-[#FF8811] hover:fill-[#FF8811]" />
                   )}
                 </button>
               </div>
