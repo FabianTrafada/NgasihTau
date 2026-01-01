@@ -35,13 +35,13 @@ const KnowledgePodDetail = () => {
         <h1 className="text-4xl font-black text-black tracking-tight">
           Kalkulus
         </h1>
-        <button className="px-10 py-2 bg-orange-500 text-white border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-orange-600 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+        <button className="px-10 py-2  border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]  hover:bg-[#FF8811] hover:text-white cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all group leading-none">
           Use
         </button>
       </div>
 
       {/* Description Card */}
-      <div className="bg-white border-2 border-black rounded-2xl p-6 pb-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+      <div className="bg-white border-2 border-black  overflow-hidden shadow-[6px_6px_0px_0px_#FF8811] rounded-2xl p-6 pb-4">
         <p className='text-xs font-semibold text-zinc-400 mb-1'>Deskripsi</p>
         <p className="text-sm font-medium text-black mb-6">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
@@ -70,7 +70,7 @@ const KnowledgePodDetail = () => {
       {/* <SearchSection/> */}
 
       {/* Files List Container */}
-      <div className="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+      <div className="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_#FF8811]">
         <div className="flex flex-col">
           {files.map((file, index) => (
             <FileListItem 
