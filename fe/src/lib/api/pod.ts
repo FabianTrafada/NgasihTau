@@ -1,5 +1,6 @@
 import apiClient from "@/lib/api-client";
-import { Pod, PodMaterial } from "@/types/pod";
+import { Pod } from "@/types/pod";
+import { Material } from "@/types/material";
 
 /**
  * Fetch pod detail berdasarkan pod ID
@@ -19,10 +20,10 @@ export async function getPodDetail(podId: string): Promise<Pod> {
  * Fetch materials dalam pod
  * Endpoint: GET /api/v1/pods/{id}/materials
  */
-export async function getPodMaterials(podId: string, limit: number = 20, offset: number = 0): Promise<PodMaterial[]> {
+export async function getPodMaterials(podId: string, limit: number = 20, offset: number = 0): Promise<Material[]> {
   try {
     const token = localStorage.getItem("access_token");
-    const response = await apiClient.get<any>(`/api/v1/pods/${podId}/materials`, {
+    const response = await apiClient.get<{ data: Material }>(`/api/v1/pods/${podId}/materials`, {
       params: { limit, offset },
       headers: {
        Authorization: `Bearer ${token}`
