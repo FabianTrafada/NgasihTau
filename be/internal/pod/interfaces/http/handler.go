@@ -49,6 +49,21 @@ func NewHandler(
 //   - POST   /api/v1/pods/:id/star (requires read access)
 //   - DELETE /api/v1/pods/:id/star (requires read access)
 //
+// Upvote (protected - trust indicator):
+//   - POST   /api/v1/pods/:id/upvote (requires read access)
+//   - DELETE /api/v1/pods/:id/upvote (requires read access)
+//
+// Upload Request (protected - teacher collaboration):
+//   - POST   /api/v1/pods/:id/upload-request (requires read access)
+//   - GET    /api/v1/users/me/upload-requests (protected)
+//   - POST   /api/v1/upload-requests/:id/approve (protected)
+//   - POST   /api/v1/upload-requests/:id/reject (protected)
+//   - DELETE /api/v1/upload-requests/:id (protected)
+//
+// Shared Pods (protected - teacher-student sharing):
+//   - POST   /api/v1/pods/:id/share (requires read access)
+//   - GET    /api/v1/users/me/shared-pods (protected)
+//
 // Collaborators (protected):
 //   - GET    /api/v1/pods/:id/collaborators (requires read access)
 //   - POST   /api/v1/pods/:id/collaborators (requires collaborator management)
@@ -74,6 +89,9 @@ func NewHandler(
 // User's pods and starred (public):
 //   - GET    /api/v1/users/:id/pods
 //   - GET    /api/v1/users/:id/starred
+//
+// User's upvoted pods (protected):
+//   - GET    /api/v1/users/me/upvoted-pods
 func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// API v1 group
 	api := app.Group("/api/v1")
@@ -151,6 +169,36 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 		h.podHandler.UnstarPod,
 	)
 
+	// Upvote - requires read access (trust indicator)
+	pods.Post("/:id/upvote",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.UpvotePod,
+	)
+	pods.Delete("/:id/upvote",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.RemoveUpvote,
+	)
+
+	// Upload Request - requires read access (teacher collaboration)
+	pods.Post("/:id/upload-request",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.CreateUploadRequest,
+	)
+
+	// Share Pod - requires read access (teacher-student sharing)
+	pods.Post("/:id/share",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.SharePod,
+	)
+
 	// Follow - requires read access
 	pods.Post("/:id/follow",
 		middleware.Auth(h.jwtManager),
@@ -183,6 +231,21 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 		h.podPermission.ExtractPodID(),
 		h.podPermission.RequireCollaboratorManagement(),
 		h.podHandler.RemoveCollaborator,
+	)
+
+	// === Upload Request management routes ===
+	uploadRequests := api.Group("/upload-requests")
+	uploadRequests.Post("/:id/approve",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.ApproveUploadRequest,
+	)
+	uploadRequests.Post("/:id/reject",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.RejectUploadRequest,
+	)
+	uploadRequests.Delete("/:id",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.RevokeUploadPermission,
 	)
 
 	// === Recommendation routes ===
@@ -220,6 +283,24 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	users := api.Group("/users")
 	users.Get("/:id/pods", h.podHandler.GetUserPods)
 	users.Get("/:id/starred", h.podHandler.GetUserStarredPods)
+
+	// User's upvoted pods (protected)
+	users.Get("/me/upvoted-pods",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.GetUserUpvotedPods,
+	)
+
+	// User's upload requests (protected)
+	users.Get("/me/upload-requests",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.GetUploadRequests,
+	)
+
+	// User's shared pods (protected)
+	users.Get("/me/shared-pods",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.GetSharedPods,
+	)
 
 	// User preferences (protected)
 	users.Get("/me/preferences",

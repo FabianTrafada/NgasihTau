@@ -89,6 +89,19 @@ func (c *UserProfileCache) Invalidate(ctx context.Context, userID uuid.UUID) err
 	return c.cache.Delete(ctx, key)
 }
 
+// InvalidateOnRoleChange removes a user profile from cache when role changes.
+// This should be called when a user's role changes from student to teacher.
+// Implements requirement 2.2: Cache invalidation when user role changes.
+func (c *UserProfileCache) InvalidateOnRoleChange(ctx context.Context, userID uuid.UUID) error {
+	key := UserProfileKey(userID.String())
+	if err := c.cache.Delete(ctx, key); err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("failed to invalidate user cache on role change")
+		return err
+	}
+	log.Debug().Str("user_id", userID.String()).Msg("invalidated user cache on role change")
+	return nil
+}
+
 // SetProfile stores a user profile in cache.
 func (c *UserProfileCache) SetProfile(ctx context.Context, userID uuid.UUID, profile *domain.UserProfile) error {
 	key := UserProfileKey(userID.String())

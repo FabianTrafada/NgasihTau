@@ -167,7 +167,10 @@ type EventPublisher interface {
 	PublishPodUpdated(ctx context.Context, pod *domain.Pod) error
 	PublishCollaboratorInvited(ctx context.Context, collaborator *domain.Collaborator, podName string) error
 	PublishUploadRequestCreated(ctx context.Context, request *domain.UploadRequest, podName string, requesterName string) error
+	PublishUploadRequestApproved(ctx context.Context, request *domain.UploadRequest, podName string, requesterName string) error
 	PublishUploadRequestRejected(ctx context.Context, request *domain.UploadRequest, podName string, reason *string) error
+	PublishPodShared(ctx context.Context, sharedPod *domain.SharedPod, podName string, teacherName string) error
+	PublishPodUpvoted(ctx context.Context, podID uuid.UUID, userID uuid.UUID, upvoteCount int, isUpvote bool) error
 }
 
 // UserRoleChecker defines the interface for checking user roles.
@@ -260,10 +263,21 @@ func (s *podService) CreatePod(ctx context.Context, input CreatePodInput) (*doma
 		}
 	}
 
-	// Create pod
-	// Note: isCreatorTeacher is set to false by default here.
-	// Task 13.1 will update this to check the actual user role.
-	pod := domain.NewPod(input.OwnerID, input.Name, slug, input.Visibility, false)
+	// Check if creator is a teacher to set is_verified status
+	// Implements requirements 1.4 (student pods unverified), 2.4 (teacher pods verified)
+	isCreatorTeacher := false
+	if s.userRoleChecker != nil {
+		var err error
+		isCreatorTeacher, err = s.userRoleChecker.IsTeacher(ctx, input.OwnerID)
+		if err != nil {
+			// Log error but continue with default (unverified)
+			// This ensures pod creation doesn't fail if role check fails
+			isCreatorTeacher = false
+		}
+	}
+
+	// Create pod with verified status based on creator's role
+	pod := domain.NewPod(input.OwnerID, input.Name, slug, input.Visibility, isCreatorTeacher)
 	pod.Description = input.Description
 	pod.Categories = input.Categories
 	pod.Tags = input.Tags
@@ -490,10 +504,21 @@ func (s *podService) ForkPod(ctx context.Context, podID, userID uuid.UUID) (*dom
 		}
 	}
 
-	// Create forked pod
-	// Note: isCreatorTeacher is set to false by default here.
-	// Task 13.1 will update this to check the actual user role.
-	forkedPod := domain.NewPod(userID, originalPod.Name, slug, domain.VisibilityPublic, false)
+	// Check if forker is a teacher to set is_verified status
+	// Implements requirements 1.4 (student pods unverified), 2.4 (teacher pods verified)
+	isForkerTeacher := false
+	if s.userRoleChecker != nil {
+		var err error
+		isForkerTeacher, err = s.userRoleChecker.IsTeacher(ctx, userID)
+		if err != nil {
+			// Log error but continue with default (unverified)
+			// This ensures fork doesn't fail if role check fails
+			isForkerTeacher = false
+		}
+	}
+
+	// Create forked pod with verified status based on forker's role
+	forkedPod := domain.NewPod(userID, originalPod.Name, slug, domain.VisibilityPublic, isForkerTeacher)
 	forkedPod.Description = originalPod.Description
 	forkedPod.Categories = originalPod.Categories
 	forkedPod.Tags = originalPod.Tags
@@ -624,7 +649,24 @@ func (s *podService) UpvotePod(ctx context.Context, podID, userID uuid.UUID) err
 	}
 
 	// Increment upvote count (requirement 5.1)
-	return s.podRepo.IncrementUpvoteCount(ctx, podID)
+	if err := s.podRepo.IncrementUpvoteCount(ctx, podID); err != nil {
+		return err
+	}
+
+	// Publish pod upvoted event for search re-indexing
+	if s.eventPublisher != nil {
+		// Get updated upvote count
+		pod, err := s.podRepo.FindByID(ctx, podID)
+		if err == nil {
+			go func() {
+				if err := s.eventPublisher.PublishPodUpvoted(context.Background(), podID, userID, pod.UpvoteCount, true); err != nil {
+					// Log error but don't fail the request - event publishing is best-effort
+				}
+			}()
+		}
+	}
+
+	return nil
 }
 
 // RemoveUpvote removes an upvote from a pod.
@@ -645,7 +687,24 @@ func (s *podService) RemoveUpvote(ctx context.Context, podID, userID uuid.UUID) 
 	}
 
 	// Decrement upvote count (requirement 5.2)
-	return s.podRepo.DecrementUpvoteCount(ctx, podID)
+	if err := s.podRepo.DecrementUpvoteCount(ctx, podID); err != nil {
+		return err
+	}
+
+	// Publish pod upvote removed event for search re-indexing
+	if s.eventPublisher != nil {
+		// Get updated upvote count
+		pod, err := s.podRepo.FindByID(ctx, podID)
+		if err == nil {
+			go func() {
+				if err := s.eventPublisher.PublishPodUpvoted(context.Background(), podID, userID, pod.UpvoteCount, false); err != nil {
+					// Log error but don't fail the request - event publishing is best-effort
+				}
+			}()
+		}
+	}
+
+	return nil
 }
 
 // HasUpvoted checks if a user has upvoted a pod.
@@ -766,7 +825,29 @@ func (s *podService) ApproveUploadRequest(ctx context.Context, requestID, ownerI
 	}
 
 	// Update status to approved
-	return s.uploadReqRepo.UpdateStatus(ctx, requestID, domain.UploadRequestStatusApproved, nil)
+	if err := s.uploadReqRepo.UpdateStatus(ctx, requestID, domain.UploadRequestStatusApproved, nil); err != nil {
+		return err
+	}
+
+	// Get pod name for notification
+	pod, err := s.podRepo.FindByID(ctx, request.PodID)
+	if err != nil {
+		// Log error but don't fail - the approval was successful
+		return nil
+	}
+
+	// Publish upload request approved event for notification
+	if s.eventPublisher != nil {
+		go func() {
+			// Note: requesterName would ideally be fetched, but for now we pass empty string
+			// The notification service can look up the name from the requester ID
+			if err := s.eventPublisher.PublishUploadRequestApproved(context.Background(), request, pod.Name, ""); err != nil {
+				// Log error but don't fail the request - event publishing is best-effort
+			}
+		}()
+	}
+
+	return nil
 }
 
 // RejectUploadRequest rejects an upload request with an optional reason.
@@ -1213,9 +1294,16 @@ func (s *podService) SharePodWithStudent(ctx context.Context, teacherID, podID, 
 	})
 	_ = s.activityRepo.Create(ctx, activity)
 
-	// TODO: Publish pod shared event for notification (Requirement 7.3)
-	// This will be implemented in task 18 (NATS Event Publishing)
-	_ = pod // Suppress unused variable warning - will be used for event publishing
+	// Publish pod shared event for notification (Requirement 7.3)
+	if s.eventPublisher != nil {
+		go func() {
+			// Note: teacherName would ideally be fetched, but for now we pass empty string
+			// The notification service can look up the name from the teacher ID
+			if err := s.eventPublisher.PublishPodShared(context.Background(), sharedPod, pod.Name, ""); err != nil {
+				// Log error but don't fail the request - event publishing is best-effort
+			}
+		}()
+	}
 
 	return sharedPod, nil
 }

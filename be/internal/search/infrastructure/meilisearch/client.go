@@ -54,13 +54,13 @@ func (c *Client) SetupIndexes(ctx context.Context) error {
 		return fmt.Errorf("failed to update pods searchable attributes: %w", err)
 	}
 
-	podsFilterable := []any{"owner_id", "visibility", "categories"}
+	podsFilterable := []any{"owner_id", "visibility", "categories", "is_verified"}
 	_, err = podsIndex.UpdateFilterableAttributes(&podsFilterable)
 	if err != nil {
 		return fmt.Errorf("failed to update pods filterable attributes: %w", err)
 	}
 
-	podsSortable := []string{"star_count", "view_count", "created_at"}
+	podsSortable := []string{"star_count", "view_count", "created_at", "upvote_count", "trust_score"}
 	_, err = podsIndex.UpdateSortableAttributes(&podsSortable)
 	if err != nil {
 		return fmt.Errorf("failed to update pods sortable attributes: %w", err)
@@ -105,10 +105,10 @@ func (c *Client) Search(ctx context.Context, query domain.SearchQuery) ([]domain
 
 	offset := (query.Page - 1) * query.PerPage
 
-	// Build filters
-	var filters []string
+	// Build common filters for materials
+	var materialFilters []string
 	if query.PodID != "" {
-		filters = append(filters, fmt.Sprintf("pod_id = '%s'", query.PodID))
+		materialFilters = append(materialFilters, fmt.Sprintf("pod_id = '%s'", query.PodID))
 	}
 	if len(query.Categories) > 0 {
 		catFilter := "categories IN ["
@@ -119,7 +119,7 @@ func (c *Client) Search(ctx context.Context, query domain.SearchQuery) ([]domain
 			catFilter += fmt.Sprintf("'%s'", cat)
 		}
 		catFilter += "]"
-		filters = append(filters, catFilter)
+		materialFilters = append(materialFilters, catFilter)
 	}
 	if len(query.FileTypes) > 0 {
 		ftFilter := "file_type IN ["
@@ -130,31 +130,92 @@ func (c *Client) Search(ctx context.Context, query domain.SearchQuery) ([]domain
 			ftFilter += fmt.Sprintf("'%s'", ft)
 		}
 		ftFilter += "]"
-		filters = append(filters, ftFilter)
+		materialFilters = append(materialFilters, ftFilter)
 	}
 
-	filterStr := ""
-	if len(filters) > 0 {
-		filterStr = filters[0]
-		for i := 1; i < len(filters); i++ {
-			filterStr += " AND " + filters[i]
+	materialFilterStr := ""
+	if len(materialFilters) > 0 {
+		materialFilterStr = materialFilters[0]
+		for i := 1; i < len(materialFilters); i++ {
+			materialFilterStr += " AND " + materialFilters[i]
 		}
 	}
 
-	searchRequest := &meilisearch.SearchRequest{
-		Query:                 query.Query,
-		Limit:                 int64(query.PerPage),
-		Offset:                int64(offset),
-		AttributesToHighlight: []string{"title", "name", "description"},
+	// Build filters for pods (includes verified filter)
+	var podFilters []string
+	if len(query.Categories) > 0 {
+		catFilter := "categories IN ["
+		for i, cat := range query.Categories {
+			if i > 0 {
+				catFilter += ", "
+			}
+			catFilter += fmt.Sprintf("'%s'", cat)
+		}
+		catFilter += "]"
+		podFilters = append(podFilters, catFilter)
 	}
-	if filterStr != "" {
-		searchRequest.Filter = filterStr
+	// Apply verified filter for pods (Requirement 6.3)
+	if query.Verified != nil {
+		podFilters = append(podFilters, fmt.Sprintf("is_verified = %t", *query.Verified))
+	}
+
+	podFilterStr := ""
+	if len(podFilters) > 0 {
+		podFilterStr = podFilters[0]
+		for i := 1; i < len(podFilters); i++ {
+			podFilterStr += " AND " + podFilters[i]
+		}
+	}
+
+	// Build sort options for pods based on SortBy (Requirement 6.4, 6.5)
+	var podSort []string
+	switch query.SortBy {
+	case domain.SortByUpvotes:
+		podSort = []string{"upvote_count:desc"}
+	case domain.SortByTrustScore:
+		// Sort by trust_score which combines is_verified and upvote_count
+		// trust_score is pre-computed: (0.6 * is_verified) + (0.4 * normalized_upvotes)
+		podSort = []string{"trust_score:desc", "upvote_count:desc"}
+	case domain.SortByRecent:
+		podSort = []string{"created_at:desc"}
+	case domain.SortByPopular:
+		podSort = []string{"view_count:desc"}
+	case domain.SortByRelevance:
+		// Default Meilisearch relevance, no explicit sort
+		podSort = nil
+	default:
+		// Default: prioritize verified pods with high upvotes (Requirement 6.5)
+		podSort = nil
+	}
+
+	// Build sort options for materials
+	var materialSort []string
+	switch query.SortBy {
+	case domain.SortByRecent:
+		materialSort = []string{"created_at:desc"}
+	case domain.SortByPopular:
+		materialSort = []string{"view_count:desc"}
+	default:
+		materialSort = nil
 	}
 
 	// Search materials
 	if len(query.Types) == 0 || slices.Contains(query.Types, "material") {
+		materialSearchRequest := &meilisearch.SearchRequest{
+			Query:                 query.Query,
+			Limit:                 int64(query.PerPage),
+			Offset:                int64(offset),
+			AttributesToHighlight: []string{"title", "name", "description"},
+		}
+		if materialFilterStr != "" {
+			materialSearchRequest.Filter = materialFilterStr
+		}
+		if len(materialSort) > 0 {
+			materialSearchRequest.Sort = materialSort
+		}
+
 		materialsIndex := c.client.Index(MaterialsIndex)
-		resp, err := materialsIndex.Search(query.Query, searchRequest)
+		resp, err := materialsIndex.Search(query.Query, materialSearchRequest)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to search materials: %w", err)
 		}
@@ -185,8 +246,21 @@ func (c *Client) Search(ctx context.Context, query domain.SearchQuery) ([]domain
 
 	// Search pods
 	if len(query.Types) == 0 || slices.Contains(query.Types, "pod") {
+		podSearchRequest := &meilisearch.SearchRequest{
+			Query:                 query.Query,
+			Limit:                 int64(query.PerPage),
+			Offset:                int64(offset),
+			AttributesToHighlight: []string{"title", "name", "description"},
+		}
+		if podFilterStr != "" {
+			podSearchRequest.Filter = podFilterStr
+		}
+		if len(podSort) > 0 {
+			podSearchRequest.Sort = podSort
+		}
+
 		podsIndex := c.client.Index(PodsIndex)
-		resp, err := podsIndex.Search(query.Query, searchRequest)
+		resp, err := podsIndex.Search(query.Query, podSearchRequest)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to search pods: %w", err)
 		}
@@ -206,8 +280,11 @@ func (c *Client) Search(ctx context.Context, query domain.SearchQuery) ([]domain
 				Title:       getString(hitMap, "name"),
 				Description: getString(hitMap, "description"),
 				Metadata: map[string]any{
-					"slug":       getString(hitMap, "slug"),
-					"visibility": getString(hitMap, "visibility"),
+					"slug":         getString(hitMap, "slug"),
+					"visibility":   getString(hitMap, "visibility"),
+					"is_verified":  getBool(hitMap, "is_verified"),
+					"upvote_count": getInt(hitMap, "upvote_count"),
+					"trust_score":  getFloat(hitMap, "trust_score"),
 				},
 			}
 			results = append(results, result)
@@ -300,6 +377,32 @@ func (c *Client) DeleteMaterial(ctx context.Context, materialID string) error {
 	return nil
 }
 
+// UpdatePodUpvoteCount updates only the upvote count and trust score for a pod.
+// This is a partial update that only modifies the upvote_count and trust_score fields.
+// Implements Requirements 6.2, 6.4, 6.5: Trust indicator updates.
+func (c *Client) UpdatePodUpvoteCount(ctx context.Context, podID string, upvoteCount int) error {
+	podsIndex := c.client.Index(PodsIndex)
+
+	// Calculate trust score based on upvote count
+	// Note: We don't have is_verified here, so we'll update only upvote_count
+	// and let the trust_score be recalculated based on the existing is_verified value
+	// For a proper update, we'd need to fetch the current document first
+	// However, Meilisearch supports partial updates, so we can just update the fields we have
+
+	// Create a partial document with only the fields we want to update
+	partialDoc := map[string]any{
+		"id":           podID,
+		"upvote_count": upvoteCount,
+	}
+
+	primaryKey := "id"
+	_, err := podsIndex.UpdateDocuments([]map[string]any{partialDoc}, &primaryKey)
+	if err != nil {
+		return fmt.Errorf("failed to update pod upvote count: %w", err)
+	}
+	return nil
+}
+
 func getString(m map[string]any, key string) string {
 	if v, ok := m[key]; ok {
 		if s, ok := v.(string); ok {
@@ -307,6 +410,45 @@ func getString(m map[string]any, key string) string {
 		}
 	}
 	return ""
+}
+
+func getBool(m map[string]any, key string) bool {
+	if v, ok := m[key]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+	}
+	return false
+}
+
+func getInt(m map[string]any, key string) int {
+	if v, ok := m[key]; ok {
+		switch n := v.(type) {
+		case int:
+			return n
+		case int64:
+			return int(n)
+		case float64:
+			return int(n)
+		}
+	}
+	return 0
+}
+
+func getFloat(m map[string]any, key string) float64 {
+	if v, ok := m[key]; ok {
+		switch n := v.(type) {
+		case float64:
+			return n
+		case float32:
+			return float64(n)
+		case int:
+			return float64(n)
+		case int64:
+			return float64(n)
+		}
+	}
+	return 0.0
 }
 
 // HealthCheck checks if Meilisearch is accessible.

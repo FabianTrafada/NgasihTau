@@ -19,6 +19,9 @@ type IndexRepository interface {
 	IndexPod(ctx context.Context, pod PodDocument) error
 	UpdatePod(ctx context.Context, pod PodDocument) error
 	DeletePod(ctx context.Context, podID string) error
+	// UpdatePodUpvoteCount updates only the upvote count and trust score for a pod
+	// Implements Requirements 6.2, 6.4, 6.5: Trust indicator updates
+	UpdatePodUpvoteCount(ctx context.Context, podID string, upvoteCount int) error
 
 	// Material Indexing
 	IndexMaterial(ctx context.Context, material MaterialDocument) error

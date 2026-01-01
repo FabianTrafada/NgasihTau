@@ -163,15 +163,16 @@ type PodFollow struct {
 // UploadRequest represents a teacher's request to upload to another teacher's pod.
 // This enables teacher-to-teacher collaboration for quality educational content.
 // Implements requirement 4.1.
+// @Description Upload request information
 type UploadRequest struct {
-	ID              uuid.UUID           `json:"id"`
-	RequesterID     uuid.UUID           `json:"requester_id"` // Teacher requesting access
-	PodID           uuid.UUID           `json:"pod_id"`       // Target pod
-	PodOwnerID      uuid.UUID           `json:"pod_owner_id"` // Pod owner (for quick lookup)
-	Status          UploadRequestStatus `json:"status"`
-	Message         *string             `json:"message,omitempty"`          // Request message
-	RejectionReason *string             `json:"rejection_reason,omitempty"` // If rejected
-	ExpiresAt       *time.Time          `json:"expires_at,omitempty"`       // Permission expiry
+	ID              uuid.UUID           `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	RequesterID     uuid.UUID           `json:"requester_id" example:"550e8400-e29b-41d4-a716-446655440001"` // Teacher requesting access
+	PodID           uuid.UUID           `json:"pod_id" example:"550e8400-e29b-41d4-a716-446655440002"`       // Target pod
+	PodOwnerID      uuid.UUID           `json:"pod_owner_id" example:"550e8400-e29b-41d4-a716-446655440003"` // Pod owner (for quick lookup)
+	Status          UploadRequestStatus `json:"status" example:"pending"`
+	Message         *string             `json:"message,omitempty" example:"I would like to contribute additional materials on advanced topics."` // Request message
+	RejectionReason *string             `json:"rejection_reason,omitempty" example:"Not accepting contributions at this time."`                  // If rejected
+	ExpiresAt       *time.Time          `json:"expires_at,omitempty"`                                                                            // Permission expiry
 	CreatedAt       time.Time           `json:"created_at"`
 	UpdatedAt       time.Time           `json:"updated_at"`
 }
@@ -360,12 +361,13 @@ func NewActivity(podID, userID uuid.UUID, action ActivityAction, metadata Activi
 // SharedPod represents a pod shared by a teacher to a student.
 // This enables teachers to recommend specific pods to their students.
 // Implements requirement 7.2.
+// @Description Shared pod information
 type SharedPod struct {
-	ID        uuid.UUID `json:"id"`
-	PodID     uuid.UUID `json:"pod_id"`
-	TeacherID uuid.UUID `json:"teacher_id"` // Teacher who shared
-	StudentID uuid.UUID `json:"student_id"` // Student receiving share
-	Message   *string   `json:"message,omitempty"`
+	ID        uuid.UUID `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	PodID     uuid.UUID `json:"pod_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	TeacherID uuid.UUID `json:"teacher_id" example:"550e8400-e29b-41d4-a716-446655440002"` // Teacher who shared
+	StudentID uuid.UUID `json:"student_id" example:"550e8400-e29b-41d4-a716-446655440003"` // Student receiving share
+	Message   *string   `json:"message,omitempty" example:"I recommend this pod for your studies on Go programming."`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -384,10 +386,11 @@ func NewSharedPod(podID, teacherID, studentID uuid.UUID, message *string) *Share
 
 // SharedPodWithDetails represents a shared pod with additional details for API responses.
 // Implements requirement 7.2.
+// @Description Shared pod with details
 type SharedPodWithDetails struct {
 	SharedPod
-	PodName       string  `json:"pod_name"`
-	PodSlug       string  `json:"pod_slug"`
-	TeacherName   string  `json:"teacher_name"`
-	TeacherAvatar *string `json:"teacher_avatar,omitempty"`
+	PodName       string  `json:"pod_name" example:"Introduction to Go Programming"`
+	PodSlug       string  `json:"pod_slug" example:"introduction-to-go-programming"`
+	TeacherName   string  `json:"teacher_name" example:"Dr. John Smith"`
+	TeacherAvatar *string `json:"teacher_avatar,omitempty" example:"https://example.com/avatar.jpg"`
 }

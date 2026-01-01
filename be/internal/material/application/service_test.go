@@ -575,6 +575,22 @@ func (m *mockEventPublisher) PublishCommentCreated(ctx context.Context, event na
 	return nil
 }
 
+func (m *mockEventPublisher) PublishTeacherVerified(ctx context.Context, event nats.TeacherVerifiedEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishUploadRequest(ctx context.Context, event nats.UploadRequestEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishPodShared(ctx context.Context, event nats.PodSharedEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishPodUpvoted(ctx context.Context, event nats.PodUpvotedEvent) error {
+	return nil
+}
+
 // Helper to create a test service
 func newTestService() (*Service, *mockMaterialRepo, *mockVersionRepo, *mockCommentRepo, *mockRatingRepo, *mockBookmarkRepo, *mockMinIOClient, *mockEventPublisher) {
 	materialRepo := newMockMaterialRepo()

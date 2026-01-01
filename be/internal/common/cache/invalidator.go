@@ -56,7 +56,7 @@ func (inv *Invalidator) Start(ctx context.Context) error {
 	userCfg := nats.SubscribeConfig{
 		Stream:     nats.StreamUser,
 		Consumer:   "cache-invalidator-user",
-		Subjects:   []string{nats.SubjectUserUpdated},
+		Subjects:   []string{nats.SubjectUserUpdated, nats.SubjectTeacherVerified},
 		MaxDeliver: 3,
 	}
 
@@ -72,7 +72,7 @@ func (inv *Invalidator) Start(ctx context.Context) error {
 	podCfg := nats.SubscribeConfig{
 		Stream:     nats.StreamPod,
 		Consumer:   "cache-invalidator-pod",
-		Subjects:   []string{nats.SubjectPodUpdated},
+		Subjects:   []string{nats.SubjectPodUpdated, nats.SubjectPodUpvoted},
 		MaxDeliver: 3,
 	}
 
@@ -138,6 +138,8 @@ func (inv *Invalidator) handleUserEvent(ctx context.Context, event nats.CloudEve
 	switch event.Type {
 	case nats.SubjectUserUpdated:
 		return inv.invalidateUserCache(ctx, event)
+	case nats.SubjectTeacherVerified:
+		return inv.invalidateUserCacheOnRoleChange(ctx, event)
 	}
 	return nil
 }
@@ -147,6 +149,8 @@ func (inv *Invalidator) handlePodEvent(ctx context.Context, event nats.CloudEven
 	switch event.Type {
 	case nats.SubjectPodUpdated:
 		return inv.invalidatePodCache(ctx, event)
+	case nats.SubjectPodUpvoted:
+		return inv.invalidatePodCacheOnUpvote(ctx, event)
 	}
 	return nil
 }
@@ -180,6 +184,27 @@ func (inv *Invalidator) invalidateUserCache(ctx context.Context, event nats.Clou
 	return nil
 }
 
+// invalidateUserCacheOnRoleChange invalidates user cache when role changes from student to teacher.
+// Implements requirement 2.2: Cache invalidation when user role changes.
+func (inv *Invalidator) invalidateUserCacheOnRoleChange(ctx context.Context, event nats.CloudEvent) error {
+	data, err := nats.ParseEventData[nats.TeacherVerifiedEvent](event)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to parse teacher verified event")
+		return err
+	}
+
+	userID := data.UserID.String()
+	key := UserProfileKey(userID)
+
+	if err := inv.cache.Delete(ctx, key); err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("failed to invalidate user cache on role change")
+		return err
+	}
+
+	log.Debug().Str("user_id", userID).Str("credential_type", data.CredentialType).Msg("invalidated user cache on teacher verification (role change)")
+	return nil
+}
+
 // invalidatePodCache invalidates pod-related cache entries.
 func (inv *Invalidator) invalidatePodCache(ctx context.Context, event nats.CloudEvent) error {
 	data, err := nats.ParseEventData[nats.PodUpdatedEvent](event)
@@ -202,6 +227,33 @@ func (inv *Invalidator) invalidatePodCache(ctx context.Context, event nats.Cloud
 	}
 
 	log.Debug().Str("pod_id", podID).Msg("invalidated pod cache")
+	return nil
+}
+
+// invalidatePodCacheOnUpvote invalidates pod cache when upvote count changes.
+// Implements requirement 5.1, 5.2: Cache invalidation when upvote count changes.
+func (inv *Invalidator) invalidatePodCacheOnUpvote(ctx context.Context, event nats.CloudEvent) error {
+	data, err := nats.ParseEventData[nats.PodUpvotedEvent](event)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to parse pod upvoted event")
+		return err
+	}
+
+	podID := data.PodID.String()
+
+	// Invalidate pod details cache (upvote count is part of pod details)
+	key := PodDetailsKey(podID)
+
+	if err := inv.cache.Delete(ctx, key); err != nil {
+		log.Error().Err(err).Str("pod_id", podID).Msg("failed to invalidate pod cache on upvote")
+		return err
+	}
+
+	action := "upvoted"
+	if !data.IsUpvote {
+		action = "upvote removed"
+	}
+	log.Debug().Str("pod_id", podID).Str("action", action).Int("upvote_count", data.UpvoteCount).Msg("invalidated pod cache on upvote change")
 	return nil
 }
 

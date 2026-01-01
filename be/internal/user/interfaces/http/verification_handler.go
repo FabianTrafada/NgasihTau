@@ -32,30 +32,33 @@ func NewVerificationHandler(userService application.UserService) *VerificationHa
 }
 
 // SubmitVerificationRequest represents the request body for teacher verification submission.
+// @Description Teacher verification submission request
 type SubmitVerificationRequest struct {
-	FullName       string `json:"full_name" validate:"required,min=3,max=255"`
-	IDNumber       string `json:"id_number" validate:"required,min=10,max=100"`
-	CredentialType string `json:"credential_type" validate:"required,oneof=government_id educator_card professional_cert"`
-	DocumentRef    string `json:"document_ref" validate:"required,max=500"`
+	FullName       string `json:"full_name" validate:"required,min=3,max=255" example:"Dr. John Smith"`
+	IDNumber       string `json:"id_number" validate:"required,min=10,max=100" example:"3275012345678901"`
+	CredentialType string `json:"credential_type" validate:"required,oneof=government_id educator_card professional_cert" example:"educator_card"`
+	DocumentRef    string `json:"document_ref" validate:"required,max=500" example:"doc_ref_abc123xyz"`
 }
 
 // RejectVerificationRequest represents the request body for rejecting a verification.
+// @Description Reject verification request
 type RejectVerificationRequest struct {
-	Reason string `json:"reason" validate:"required,min=1,max=1000"`
+	Reason string `json:"reason" validate:"required,min=1,max=1000" example:"The submitted document is not clear. Please resubmit with a higher quality image."`
 }
 
 // TeacherVerificationResponse represents a teacher verification in API responses.
+// @Description Teacher verification information
 type TeacherVerificationResponse struct {
-	ID              uuid.UUID  `json:"id"`
-	UserID          uuid.UUID  `json:"user_id"`
-	FullName        string     `json:"full_name"`
-	IDNumber        string     `json:"id_number"`
-	CredentialType  string     `json:"credential_type"`
-	DocumentRef     string     `json:"document_ref"`
-	Status          string     `json:"status"`
-	ReviewedBy      *uuid.UUID `json:"reviewed_by,omitempty"`
+	ID              uuid.UUID  `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	UserID          uuid.UUID  `json:"user_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	FullName        string     `json:"full_name" example:"Dr. John Smith"`
+	IDNumber        string     `json:"id_number" example:"3275012345678901"`
+	CredentialType  string     `json:"credential_type" example:"educator_card"`
+	DocumentRef     string     `json:"document_ref" example:"doc_ref_abc123xyz"`
+	Status          string     `json:"status" example:"pending"`
+	ReviewedBy      *uuid.UUID `json:"reviewed_by,omitempty" example:"550e8400-e29b-41d4-a716-446655440002"`
 	ReviewedAt      *time.Time `json:"reviewed_at,omitempty"`
-	RejectionReason *string    `json:"rejection_reason,omitempty"`
+	RejectionReason *string    `json:"rejection_reason,omitempty" example:"Document not clear"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 }

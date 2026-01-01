@@ -1324,10 +1324,22 @@ func (s *userService) ApproveVerification(ctx context.Context, verificationID uu
 		Str("reviewer_id", reviewerID.String()).
 		Msg("teacher verification approved, user role updated to teacher")
 
-	// Publish user.updated event for cache invalidation
+	// Publish events for cache invalidation and notification
 	if s.eventPublisher != nil {
+		// Publish user.updated event for cache invalidation
 		if err := s.eventPublisher.PublishUserUpdated(ctx, verification.UserID); err != nil {
 			log.Error().Err(err).Str("user_id", verification.UserID.String()).Msg("failed to publish user updated event")
+		}
+
+		// Publish teacher verified event for notification
+		event := natspkg.TeacherVerifiedEvent{
+			UserID:         verification.UserID,
+			VerificationID: verification.ID,
+			FullName:       verification.FullName,
+			CredentialType: string(verification.CredentialType),
+		}
+		if err := s.eventPublisher.PublishTeacherVerified(ctx, event); err != nil {
+			log.Error().Err(err).Str("user_id", verification.UserID.String()).Msg("failed to publish teacher verified event")
 		}
 	}
 

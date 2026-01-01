@@ -22,6 +22,280 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/verifications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of pending teacher verification requests (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Verification"
+                ],
+                "summary": "Get pending verifications",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pending verifications",
+                        "schema": {
+                            "$ref": "#/definitions/response.PaginatedResponse-http_TeacherVerificationResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/verifications/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approve a teacher verification request and update user role to teacher (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Verification"
+                ],
+                "summary": "Approve verification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Verification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Verification approved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid verification ID or already reviewed",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Verification not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/verifications/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reject a teacher verification request with a reason (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Verification"
+                ],
+                "summary": "Reject verification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Verification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rejection reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RejectVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Verification rejected successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid verification ID, already reviewed, or missing reason",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Verification not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/feed/recommended": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns pods recommended based on user's interaction history",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Get personalized feed",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_RecommendedFeedResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/feed/trending": {
+            "get": {
+                "description": "Returns trending pods based on popularity",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Get trending feed",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_TrendingFeedResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/interests/me": {
             "get": {
                 "security": [
@@ -370,6 +644,196 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pods/{id}/similar": {
+            "get": {
+                "description": "Returns pods similar to the specified pod",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Get similar pods",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "maximum": 20,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum results",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_SimilarPodsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pods/{id}/track": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records user interaction for recommendation algorithm",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Track user interaction with a pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Interaction data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.TrackInteractionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Interaction tracked"
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pods/{id}/track/time": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records time spent viewing a pod for recommendations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Track time spent on a pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Time spent data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.TrackTimeSpentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Time tracked"
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/preferences": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns user's content preferences based on interaction history",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Get user preferences",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_UserPreferencesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -2294,6 +2758,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/materials/{id}/versions/{version}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Restore a material to a specific previous version",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Materials"
+                ],
+                "summary": "Restore a version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Material ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Version number to restore",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Restored material",
+                        "schema": {
+                            "$ref": "#/definitions/fiber.Map"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid material ID or version",
+                        "schema": {
+                            "$ref": "#/definitions/fiber.Map"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/fiber.Map"
+                        }
+                    },
+                    "404": {
+                        "description": "Version not found",
+                        "schema": {
+                            "$ref": "#/definitions/fiber.Map"
+                        }
+                    }
+                }
+            }
+        },
         "/notifications": {
             "get": {
                 "security": [
@@ -3364,6 +3891,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/pods/{id}/share": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Share a knowledge pod with a student. Only teachers can share pods.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shared Pods"
+                ],
+                "summary": "Share a pod with a student",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Share pod input",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SharePodInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Pod shared successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_SharedPod"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Only teachers can share pods",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod or student not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Pod already shared with this student",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/pods/{id}/star": {
             "post": {
                 "security": [
@@ -3461,6 +4065,186 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Pod not found or not starred",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pods/{id}/upload-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Request permission to upload materials to another teacher's pod. Only teachers can make this request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload Requests"
+                ],
+                "summary": "Request upload permission to a pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional message for the request",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/http.CreateUploadRequestInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Upload request created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_UploadRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Only teachers can request upload permission",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Upload request already exists",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pods/{id}/upvote": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add an upvote to a pod as a trust indicator. Each user can only upvote a pod once.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Upvote a Knowledge Pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pod upvoted",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Already upvoted",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove your upvote from a pod",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Remove upvote from a Knowledge Pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upvote removed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found or not upvoted",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -3576,6 +4360,19 @@ const docTemplate = `{
                         "format": "uuid",
                         "description": "Filter by pod ID",
                         "name": "pod_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by verified status (teacher-created pods)",
+                        "name": "verified",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "relevance",
+                        "description": "Sort by (relevance, upvotes, trust_score, recent, popular)",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -3727,6 +4524,19 @@ const docTemplate = `{
                         "format": "uuid",
                         "description": "Filter by pod ID",
                         "name": "pod_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by verified status (teacher-created pods)",
+                        "name": "verified",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "relevance",
+                        "description": "Sort by (relevance, upvotes, trust_score, recent, popular)",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -3941,6 +4751,200 @@ const docTemplate = `{
                 }
             }
         },
+        "/upload-requests/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Revoke a previously approved upload permission",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload Requests"
+                ],
+                "summary": "Revoke upload permission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Upload Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload permission revoked",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not the pod owner",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Upload request not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/upload-requests/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approve an upload request, granting the requester permission to upload to your pod",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload Requests"
+                ],
+                "summary": "Approve an upload request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Upload Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload request approved",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not the pod owner",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Upload request not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/upload-requests/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reject an upload request with an optional reason",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload Requests"
+                ],
+                "summary": "Reject an upload request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Upload Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional rejection reason",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/http.RejectUploadRequestInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload request rejected",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not the pod owner",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Upload request not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/me": {
             "get": {
                 "security": [
@@ -4017,6 +5021,265 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/shared-pods": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of pods that have been shared with the current user by teachers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shared Pods"
+                ],
+                "summary": "Get pods shared with the current user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of shared pods",
+                        "schema": {
+                            "$ref": "#/definitions/response.PaginatedResponse-domain_SharedPodWithDetails"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/upload-requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of upload requests received by the current user (as pod owner)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload Requests"
+                ],
+                "summary": "Get upload requests for the current user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "approved",
+                            "rejected",
+                            "revoked"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of upload requests",
+                        "schema": {
+                            "$ref": "#/definitions/response.PaginatedResponse-domain_UploadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/upvoted-pods": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of pods upvoted by the current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Get current user's upvoted pods",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of upvoted pods",
+                        "schema": {
+                            "$ref": "#/definitions/response.PaginatedResponse-domain_Pod"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/verification/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the current user's teacher verification status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Verification"
+                ],
+                "summary": "Get verification status",
+                "responses": {
+                    "200": {
+                        "description": "Verification status",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_TeacherVerificationResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No verification request found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/verification/teacher": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submit a request to become a verified teacher with identity documents",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Verification"
+                ],
+                "summary": "Submit teacher verification request",
+                "parameters": [
+                    {
+                        "description": "Verification details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SubmitVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Verification request created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_TeacherVerificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Verification request already exists or user is already a teacher",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -4803,6 +6066,30 @@ const docTemplate = `{
                 "CollaboratorStatusVerified"
             ]
         },
+        "domain.InteractionMetadata": {
+            "type": "object",
+            "properties": {
+                "device_type": {
+                    "type": "string"
+                },
+                "material_id": {
+                    "type": "string"
+                },
+                "referrer": {
+                    "type": "string"
+                },
+                "scroll_depth": {
+                    "description": "0.0 - 1.0",
+                    "type": "number"
+                },
+                "search_query": {
+                    "type": "string"
+                },
+                "time_spent_seconds": {
+                    "type": "integer"
+                }
+            }
+        },
         "domain.InterestSummary": {
             "type": "object",
             "properties": {
@@ -4850,6 +6137,10 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "is_verified": {
+                    "description": "True if created by teacher (Req 1.4, 2.4, 6.1)",
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -4870,6 +6161,10 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "upvote_count": {
+                    "description": "Trust indicator (Req 6.2)",
+                    "type": "integer"
                 },
                 "view_count": {
                     "type": "integer"
@@ -4913,6 +6208,152 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "domain.SharedPod": {
+            "description": "Shared pod information",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "I recommend this pod for your studies on Go programming."
+                },
+                "pod_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
+                },
+                "student_id": {
+                    "description": "Student receiving share",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440003"
+                },
+                "teacher_id": {
+                    "description": "Teacher who shared",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440002"
+                }
+            }
+        },
+        "domain.SharedPodWithDetails": {
+            "description": "Shared pod with details",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "I recommend this pod for your studies on Go programming."
+                },
+                "pod_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
+                },
+                "pod_name": {
+                    "type": "string",
+                    "example": "Introduction to Go Programming"
+                },
+                "pod_slug": {
+                    "type": "string",
+                    "example": "introduction-to-go-programming"
+                },
+                "student_id": {
+                    "description": "Student receiving share",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440003"
+                },
+                "teacher_avatar": {
+                    "type": "string",
+                    "example": "https://example.com/avatar.jpg"
+                },
+                "teacher_id": {
+                    "description": "Teacher who shared",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440002"
+                },
+                "teacher_name": {
+                    "type": "string",
+                    "example": "Dr. John Smith"
+                }
+            }
+        },
+        "domain.UploadRequest": {
+            "description": "Upload request information",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "description": "Permission expiry",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "message": {
+                    "description": "Request message",
+                    "type": "string",
+                    "example": "I would like to contribute additional materials on advanced topics."
+                },
+                "pod_id": {
+                    "description": "Target pod",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440002"
+                },
+                "pod_owner_id": {
+                    "description": "Pod owner (for quick lookup)",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440003"
+                },
+                "rejection_reason": {
+                    "description": "If rejected",
+                    "type": "string",
+                    "example": "Not accepting contributions at this time."
+                },
+                "requester_id": {
+                    "description": "Teacher requesting access",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.UploadRequestStatus"
+                        }
+                    ],
+                    "example": "pending"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UploadRequestStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "revoked"
+            ],
+            "x-enum-varnames": [
+                "UploadRequestStatusPending",
+                "UploadRequestStatusApproved",
+                "UploadRequestStatusRejected",
+                "UploadRequestStatusRevoked"
+            ]
         },
         "domain.Visibility": {
             "type": "string",
@@ -5037,6 +6478,20 @@ const docTemplate = `{
                 }
             }
         },
+        "http.CategoryPreferenceResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "number"
+                }
+            }
+        },
         "http.ChatRequest": {
             "type": "object",
             "required": [
@@ -5071,6 +6526,16 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "maxLength": 255
+                }
+            }
+        },
+        "http.CreateUploadRequestInput": {
+            "description": "Create upload request input",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "I would like to contribute additional materials on advanced topics."
                 }
             }
         },
@@ -5190,6 +6655,41 @@ const docTemplate = `{
                 }
             }
         },
+        "http.PodResponse": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "star_count": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "view_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "http.RateMaterialRequest": {
             "type": "object",
             "required": [
@@ -5204,6 +6704,79 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 5,
                     "minimum": 1
+                }
+            }
+        },
+        "http.RecommendedFeedResponse": {
+            "type": "object",
+            "properties": {
+                "has_more": {
+                    "type": "boolean"
+                },
+                "is_personalized": {
+                    "type": "boolean"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "pods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.RecommendedPodResponse"
+                    }
+                }
+            }
+        },
+        "http.RecommendedPodResponse": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "matched_categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "matched_tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "recommendation_score": {
+                    "type": "number"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "star_count": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "view_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -5240,6 +6813,31 @@ const docTemplate = `{
                 }
             }
         },
+        "http.RejectUploadRequestInput": {
+            "description": "Reject upload request input",
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "example": "Not accepting contributions at this time."
+                }
+            }
+        },
+        "http.RejectVerificationRequest": {
+            "description": "Reject verification request",
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "minLength": 1,
+                    "example": "The submitted document is not clear. Please resubmit with a higher quality image."
+                }
+            }
+        },
         "http.SetInterestsRequest": {
             "type": "object",
             "properties": {
@@ -5253,6 +6851,199 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "http.SharePodInput": {
+            "description": "Share pod with student input",
+            "type": "object",
+            "required": [
+                "student_id"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "I recommend this pod for your studies on Go programming."
+                },
+                "student_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "http.SimilarPodsResponse": {
+            "type": "object",
+            "properties": {
+                "pods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.PodResponse"
+                    }
+                }
+            }
+        },
+        "http.SubmitVerificationRequest": {
+            "description": "Teacher verification submission request",
+            "type": "object",
+            "required": [
+                "credential_type",
+                "document_ref",
+                "full_name",
+                "id_number"
+            ],
+            "properties": {
+                "credential_type": {
+                    "type": "string",
+                    "enum": [
+                        "government_id",
+                        "educator_card",
+                        "professional_cert"
+                    ],
+                    "example": "educator_card"
+                },
+                "document_ref": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "doc_ref_abc123xyz"
+                },
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 3,
+                    "example": "Dr. John Smith"
+                },
+                "id_number": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 10,
+                    "example": "3275012345678901"
+                }
+            }
+        },
+        "http.TagPreferenceResponse": {
+            "type": "object",
+            "properties": {
+                "rank": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.TeacherVerificationResponse": {
+            "description": "Teacher verification information",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "credential_type": {
+                    "type": "string",
+                    "example": "educator_card"
+                },
+                "document_ref": {
+                    "type": "string",
+                    "example": "doc_ref_abc123xyz"
+                },
+                "full_name": {
+                    "type": "string",
+                    "example": "Dr. John Smith"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "id_number": {
+                    "type": "string",
+                    "example": "3275012345678901"
+                },
+                "rejection_reason": {
+                    "type": "string",
+                    "example": "Document not clear"
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "reviewed_by": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440002"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
+                }
+            }
+        },
+        "http.TrackInteractionRequest": {
+            "type": "object",
+            "required": [
+                "interaction_type"
+            ],
+            "properties": {
+                "interaction_type": {
+                    "type": "string",
+                    "enum": [
+                        "view",
+                        "star",
+                        "unstar",
+                        "follow",
+                        "unfollow",
+                        "fork",
+                        "share",
+                        "time_spent",
+                        "material_view",
+                        "material_bookmark",
+                        "search_click",
+                        "upvote",
+                        "remove_upvote"
+                    ]
+                },
+                "metadata": {
+                    "$ref": "#/definitions/domain.InteractionMetadata"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.TrackTimeSpentRequest": {
+            "type": "object",
+            "required": [
+                "seconds"
+            ],
+            "properties": {
+                "seconds": {
+                    "type": "integer",
+                    "maximum": 3600,
+                    "minimum": 1
+                }
+            }
+        },
+        "http.TrendingFeedResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "pods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.PodResponse"
                     }
                 }
             }
@@ -5376,6 +7167,29 @@ const docTemplate = `{
                     "description": "100MB max",
                     "type": "integer",
                     "maximum": 104857600
+                }
+            }
+        },
+        "http.UserPreferencesResponse": {
+            "type": "object",
+            "properties": {
+                "has_enough_data": {
+                    "type": "boolean"
+                },
+                "top_categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.CategoryPreferenceResponse"
+                    }
+                },
+                "top_tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.TagPreferenceResponse"
+                    }
+                },
+                "total_interactions": {
+                    "type": "integer"
                 }
             }
         },
@@ -5592,6 +7406,66 @@ const docTemplate = `{
                 }
             }
         },
+        "response.PaginatedResponse-domain_SharedPodWithDetails": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.SharedPodWithDetails"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/response.Pagination"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.PaginatedResponse-domain_UploadRequest": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.UploadRequest"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/response.Pagination"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.PaginatedResponse-http_TeacherVerificationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.TeacherVerificationResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/response.Pagination"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "response.PaginatedResponse-http_UserResponse": {
             "type": "object",
             "properties": {
@@ -5756,11 +7630,95 @@ const docTemplate = `{
                 }
             }
         },
+        "response.Response-domain_SharedPod": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/domain.SharedPod"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_UploadRequest": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/domain.UploadRequest"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "response.Response-http_AuthResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "$ref": "#/definitions/http.AuthResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_RecommendedFeedResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.RecommendedFeedResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_SimilarPodsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.SimilarPodsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_TeacherVerificationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.TeacherVerificationResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_TrendingFeedResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.TrendingFeedResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"
@@ -5789,6 +7747,20 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/http.TwoFactorSetupResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_UserPreferencesResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.UserPreferencesResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"

@@ -29,7 +29,7 @@ func NewRecommendationHandler(service application.RecommendationService) *Recomm
 
 // TrackInteractionRequest represents the request body for tracking interactions.
 type TrackInteractionRequest struct {
-	InteractionType string                      `json:"interaction_type" validate:"required,oneof=view star unstar follow unfollow fork share time_spent material_view material_bookmark search_click"`
+	InteractionType string                      `json:"interaction_type" validate:"required,oneof=view star unstar follow unfollow fork share time_spent material_view material_bookmark search_click upvote remove_upvote"`
 	Metadata        *domain.InteractionMetadata `json:"metadata,omitempty"`
 	SessionID       *uuid.UUID                  `json:"session_id,omitempty"`
 }
@@ -44,9 +44,9 @@ type TrackInteractionRequest struct {
 // @Param id path string true "Pod ID"
 // @Param body body TrackInteractionRequest true "Interaction data"
 // @Success 204 "Interaction tracked"
-// @Failure 400 {object} response.ErrorResponse "Invalid request"
-// @Failure 401 {object} response.ErrorResponse "Unauthorized"
-// @Failure 404 {object} response.ErrorResponse "Pod not found"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request"
+// @Failure 401 {object} errors.ErrorResponse "Unauthorized"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
 // @Router /api/v1/pods/{id}/track [post]
 func (h *RecommendationHandler) TrackInteraction(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
@@ -99,8 +99,8 @@ type TrackTimeSpentRequest struct {
 // @Param id path string true "Pod ID"
 // @Param body body TrackTimeSpentRequest true "Time spent data"
 // @Success 204 "Time tracked"
-// @Failure 400 {object} response.ErrorResponse "Invalid request"
-// @Failure 401 {object} response.ErrorResponse "Unauthorized"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request"
+// @Failure 401 {object} errors.ErrorResponse "Unauthorized"
 // @Router /api/v1/pods/{id}/track/time [post]
 func (h *RecommendationHandler) TrackTimeSpent(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
@@ -138,8 +138,8 @@ func (h *RecommendationHandler) TrackTimeSpent(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Param page query int false "Page number" default(1)
 // @Param per_page query int false "Items per page" default(20) maximum(50)
-// @Success 200 {object} response.SuccessResponse{data=RecommendedFeedResponse}
-// @Failure 401 {object} response.ErrorResponse "Unauthorized"
+// @Success 200 {object} response.Response[RecommendedFeedResponse]
+// @Failure 401 {object} errors.ErrorResponse "Unauthorized"
 // @Router /api/v1/feed/recommended [get]
 func (h *RecommendationHandler) GetPersonalizedFeed(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)
@@ -174,7 +174,7 @@ func (h *RecommendationHandler) GetPersonalizedFeed(c *fiber.Ctx) error {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param per_page query int false "Items per page" default(20) maximum(50)
-// @Success 200 {object} response.SuccessResponse{data=TrendingFeedResponse}
+// @Success 200 {object} response.Response[TrendingFeedResponse]
 // @Router /api/v1/feed/trending [get]
 func (h *RecommendationHandler) GetTrendingFeed(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
@@ -202,8 +202,8 @@ func (h *RecommendationHandler) GetTrendingFeed(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path string true "Pod ID"
 // @Param limit query int false "Maximum results" default(10) maximum(20)
-// @Success 200 {object} response.SuccessResponse{data=SimilarPodsResponse}
-// @Failure 404 {object} response.ErrorResponse "Pod not found"
+// @Success 200 {object} response.Response[SimilarPodsResponse]
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
 // @Router /api/v1/pods/{id}/similar [get]
 func (h *RecommendationHandler) GetSimilarPods(c *fiber.Ctx) error {
 	podIDStr := c.Params("id")
@@ -233,8 +233,8 @@ func (h *RecommendationHandler) GetSimilarPods(c *fiber.Ctx) error {
 // @Tags Recommendations
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.SuccessResponse{data=UserPreferencesResponse}
-// @Failure 401 {object} response.ErrorResponse "Unauthorized"
+// @Success 200 {object} response.Response[UserPreferencesResponse]
+// @Failure 401 {object} errors.ErrorResponse "Unauthorized"
 // @Router /api/v1/users/me/preferences [get]
 func (h *RecommendationHandler) GetUserPreferences(c *fiber.Ctx) error {
 	userID, ok := middleware.GetUserID(c)

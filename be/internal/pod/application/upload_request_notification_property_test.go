@@ -94,6 +94,24 @@ func (m *mockEventPublisherForNotifications) PublishUploadRequestRejected(ctx co
 	return nil
 }
 
+func (m *mockEventPublisherForNotifications) PublishUploadRequestApproved(ctx context.Context, request *domain.UploadRequest, podName string, requesterName string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return nil
+}
+
+func (m *mockEventPublisherForNotifications) PublishPodShared(ctx context.Context, sharedPod *domain.SharedPod, podName string, teacherName string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return nil
+}
+
+func (m *mockEventPublisherForNotifications) PublishPodUpvoted(ctx context.Context, podID uuid.UUID, userID uuid.UUID, upvoteCount int, isUpvote bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return nil
+}
+
 func (m *mockEventPublisherForNotifications) getUploadRequestCreatedCalls() []uploadRequestCreatedCall {
 	m.mu.Lock()
 	defer m.mu.Unlock()

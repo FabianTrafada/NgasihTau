@@ -113,6 +113,17 @@ func (m *mockIndexRepo) DeleteMaterial(ctx context.Context, materialID string) e
 	return nil
 }
 
+func (m *mockIndexRepo) UpdatePodUpvoteCount(ctx context.Context, podID string, upvoteCount int) error {
+	if m.indexErr != nil {
+		return m.indexErr
+	}
+	if pod, ok := m.pods[podID]; ok {
+		pod.UpvoteCount = upvoteCount
+		m.pods[podID] = pod
+	}
+	return nil
+}
+
 type mockVectorSearchRepo struct {
 	results   []domain.SearchResult
 	searchErr error
