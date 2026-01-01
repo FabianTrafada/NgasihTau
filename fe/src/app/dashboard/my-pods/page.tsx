@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import KnowledgePodCard from '@/components/knowledge-pod/KnowledgePodCard';
 import { KnowledgePod } from '@/types/knowledgePods';
 
-const MyKnowledgePage: React.FC = () => {
+const KnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
     {
       id: '1',
@@ -12,7 +12,7 @@ const MyKnowledgePage: React.FC = () => {
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ...',
       fileCount: 12,
       date: '2 Jan 25',
-      isLiked: true,
+      isPublic: "private"
     },
     {
       id: '2',
@@ -20,7 +20,7 @@ const MyKnowledgePage: React.FC = () => {
       description: 'Panduan lengkap memahami component, props, dan state dalam React modern menggunakan TypeScript.',
       fileCount: 8,
       date: '5 Jan 25',
-      isLiked: true,
+        isPublic: "public"
     },
     {
       id: '3',
@@ -28,7 +28,7 @@ const MyKnowledgePage: React.FC = () => {
       description: 'Tips dan trik mengelola jadwal skripsi tanpa mengabaikan kesehatan mental dan kehidupan sosial.',
       fileCount: 5,
       date: '10 Jan 25',
-      isLiked: true,
+        isPublic: "public"
     },
     {
       id: '4',
@@ -36,7 +36,7 @@ const MyKnowledgePage: React.FC = () => {
       description: 'Cara mengambil foto makanan yang estetik hanya dengan modal kamera HP dan cahaya matahari.',
       fileCount: 20,
       date: '12 Jan 25',
-      isLiked: true,
+      isPublic: "private"
     }
   ]);
 
@@ -54,15 +54,13 @@ const MyKnowledgePage: React.FC = () => {
           <h1 className="text-2xl font-black text-black tracking-tight mb-2">
             My Knowledge Pods
           </h1>
-          <p className="text-zinc-500 font-medium">
-            Manage and explore your personal collection of knowledge repositories.
+          <p className="text-zinc-500 font-medium text-sm">
+            Explore the most shared and updated knowledge repositories.
           </p>
         </div>
         <div className="flex gap-2 min-w-max">
-          <button className="px-4 py-2  border-2 text-base border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF8811] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:text-white cursor-pointer hover:translate-x-[2px] hover:translate-y-[2px] transition-all group leading-none">
-            Newest
-          </button>
-          <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
+         
+          <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-px hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
             Upload Pod
           </button>
         </div>
@@ -77,7 +75,7 @@ const MyKnowledgePage: React.FC = () => {
               pod={pod} 
               onToggleLike={handleToggleLike}
               isLast={index === pods.length - 1}
-              isPersonal={true}
+                            
             />
           ))}
         </div>
@@ -102,4 +100,4 @@ const MyKnowledgePage: React.FC = () => {
   );
 };
 
-export default MyKnowledgePage;
+export default KnowledgePage;

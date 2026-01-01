@@ -12,7 +12,7 @@ interface RecentPodCardProps {
 
 const RecentPodCard = ({ title, description, fileCount, date }: RecentPodCardProps) => {
     return (
-        <div className='bg-white border-2 border-[#2B2D42] p-5 shadow-[6px_6px_0px_0px_#2B2D42] hover:shadow-[3px_3px_0px_0px_#2B2D42] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-200 flex flex-col justify-between h-full relative group'>
+        <div className='bg-white border-2 border-[#2B2D42] p-5 shadow-[6px_6px_0px_0px_#2B2D42] hover:shadow-[3px_3px_0px_0px_#FF8811] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-200 flex flex-col justify-between h-full relative group'>
 
             <div>
                 <h3 className='text-[#ff8811] font-bold text-lg mb-2 line-clamp-2'>

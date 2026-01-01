@@ -30,7 +30,6 @@ export function proxy (request: NextRequest) {
 
 
     // if not have any token and trying to access auth routes, allow
-    // if have token and trying to access protected routes, allow
 
     
 

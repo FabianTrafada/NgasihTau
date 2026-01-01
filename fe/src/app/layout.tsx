@@ -18,6 +18,7 @@ const inter = Inter({
 
 
 
+
 export const metadata: Metadata = {
   title: "NgasihTau",
   description: "NgasihTau - Your learning platform",

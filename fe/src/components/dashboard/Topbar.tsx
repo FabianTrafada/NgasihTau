@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/lib/auth-context';
 
-import { Bell, LogOut, PanelLeft, PanelLeftClose,  Search, Settings, User, Users } from 'lucide-react'
+import { Bell, LogOut, PanelLeft, PanelLeftClose, Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
@@ -64,10 +64,71 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) =>
 
 
 
-                <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors hidden sm:block">
-                    <Bell className="w-5 h-5 lg:w-6 lg:h-6" />
-                    <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FFFBF7]"></span>
-                </button>
+
+                {/* TODO Hackaton 50% */}
+                {/* <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors hidden sm:block">
+                            <Bell className="w-5 h-5 lg:w-6 lg:h-6" />
+                            <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FFFBF7]"></span>
+                        </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent className="w-80 p-0 border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] bg-white rounded-xl overflow-hidden" align="end">
+                        <div className="p-4 border-b border-gray-100 bg-[#FFFBF7]">
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-bold text-[#2B2D42]">Notifications</h3>
+                                <span className="text-xs text-[#FF8811] font-medium cursor-pointer hover:underline">Mark all as read</span>
+                            </div>
+                        </div>
+                        
+                        <div className="max-h-[300px] overflow-y-auto">
+                    
+                            <DropdownMenuItem className="p-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 border-b border-gray-100 last:border-0 outline-none">
+                                <div className="flex gap-3">
+                                    <div className="mt-1 shrink-0 w-2 h-2 rounded-full bg-[#FF8811]"></div>
+                                    <div className="flex-1 space-y-1">
+                                        <p className="text-sm font-medium text-[#2B2D42] leading-none">New Team Member</p>
+                                        <p className="text-xs text-gray-500">Alex joined the design team.</p>
+                                        <p className="text-[10px] text-gray-400">2 min ago</p>
+                                    </div>
+                                </div>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="p-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 border-b border-gray-100 last:border-0 outline-none">
+                                <div className="flex gap-3">
+                                    <div className="mt-1 shrink-0 w-2 h-2 rounded-full bg-[#FF8811]"></div>
+                                    <div className="flex-1 space-y-1">
+                                        <p className="text-sm font-medium text-[#2B2D42] leading-none">Project Update</p>
+                                        <p className="text-xs text-gray-500">Dashboard redesign is complete.</p>
+                                        <p className="text-[10px] text-gray-400">1 hour ago</p>
+                                    </div>
+                                </div>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="p-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 outline-none">
+                                <div className="flex gap-3">
+                                    <div className="mt-1 shrink-0 w-2 h-2 rounded-full bg-gray-300"></div>
+                                    <div className="flex-1 space-y-1">
+                                        <p className="text-sm font-medium text-[#2B2D42] leading-none">System Alert</p>
+                                        <p className="text-xs text-gray-500">Maintenance scheduled for tonight.</p>
+                                        <p className="text-[10px] text-gray-400">5 hours ago</p>
+                                    </div>
+                                </div>
+                            </DropdownMenuItem>
+                        </div>
+
+                        <div className="p-2 border-t border-gray-100 bg-gray-50 text-center">
+                            <Link href="/dashboard/notifications" className="text-xs font-medium text-[#2B2D42] hover:text-[#FF8811] transition-colors">
+                                View all notifications
+                            </Link>
+                        </div>
+                    </DropdownMenuContent>
+                </DropdownMenu> */}  
+
+
+
+
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

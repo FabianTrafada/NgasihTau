@@ -8,7 +8,7 @@ interface ChatbotLogCardProps {
 
 const ChatbotLogCard = ({ title, snippet }: ChatbotLogCardProps) => {
   return (
-    <div className="bg-white border-2 border-[#2B2D42] p-5 flex items-center justify-between shadow-[4px_4px_0px_0px_#2B2D42] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] transition-all group">
+    <div className="bg-white border-2 border-[#2B2D42] p-5 flex items-center justify-between shadow-[4px_4px_0px_0px_#2B2D42] cursor-pointer hover:shadow-[4px_4px_0px_0px_#FF8811] hover:translate-x-[2px] hover:translate-y-[2px] transition-all group">
       <div className="flex gap-4 items-start">
         <div className="w-10 h-10 bg-gray-50 flex items-center justify-center flex-shrink-0 border-2 border-[#2B2D42]">
           <MessageSquare className="w-5 h-5 text-[#2B2D42]" />
@@ -22,7 +22,7 @@ const ChatbotLogCard = ({ title, snippet }: ChatbotLogCardProps) => {
         </div>
       </div>
 
-      <button className="px-4 py-2 border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]">
+      <button className="px-4 py-2 border-2 cursor-pointer border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]">
         Continue
       </button>
     </div>
