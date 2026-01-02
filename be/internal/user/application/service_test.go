@@ -373,6 +373,91 @@ func (m *mockVerificationTokenRepo) DeleteExpired(ctx context.Context) (int64, e
 	return 0, nil
 }
 
+// mockTeacherVerificationRepo is a mock implementation of TeacherVerificationRepository.
+type mockTeacherVerificationRepo struct {
+	verifications map[uuid.UUID]*domain.TeacherVerification
+	userIndex     map[uuid.UUID]*domain.TeacherVerification
+}
+
+func newMockTeacherVerificationRepo() *mockTeacherVerificationRepo {
+	return &mockTeacherVerificationRepo{
+		verifications: make(map[uuid.UUID]*domain.TeacherVerification),
+		userIndex:     make(map[uuid.UUID]*domain.TeacherVerification),
+	}
+}
+
+func (m *mockTeacherVerificationRepo) Create(ctx context.Context, verification *domain.TeacherVerification) error {
+	m.verifications[verification.ID] = verification
+	m.userIndex[verification.UserID] = verification
+	return nil
+}
+
+func (m *mockTeacherVerificationRepo) FindByID(ctx context.Context, id uuid.UUID) (*domain.TeacherVerification, error) {
+	v, ok := m.verifications[id]
+	if !ok {
+		return nil, errors.NotFound("teacher_verification", id.String())
+	}
+	return v, nil
+}
+
+func (m *mockTeacherVerificationRepo) FindByUserID(ctx context.Context, userID uuid.UUID) (*domain.TeacherVerification, error) {
+	v, ok := m.userIndex[userID]
+	if !ok {
+		return nil, errors.NotFound("teacher_verification", userID.String())
+	}
+	return v, nil
+}
+
+func (m *mockTeacherVerificationRepo) FindPending(ctx context.Context, limit, offset int) ([]*domain.TeacherVerification, int, error) {
+	var pending []*domain.TeacherVerification
+	for _, v := range m.verifications {
+		if v.Status == domain.VerificationStatusPending {
+			pending = append(pending, v)
+		}
+	}
+	total := len(pending)
+	if offset >= total {
+		return []*domain.TeacherVerification{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return pending[offset:end], total, nil
+}
+
+func (m *mockTeacherVerificationRepo) Update(ctx context.Context, verification *domain.TeacherVerification) error {
+	m.verifications[verification.ID] = verification
+	m.userIndex[verification.UserID] = verification
+	return nil
+}
+
+func (m *mockTeacherVerificationRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.VerificationStatus, reviewedBy uuid.UUID, reason *string) error {
+	v, ok := m.verifications[id]
+	if !ok {
+		return errors.NotFound("teacher_verification", id.String())
+	}
+	v.Status = status
+	v.ReviewedBy = &reviewedBy
+	now := time.Now()
+	v.ReviewedAt = &now
+	v.RejectionReason = reason
+	return nil
+}
+
+func (m *mockTeacherVerificationRepo) ExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error) {
+	_, ok := m.userIndex[userID]
+	return ok, nil
+}
+
+func (m *mockTeacherVerificationRepo) ExistsPendingByUserID(ctx context.Context, userID uuid.UUID) (bool, error) {
+	v, ok := m.userIndex[userID]
+	if !ok {
+		return false, nil
+	}
+	return v.Status == domain.VerificationStatusPending, nil
+}
+
 // Helper to create a test service
 func newTestService() (UserService, *mockUserRepo, *mockRefreshTokenRepo) {
 	userRepo := newMockUserRepo()
@@ -381,6 +466,7 @@ func newTestService() (UserService, *mockUserRepo, *mockRefreshTokenRepo) {
 	backupCodeRepo := newMockBackupCodeRepo()
 	followRepo := newMockFollowRepo()
 	verificationTokenRepo := newMockVerificationTokenRepo()
+	teacherVerificationRepo := newMockTeacherVerificationRepo()
 
 	jwtManager := jwt.NewManager(jwt.Config{
 		Secret:             "test-secret-key-for-testing-only",
@@ -396,6 +482,7 @@ func newTestService() (UserService, *mockUserRepo, *mockRefreshTokenRepo) {
 		backupCodeRepo,
 		followRepo,
 		verificationTokenRepo,
+		teacherVerificationRepo,
 		jwtManager,
 		nil, // No Google client for tests
 		nil, // No event publisher for tests (will use nil checks)
@@ -779,5 +866,651 @@ func TestEnable2FA_AlreadyEnabled(t *testing.T) {
 	}
 	if appErr.Code != errors.CodeBadRequest {
 		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+// =============================================================================
+// Teacher Verification Service Tests
+// =============================================================================
+
+// Test: SubmitTeacherVerification - Success
+func TestSubmitTeacherVerification_Success(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	input := TeacherVerificationInput{
+		FullName:       "John Doe Teacher",
+		IDNumber:       "1234567890123456",
+		CredentialType: domain.CredentialTypeEducatorCard,
+		DocumentRef:    "ref://documents/educator-card-123",
+	}
+
+	result, err := svc.SubmitTeacherVerification(ctx, user.ID, input)
+	if err != nil {
+		t.Fatalf("SubmitTeacherVerification failed: %v", err)
+	}
+
+	// Verify result
+	if result == nil {
+		t.Fatal("Expected verification result")
+	}
+	if result.UserID != user.ID {
+		t.Errorf("Expected user ID %s, got %s", user.ID, result.UserID)
+	}
+	if result.FullName != input.FullName {
+		t.Errorf("Expected full name %s, got %s", input.FullName, result.FullName)
+	}
+	if result.IDNumber != input.IDNumber {
+		t.Errorf("Expected ID number %s, got %s", input.IDNumber, result.IDNumber)
+	}
+	if result.CredentialType != input.CredentialType {
+		t.Errorf("Expected credential type %s, got %s", input.CredentialType, result.CredentialType)
+	}
+	if result.DocumentRef != input.DocumentRef {
+		t.Errorf("Expected document ref %s, got %s", input.DocumentRef, result.DocumentRef)
+	}
+	if result.Status != domain.VerificationStatusPending {
+		t.Errorf("Expected status %s, got %s", domain.VerificationStatusPending, result.Status)
+	}
+
+	// Verify verification was stored
+	if len(teacherVerificationRepo.verifications) != 1 {
+		t.Errorf("Expected 1 verification in repo, got %d", len(teacherVerificationRepo.verifications))
+	}
+}
+
+// Test: SubmitTeacherVerification - User Already Teacher
+func TestSubmitTeacherVerification_UserAlreadyTeacher(t *testing.T) {
+	svc, userRepo, _ := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a teacher user
+	user := domain.NewUser("teacher@example.com", "hash", "Teacher User")
+	user.Role = domain.RoleTeacher
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	input := TeacherVerificationInput{
+		FullName:       "John Doe Teacher",
+		IDNumber:       "1234567890123456",
+		CredentialType: domain.CredentialTypeEducatorCard,
+		DocumentRef:    "ref://documents/educator-card-123",
+	}
+
+	_, err := svc.SubmitTeacherVerification(ctx, user.ID, input)
+	if err == nil {
+		t.Fatal("Expected error for user already teacher")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeBadRequest {
+		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+// Test: SubmitTeacherVerification - Pending Verification Exists
+func TestSubmitTeacherVerification_PendingExists(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create existing pending verification
+	existingVerification := domain.NewTeacherVerification(
+		user.ID,
+		"Existing Name",
+		"1234567890123456",
+		domain.CredentialTypeGovernmentID,
+		"ref://existing",
+	)
+	teacherVerificationRepo.verifications[existingVerification.ID] = existingVerification
+	teacherVerificationRepo.userIndex[user.ID] = existingVerification
+
+	input := TeacherVerificationInput{
+		FullName:       "John Doe Teacher",
+		IDNumber:       "1234567890123456",
+		CredentialType: domain.CredentialTypeEducatorCard,
+		DocumentRef:    "ref://documents/educator-card-123",
+	}
+
+	_, err := svc.SubmitTeacherVerification(ctx, user.ID, input)
+	if err == nil {
+		t.Fatal("Expected error for pending verification exists")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeConflict {
+		t.Errorf("Expected conflict error code, got %s", appErr.Code)
+	}
+}
+
+// Test: SubmitTeacherVerification - Validation Errors
+func TestSubmitTeacherVerification_ValidationErrors(t *testing.T) {
+	svc, userRepo, _ := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	tests := []struct {
+		name  string
+		input TeacherVerificationInput
+	}{
+		{
+			name: "empty full name",
+			input: TeacherVerificationInput{
+				FullName:       "",
+				IDNumber:       "1234567890123456",
+				CredentialType: domain.CredentialTypeEducatorCard,
+				DocumentRef:    "ref://documents/123",
+			},
+		},
+		{
+			name: "short full name",
+			input: TeacherVerificationInput{
+				FullName:       "AB",
+				IDNumber:       "1234567890123456",
+				CredentialType: domain.CredentialTypeEducatorCard,
+				DocumentRef:    "ref://documents/123",
+			},
+		},
+		{
+			name: "empty ID number",
+			input: TeacherVerificationInput{
+				FullName:       "John Doe Teacher",
+				IDNumber:       "",
+				CredentialType: domain.CredentialTypeEducatorCard,
+				DocumentRef:    "ref://documents/123",
+			},
+		},
+		{
+			name: "short ID number",
+			input: TeacherVerificationInput{
+				FullName:       "John Doe Teacher",
+				IDNumber:       "123456789",
+				CredentialType: domain.CredentialTypeEducatorCard,
+				DocumentRef:    "ref://documents/123",
+			},
+		},
+		{
+			name: "empty credential type",
+			input: TeacherVerificationInput{
+				FullName:       "John Doe Teacher",
+				IDNumber:       "1234567890123456",
+				CredentialType: "",
+				DocumentRef:    "ref://documents/123",
+			},
+		},
+		{
+			name: "invalid credential type",
+			input: TeacherVerificationInput{
+				FullName:       "John Doe Teacher",
+				IDNumber:       "1234567890123456",
+				CredentialType: "invalid_type",
+				DocumentRef:    "ref://documents/123",
+			},
+		},
+		{
+			name: "empty document ref",
+			input: TeacherVerificationInput{
+				FullName:       "John Doe Teacher",
+				IDNumber:       "1234567890123456",
+				CredentialType: domain.CredentialTypeEducatorCard,
+				DocumentRef:    "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.SubmitTeacherVerification(ctx, user.ID, tt.input)
+			if err == nil {
+				t.Fatal("Expected validation error")
+			}
+
+			appErr, ok := err.(*errors.AppError)
+			if !ok {
+				t.Fatalf("Expected AppError, got %T", err)
+			}
+			if appErr.Code != errors.CodeValidationError {
+				t.Errorf("Expected validation error code, got %s", appErr.Code)
+			}
+		})
+	}
+}
+
+// Test: ApproveVerification - Success
+func TestApproveVerification_Success(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create pending verification
+	verification := domain.NewTeacherVerification(
+		user.ID,
+		"John Doe Teacher",
+		"1234567890123456",
+		domain.CredentialTypeEducatorCard,
+		"ref://documents/123",
+	)
+	teacherVerificationRepo.verifications[verification.ID] = verification
+	teacherVerificationRepo.userIndex[user.ID] = verification
+
+	reviewerID := uuid.New()
+
+	err := svc.ApproveVerification(ctx, verification.ID, reviewerID)
+	if err != nil {
+		t.Fatalf("ApproveVerification failed: %v", err)
+	}
+
+	// Verify verification status was updated
+	updatedVerification := teacherVerificationRepo.verifications[verification.ID]
+	if updatedVerification.Status != domain.VerificationStatusApproved {
+		t.Errorf("Expected status %s, got %s", domain.VerificationStatusApproved, updatedVerification.Status)
+	}
+	if updatedVerification.ReviewedBy == nil || *updatedVerification.ReviewedBy != reviewerID {
+		t.Error("Expected reviewer ID to be set")
+	}
+	if updatedVerification.ReviewedAt == nil {
+		t.Error("Expected reviewed at to be set")
+	}
+
+	// Verify user role was updated to teacher
+	updatedUser := userRepo.users[user.ID]
+	if updatedUser.Role != domain.RoleTeacher {
+		t.Errorf("Expected user role %s, got %s", domain.RoleTeacher, updatedUser.Role)
+	}
+}
+
+// Test: ApproveVerification - Already Reviewed
+func TestApproveVerification_AlreadyReviewed(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create already approved verification
+	verification := domain.NewTeacherVerification(
+		user.ID,
+		"John Doe Teacher",
+		"1234567890123456",
+		domain.CredentialTypeEducatorCard,
+		"ref://documents/123",
+	)
+	verification.Approve(uuid.New())
+	teacherVerificationRepo.verifications[verification.ID] = verification
+	teacherVerificationRepo.userIndex[user.ID] = verification
+
+	reviewerID := uuid.New()
+
+	err := svc.ApproveVerification(ctx, verification.ID, reviewerID)
+	if err == nil {
+		t.Fatal("Expected error for already reviewed verification")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeBadRequest {
+		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+// Test: ApproveVerification - Not Found
+func TestApproveVerification_NotFound(t *testing.T) {
+	svc, _, _ := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	nonExistentID := uuid.New()
+	reviewerID := uuid.New()
+
+	err := svc.ApproveVerification(ctx, nonExistentID, reviewerID)
+	if err == nil {
+		t.Fatal("Expected error for non-existent verification")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+// Test: RejectVerification - Success
+func TestRejectVerification_Success(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create pending verification
+	verification := domain.NewTeacherVerification(
+		user.ID,
+		"John Doe Teacher",
+		"1234567890123456",
+		domain.CredentialTypeEducatorCard,
+		"ref://documents/123",
+	)
+	teacherVerificationRepo.verifications[verification.ID] = verification
+	teacherVerificationRepo.userIndex[user.ID] = verification
+
+	reviewerID := uuid.New()
+	reason := "Invalid credentials provided"
+
+	err := svc.RejectVerification(ctx, verification.ID, reviewerID, reason)
+	if err != nil {
+		t.Fatalf("RejectVerification failed: %v", err)
+	}
+
+	// Verify verification status was updated
+	updatedVerification := teacherVerificationRepo.verifications[verification.ID]
+	if updatedVerification.Status != domain.VerificationStatusRejected {
+		t.Errorf("Expected status %s, got %s", domain.VerificationStatusRejected, updatedVerification.Status)
+	}
+	if updatedVerification.ReviewedBy == nil || *updatedVerification.ReviewedBy != reviewerID {
+		t.Error("Expected reviewer ID to be set")
+	}
+	if updatedVerification.ReviewedAt == nil {
+		t.Error("Expected reviewed at to be set")
+	}
+	if updatedVerification.RejectionReason == nil || *updatedVerification.RejectionReason != reason {
+		t.Errorf("Expected rejection reason %s, got %v", reason, updatedVerification.RejectionReason)
+	}
+
+	// Verify user role was NOT changed (should remain student)
+	updatedUser := userRepo.users[user.ID]
+	if updatedUser.Role != domain.RoleStudent {
+		t.Errorf("Expected user role to remain %s, got %s", domain.RoleStudent, updatedUser.Role)
+	}
+}
+
+// Test: RejectVerification - Empty Reason
+func TestRejectVerification_EmptyReason(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create pending verification
+	verification := domain.NewTeacherVerification(
+		user.ID,
+		"John Doe Teacher",
+		"1234567890123456",
+		domain.CredentialTypeEducatorCard,
+		"ref://documents/123",
+	)
+	teacherVerificationRepo.verifications[verification.ID] = verification
+	teacherVerificationRepo.userIndex[user.ID] = verification
+
+	reviewerID := uuid.New()
+
+	err := svc.RejectVerification(ctx, verification.ID, reviewerID, "")
+	if err == nil {
+		t.Fatal("Expected error for empty rejection reason")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeBadRequest {
+		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+// Test: RejectVerification - Already Reviewed
+func TestRejectVerification_AlreadyReviewed(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create already rejected verification
+	verification := domain.NewTeacherVerification(
+		user.ID,
+		"John Doe Teacher",
+		"1234567890123456",
+		domain.CredentialTypeEducatorCard,
+		"ref://documents/123",
+	)
+	verification.Reject(uuid.New(), "Previous rejection")
+	teacherVerificationRepo.verifications[verification.ID] = verification
+	teacherVerificationRepo.userIndex[user.ID] = verification
+
+	reviewerID := uuid.New()
+
+	err := svc.RejectVerification(ctx, verification.ID, reviewerID, "New rejection reason")
+	if err == nil {
+		t.Fatal("Expected error for already reviewed verification")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeBadRequest {
+		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+// Test: RejectVerification - Not Found
+func TestRejectVerification_NotFound(t *testing.T) {
+	svc, _, _ := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	nonExistentID := uuid.New()
+	reviewerID := uuid.New()
+
+	err := svc.RejectVerification(ctx, nonExistentID, reviewerID, "Some reason")
+	if err == nil {
+		t.Fatal("Expected error for non-existent verification")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+// Test: GetVerificationStatus - Success
+func TestGetVerificationStatus_Success(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	// Create pending verification
+	verification := domain.NewTeacherVerification(
+		user.ID,
+		"John Doe Teacher",
+		"1234567890123456",
+		domain.CredentialTypeEducatorCard,
+		"ref://documents/123",
+	)
+	teacherVerificationRepo.verifications[verification.ID] = verification
+	teacherVerificationRepo.userIndex[user.ID] = verification
+
+	result, err := svc.GetVerificationStatus(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetVerificationStatus failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Expected verification result")
+	}
+	if result.ID != verification.ID {
+		t.Errorf("Expected verification ID %s, got %s", verification.ID, result.ID)
+	}
+	if result.Status != domain.VerificationStatusPending {
+		t.Errorf("Expected status %s, got %s", domain.VerificationStatusPending, result.Status)
+	}
+}
+
+// Test: GetVerificationStatus - Not Found
+func TestGetVerificationStatus_NotFound(t *testing.T) {
+	svc, userRepo, _ := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create a student user without verification
+	user := domain.NewUser("student@example.com", "hash", "Student User")
+	userRepo.users[user.ID] = user
+	userRepo.emailIndex[user.Email] = user
+
+	_, err := svc.GetVerificationStatus(ctx, user.ID)
+	if err == nil {
+		t.Fatal("Expected error for non-existent verification")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+// Test: GetPendingVerifications - Success
+func TestGetPendingVerifications_Success(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create multiple users with pending verifications
+	for i := 0; i < 3; i++ {
+		user := domain.NewUser("student"+string(rune('0'+i))+"@example.com", "hash", "Student "+string(rune('0'+i)))
+		userRepo.users[user.ID] = user
+		userRepo.emailIndex[user.Email] = user
+
+		verification := domain.NewTeacherVerification(
+			user.ID,
+			"Teacher "+string(rune('0'+i)),
+			"123456789012345"+string(rune('0'+i)),
+			domain.CredentialTypeEducatorCard,
+			"ref://documents/"+string(rune('0'+i)),
+		)
+		teacherVerificationRepo.verifications[verification.ID] = verification
+		teacherVerificationRepo.userIndex[user.ID] = verification
+	}
+
+	result, err := svc.GetPendingVerifications(ctx, 1, 10)
+	if err != nil {
+		t.Fatalf("GetPendingVerifications failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Expected result")
+	}
+	if result.Total != 3 {
+		t.Errorf("Expected total 3, got %d", result.Total)
+	}
+	if len(result.Verifications) != 3 {
+		t.Errorf("Expected 3 verifications, got %d", len(result.Verifications))
+	}
+	if result.Page != 1 {
+		t.Errorf("Expected page 1, got %d", result.Page)
+	}
+	if result.PerPage != 10 {
+		t.Errorf("Expected per page 10, got %d", result.PerPage)
+	}
+}
+
+// Test: GetPendingVerifications - Pagination
+func TestGetPendingVerifications_Pagination(t *testing.T) {
+	svc, userRepo, teacherVerificationRepo := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	// Create 5 users with pending verifications
+	for i := 0; i < 5; i++ {
+		user := domain.NewUser("student"+string(rune('0'+i))+"@example.com", "hash", "Student "+string(rune('0'+i)))
+		userRepo.users[user.ID] = user
+		userRepo.emailIndex[user.Email] = user
+
+		verification := domain.NewTeacherVerification(
+			user.ID,
+			"Teacher "+string(rune('0'+i)),
+			"123456789012345"+string(rune('0'+i)),
+			domain.CredentialTypeEducatorCard,
+			"ref://documents/"+string(rune('0'+i)),
+		)
+		teacherVerificationRepo.verifications[verification.ID] = verification
+		teacherVerificationRepo.userIndex[user.ID] = verification
+	}
+
+	// Get first page with 2 items
+	result, err := svc.GetPendingVerifications(ctx, 1, 2)
+	if err != nil {
+		t.Fatalf("GetPendingVerifications failed: %v", err)
+	}
+
+	if result.Total != 5 {
+		t.Errorf("Expected total 5, got %d", result.Total)
+	}
+	if len(result.Verifications) != 2 {
+		t.Errorf("Expected 2 verifications on page 1, got %d", len(result.Verifications))
+	}
+	if result.TotalPages != 3 {
+		t.Errorf("Expected 3 total pages, got %d", result.TotalPages)
+	}
+}
+
+// Test: GetPendingVerifications - Empty
+func TestGetPendingVerifications_Empty(t *testing.T) {
+	svc, _, _ := newTestServiceWithTeacherVerification()
+	ctx := context.Background()
+
+	result, err := svc.GetPendingVerifications(ctx, 1, 10)
+	if err != nil {
+		t.Fatalf("GetPendingVerifications failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Expected result")
+	}
+	if result.Total != 0 {
+		t.Errorf("Expected total 0, got %d", result.Total)
+	}
+	if len(result.Verifications) != 0 {
+		t.Errorf("Expected 0 verifications, got %d", len(result.Verifications))
 	}
 }

@@ -620,3 +620,135 @@ type UpdatePreferencesRequest struct {
 	InAppNewMaterial  *bool `json:"inapp_new_material,omitempty" example:"true"`
 	InAppCommentReply *bool `json:"inapp_comment_reply,omitempty" example:"true"`
 }
+
+// ============================================================================
+// Teacher Verification Types
+// ============================================================================
+
+// SubmitTeacherVerificationRequest represents the request body for teacher verification submission.
+// @Description Teacher verification submission request
+type SubmitTeacherVerificationRequest struct {
+	FullName       string `json:"full_name" example:"Dr. John Smith" validate:"required,min=3,max=255"`
+	IDNumber       string `json:"id_number" example:"3275012345678901" validate:"required,min=10,max=100"`
+	CredentialType string `json:"credential_type" example:"educator_card" validate:"required,oneof=government_id educator_card professional_cert"`
+	DocumentRef    string `json:"document_ref" example:"doc_ref_abc123xyz" validate:"required,max=500"`
+}
+
+// TeacherVerificationResponse represents a teacher verification in API responses.
+// @Description Teacher verification information
+type TeacherVerificationResponse struct {
+	ID              string     `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	UserID          string     `json:"user_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	FullName        string     `json:"full_name" example:"Dr. John Smith"`
+	IDNumber        string     `json:"id_number" example:"3275012345678901"`
+	CredentialType  string     `json:"credential_type" example:"educator_card"`
+	DocumentRef     string     `json:"document_ref" example:"doc_ref_abc123xyz"`
+	Status          string     `json:"status" example:"pending"`
+	ReviewedBy      *string    `json:"reviewed_by,omitempty" example:"550e8400-e29b-41d4-a716-446655440002"`
+	ReviewedAt      *time.Time `json:"reviewed_at,omitempty" example:"2025-01-20T14:30:00Z"`
+	RejectionReason *string    `json:"rejection_reason,omitempty" example:"Document not clear"`
+	CreatedAt       time.Time  `json:"created_at" example:"2025-01-15T10:00:00Z"`
+	UpdatedAt       time.Time  `json:"updated_at" example:"2025-01-15T10:00:00Z"`
+}
+
+// RejectVerificationRequest represents the request body for rejecting a verification.
+// @Description Reject verification request
+type RejectVerificationRequest struct {
+	Reason string `json:"reason" example:"The submitted document is not clear. Please resubmit with a higher quality image." validate:"required,min=1,max=1000"`
+}
+
+// ============================================================================
+// Upvote Types
+// ============================================================================
+
+// UpvoteResponse represents the response for upvote operations.
+// @Description Upvote operation response
+type UpvoteResponse struct {
+	Upvoted bool `json:"upvoted" example:"true"`
+}
+
+// ============================================================================
+// Upload Request Types
+// ============================================================================
+
+// CreateUploadRequestRequest represents the request body for creating an upload request.
+// @Description Create upload request
+type CreateUploadRequestRequest struct {
+	Message *string `json:"message,omitempty" example:"I would like to contribute additional materials on advanced topics."`
+}
+
+// UploadRequestResponse represents an upload request in API responses.
+// @Description Upload request information
+type UploadRequestResponse struct {
+	ID              string     `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	RequesterID     string     `json:"requester_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	PodID           string     `json:"pod_id" example:"550e8400-e29b-41d4-a716-446655440002"`
+	PodOwnerID      string     `json:"pod_owner_id" example:"550e8400-e29b-41d4-a716-446655440003"`
+	Status          string     `json:"status" example:"pending"`
+	Message         *string    `json:"message,omitempty" example:"I would like to contribute additional materials on advanced topics."`
+	RejectionReason *string    `json:"rejection_reason,omitempty" example:"Not accepting contributions at this time."`
+	ExpiresAt       *time.Time `json:"expires_at,omitempty" example:"2025-06-15T10:00:00Z"`
+	CreatedAt       time.Time  `json:"created_at" example:"2025-01-15T10:00:00Z"`
+	UpdatedAt       time.Time  `json:"updated_at" example:"2025-01-15T10:00:00Z"`
+}
+
+// RejectUploadRequestRequest represents the request body for rejecting an upload request.
+// @Description Reject upload request
+type RejectUploadRequestRequest struct {
+	Reason *string `json:"reason,omitempty" example:"Not accepting contributions at this time."`
+}
+
+// ApproveUploadRequestResponse represents the response for approving an upload request.
+// @Description Approve upload request response
+type ApproveUploadRequestResponse struct {
+	Approved bool `json:"approved" example:"true"`
+}
+
+// RejectUploadRequestResponse represents the response for rejecting an upload request.
+// @Description Reject upload request response
+type RejectUploadRequestResponse struct {
+	Rejected bool `json:"rejected" example:"true"`
+}
+
+// RevokeUploadPermissionResponse represents the response for revoking upload permission.
+// @Description Revoke upload permission response
+type RevokeUploadPermissionResponse struct {
+	Revoked bool `json:"revoked" example:"true"`
+}
+
+// ============================================================================
+// Shared Pod Types
+// ============================================================================
+
+// SharePodRequest represents the request body for sharing a pod with a student.
+// @Description Share pod request
+type SharePodRequest struct {
+	StudentID string  `json:"student_id" example:"550e8400-e29b-41d4-a716-446655440000" validate:"required,uuid"`
+	Message   *string `json:"message,omitempty" example:"I recommend this pod for your studies on Go programming."`
+}
+
+// SharedPodResponse represents a shared pod in API responses.
+// @Description Shared pod information
+type SharedPodResponse struct {
+	ID        string    `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	PodID     string    `json:"pod_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	TeacherID string    `json:"teacher_id" example:"550e8400-e29b-41d4-a716-446655440002"`
+	StudentID string    `json:"student_id" example:"550e8400-e29b-41d4-a716-446655440003"`
+	Message   *string   `json:"message,omitempty" example:"I recommend this pod for your studies on Go programming."`
+	CreatedAt time.Time `json:"created_at" example:"2025-01-15T10:00:00Z"`
+}
+
+// SharedPodWithDetailsResponse represents a shared pod with additional details.
+// @Description Shared pod with details
+type SharedPodWithDetailsResponse struct {
+	ID            string    `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	PodID         string    `json:"pod_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	TeacherID     string    `json:"teacher_id" example:"550e8400-e29b-41d4-a716-446655440002"`
+	StudentID     string    `json:"student_id" example:"550e8400-e29b-41d4-a716-446655440003"`
+	Message       *string   `json:"message,omitempty" example:"I recommend this pod for your studies on Go programming."`
+	PodName       string    `json:"pod_name" example:"Introduction to Go Programming"`
+	PodSlug       string    `json:"pod_slug" example:"introduction-to-go-programming"`
+	TeacherName   string    `json:"teacher_name" example:"Dr. John Smith"`
+	TeacherAvatar *string   `json:"teacher_avatar,omitempty" example:"https://example.com/avatar.jpg"`
+	CreatedAt     time.Time `json:"created_at" example:"2025-01-15T10:00:00Z"`
+}

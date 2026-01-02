@@ -46,6 +46,8 @@ type SearchInput struct {
 	Categories []string
 	FileTypes  []string
 	PodID      string
+	Verified   *bool         // Filter by verified status (teacher-created pods)
+	SortBy     domain.SortBy // Sorting option (relevance, upvotes, trust_score, recent, popular)
 	Page       int
 	PerPage    int
 	UserID     string // for saving search history
@@ -76,6 +78,8 @@ func (s *Service) Search(ctx context.Context, input SearchInput) (*SearchOutput,
 		Categories: input.Categories,
 		FileTypes:  input.FileTypes,
 		PodID:      input.PodID,
+		Verified:   input.Verified,
+		SortBy:     input.SortBy,
 		Page:       input.Page,
 		PerPage:    input.PerPage,
 	}
@@ -148,6 +152,8 @@ type HybridSearchInput struct {
 	Categories     []string
 	FileTypes      []string
 	PodID          string
+	Verified       *bool         // Filter by verified status (teacher-created pods)
+	SortBy         domain.SortBy // Sorting option (relevance, upvotes, trust_score, recent, popular)
 	Page           int
 	PerPage        int
 	SemanticWeight float64 // 0.0 to 1.0, weight for semantic results (default 0.3)
@@ -174,6 +180,7 @@ func (s *Service) HybridSearch(ctx context.Context, input HybridSearchInput) (*S
 		Categories: input.Categories,
 		FileTypes:  input.FileTypes,
 		PodID:      input.PodID,
+		Verified:   input.Verified,
 		Page:       1,
 		PerPage:    input.PerPage * 2, // Fetch more for merging
 	}
@@ -345,4 +352,10 @@ func (s *Service) DeletePodIndex(ctx context.Context, podID string) error {
 // DeleteMaterialIndex removes a material from the search index
 func (s *Service) DeleteMaterialIndex(ctx context.Context, materialID string) error {
 	return s.indexRepo.DeleteMaterial(ctx, materialID)
+}
+
+// UpdatePodUpvoteCount updates the upvote count for a pod in the search index.
+// Implements Requirements 6.2, 6.4, 6.5: Trust indicator updates.
+func (s *Service) UpdatePodUpvoteCount(ctx context.Context, podID string, upvoteCount int) error {
+	return s.indexRepo.UpdatePodUpvoteCount(ctx, podID, upvoteCount)
 }

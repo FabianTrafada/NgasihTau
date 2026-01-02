@@ -1,8 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils';
-import { div, label } from 'framer-motion/client';
-import { Book, BookOpen, LayoutDashboard, Sparkles, Users, X, Folder, LucideIcon } from 'lucide-react';
+import { BookOpen, LayoutDashboard, Sparkles, X, LucideIcon, File } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'
 
@@ -35,11 +34,7 @@ const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: prop
             href: "/dashboard/ngasihtau-ai",
             icon: Sparkles,
         },
-        {
-            label: "Assets",
-            href: "/dashboard/assets",
-            icon: Folder,
-        },
+    
     ]
 
     const defaultKnowledgeItems = [
@@ -48,11 +43,21 @@ const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: prop
             href: "/dashboard/knowledge",
             icon: BookOpen,
         },
+    ]
 
+    const personalPods = [
+        {
+            label: "My Knowledge Pods",
+            href: "/dashboard/my-pods",
+            icon: File,
+        },
+        
+        
     ]
 
     const navItems = propNavItems || defaultNavItems;
     const knowledgeItems = propKnowledgeItems || defaultKnowledgeItems;
+
 
 
 
@@ -96,13 +101,13 @@ const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: prop
                                         key={item.href}
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                                            "flex text-sm items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
                                             isActive
                                                 ? "bg-[#FF8811] text-white shadow-sm"
                                                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                         )}
                                     >
-                                        <item.icon className="w-5 h-5" />
+                                        <item.icon className="w-4 h-4" />
                                         {item.label}
                                     </Link>
                                 );
@@ -123,13 +128,39 @@ const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: prop
                                         key={item.href}
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                                            "flex items-center text-sm gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
                                             isActive
                                                 ? "bg-[#FF8811] text-white shadow-sm"
                                                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                         )}
                                     >
-                                        <item.icon className="w-5 h-5" />
+                                        <item.icon className="w-4 h-4" />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+                    <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-wider">
+                            Your Pods
+                        </p>
+                        <nav className="space-y-2">
+                            {personalPods.map((item) => {
+                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={cn(
+                                            "flex items-center text-sm gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                                            isActive
+                                                ? "bg-[#FF8811] text-white shadow-sm"
+                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                        )}
+                                    >
+                                        <item.icon className="w-4 h-4" />
                                         {item.label}
                                     </Link>
                                 );

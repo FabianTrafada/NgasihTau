@@ -5,6 +5,7 @@ import Topbar from '@/components/dashboard/Topbar'
 import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
 import { LayoutDashboard, Sparkles, Folder, BookOpen } from 'lucide-react';
+import { usePathname } from 'next/navigation'
 
 const navItems = [
   {
@@ -33,8 +34,18 @@ const knowledgeItems = [
 ]
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+
+  // Daftar pola path yang tidak menampilkan RightSidebar
+  // Menggunakan Regex agar bisa menangani dynamic route seperti /dashboard/my-pods/123
+  const hideRightSidebarPatterns = [
+    /^\/dashboard\/my-pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
+    /^\/dashboard\/my-pods$/, // matches /dashboard/my-pods 
+  ];
+
+  const shouldHideRightSidebar = hideRightSidebarPatterns.some(pattern => pattern.test(pathname));
 
   return (
     <div className='flex min-h-screen bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
@@ -63,11 +74,14 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             {children}
           </main>
 
-          {/* Right Sidebar - Now part of layout */}
-          <RightSidebar
-            isOpen={rightSidebarOpen}
-            onClose={() => setRightSidebarOpen(false)}
-          />
+          {!shouldHideRightSidebar && (
+            <RightSidebar
+              // {/* Right Sidebar - Now part of layout */}
+              isOpen={rightSidebarOpen}
+              onClose={() => setRightSidebarOpen(false)}
+            />
+
+          )}
         </div>
       </div>
     </div>

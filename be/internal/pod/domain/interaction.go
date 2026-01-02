@@ -24,6 +24,8 @@ const (
 	InteractionMaterialView     InteractionType = "material_view"
 	InteractionMaterialBookmark InteractionType = "material_bookmark"
 	InteractionSearchClick      InteractionType = "search_click"
+	InteractionUpvote           InteractionType = "upvote"
+	InteractionRemoveUpvote     InteractionType = "remove_upvote"
 )
 
 // DefaultInteractionWeights defines the base weights for each interaction type.
@@ -39,6 +41,8 @@ var DefaultInteractionWeights = map[InteractionType]float64{
 	InteractionMaterialView:     2.0,
 	InteractionMaterialBookmark: 4.0,
 	InteractionSearchClick:      3.0,
+	InteractionUpvote:           7.0,  // Trust indicator - higher weight than star
+	InteractionRemoveUpvote:     -4.0, // Negative weight for removing upvote
 }
 
 // MaxTimeSpentSeconds is the cap for time spent weighting.

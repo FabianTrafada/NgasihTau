@@ -10,6 +10,7 @@ import (
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/internal/common/response"
 	"ngasihtau/internal/search/application"
+	"ngasihtau/internal/search/domain"
 	"ngasihtau/pkg/jwt"
 )
 
@@ -59,6 +60,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 // @Param category query string false "Filter by category"
 // @Param file_type query string false "Filter by file type (pdf, docx, pptx)"
 // @Param pod_id query string false "Filter by pod ID" format(uuid)
+// @Param verified query bool false "Filter by verified status (teacher-created pods)"
+// @Param sort query string false "Sort by (relevance, upvotes, trust_score, recent, popular)" default(relevance)
 // @Param page query int false "Page number" default(1)
 // @Param per_page query int false "Items per page" default(20)
 // @Success 200 {object} response.PaginatedResponse[any] "Search results"
@@ -71,6 +74,8 @@ func (h *Handler) Search(c *fiber.Ctx) error {
 	categoryParam := c.Query("category")
 	fileTypeParam := c.Query("file_type")
 	podID := c.Query("pod_id")
+	verifiedParam := c.Query("verified")
+	sortParam := c.Query("sort", "relevance")
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	perPage, _ := strconv.Atoi(c.Query("per_page", "20"))
 
@@ -86,6 +91,18 @@ func (h *Handler) Search(c *fiber.Ctx) error {
 		fileTypesArr = []string{fileTypeParam}
 	}
 
+	// Parse verified filter (Requirement 6.3)
+	var verified *bool
+	if verifiedParam != "" {
+		v, err := strconv.ParseBool(verifiedParam)
+		if err == nil {
+			verified = &v
+		}
+	}
+
+	// Parse sort option (Requirement 6.4, 6.5)
+	sortBy := parseSortBy(sortParam)
+
 	// Get user ID if authenticated (optional)
 	var userIDStr string
 	if userID, ok := middleware.GetUserID(c); ok {
@@ -98,6 +115,8 @@ func (h *Handler) Search(c *fiber.Ctx) error {
 		Categories: categoriesArr,
 		FileTypes:  fileTypesArr,
 		PodID:      podID,
+		Verified:   verified,
+		SortBy:     sortBy,
 		Page:       page,
 		PerPage:    perPage,
 		UserID:     userIDStr,
@@ -163,6 +182,8 @@ func (h *Handler) SemanticSearch(c *fiber.Ctx) error {
 // @Param category query string false "Filter by category"
 // @Param file_type query string false "Filter by file type"
 // @Param pod_id query string false "Filter by pod ID" format(uuid)
+// @Param verified query bool false "Filter by verified status (teacher-created pods)"
+// @Param sort query string false "Sort by (relevance, upvotes, trust_score, recent, popular)" default(relevance)
 // @Param page query int false "Page number" default(1)
 // @Param per_page query int false "Items per page" default(20)
 // @Param semantic_weight query number false "Weight for semantic results (0-1)" default(0.3)
@@ -176,6 +197,8 @@ func (h *Handler) HybridSearch(c *fiber.Ctx) error {
 	categoryParam := c.Query("category")
 	fileTypeParam := c.Query("file_type")
 	podID := c.Query("pod_id")
+	verifiedParam := c.Query("verified")
+	sortParam := c.Query("sort", "relevance")
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	perPage, _ := strconv.Atoi(c.Query("per_page", "20"))
 	semanticWeight, _ := strconv.ParseFloat(c.Query("semantic_weight", "0.3"), 64)
@@ -192,6 +215,18 @@ func (h *Handler) HybridSearch(c *fiber.Ctx) error {
 		fileTypesArr = []string{fileTypeParam}
 	}
 
+	// Parse verified filter (Requirement 6.3)
+	var verified *bool
+	if verifiedParam != "" {
+		v, err := strconv.ParseBool(verifiedParam)
+		if err == nil {
+			verified = &v
+		}
+	}
+
+	// Parse sort option (Requirement 6.4, 6.5)
+	sortBy := parseSortBy(sortParam)
+
 	// Get user ID if authenticated (optional)
 	var userIDStr string
 	if userID, ok := middleware.GetUserID(c); ok {
@@ -204,6 +239,8 @@ func (h *Handler) HybridSearch(c *fiber.Ctx) error {
 		Categories:     categoriesArr,
 		FileTypes:      fileTypesArr,
 		PodID:          podID,
+		Verified:       verified,
+		SortBy:         sortBy,
 		Page:           page,
 		PerPage:        perPage,
 		SemanticWeight: semanticWeight,
@@ -354,6 +391,25 @@ func (h *Handler) ClearSearchHistory(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, fiber.Map{
 		"message": "Search history cleared",
 	}))
+}
+
+// parseSortBy converts a string sort parameter to domain.SortBy
+// Implements Requirement 6.4, 6.5: Trust score sorting
+func parseSortBy(s string) domain.SortBy {
+	switch s {
+	case "upvotes":
+		return domain.SortByUpvotes
+	case "trust_score":
+		return domain.SortByTrustScore
+	case "recent":
+		return domain.SortByRecent
+	case "popular":
+		return domain.SortByPopular
+	case "relevance":
+		return domain.SortByRelevance
+	default:
+		return domain.SortByRelevance
+	}
 }
 
 // sendError sends an error response using the standard error format.

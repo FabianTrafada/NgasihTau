@@ -43,6 +43,14 @@ type PodRepository interface {
 	// IncrementViewCount increments the view count for a pod.
 	IncrementViewCount(ctx context.Context, id uuid.UUID) error
 
+	// IncrementUpvoteCount increments the upvote count for a pod.
+	// Implements requirement 5.1.
+	IncrementUpvoteCount(ctx context.Context, id uuid.UUID) error
+
+	// DecrementUpvoteCount decrements the upvote count for a pod.
+	// Implements requirement 5.2.
+	DecrementUpvoteCount(ctx context.Context, id uuid.UUID) error
+
 	// Search searches pods with filters.
 	Search(ctx context.Context, query string, filters PodFilters, limit, offset int) ([]*Pod, int, error)
 
@@ -249,4 +257,80 @@ type RecommendationRepository interface {
 
 	// ExcludePods allows filtering out specific pods (e.g., already seen).
 	GetPersonalizedFeedExcluding(ctx context.Context, userID uuid.UUID, excludePodIDs []uuid.UUID, config *RecommendationConfig, limit int) ([]*RecommendedPod, error)
+}
+
+// ===========================================
+// Student-Teacher Roles Repositories
+// ===========================================
+
+// PodUpvoteRepository defines the interface for pod upvote data access.
+// Follows the existing PodStarRepository pattern for consistency.
+// Implements requirements 5.1, 5.2, 5.3.
+type PodUpvoteRepository interface {
+	// Create creates a new upvote.
+	Create(ctx context.Context, upvote *PodUpvote) error
+
+	// Delete removes an upvote.
+	Delete(ctx context.Context, userID, podID uuid.UUID) error
+
+	// Exists checks if an upvote exists.
+	Exists(ctx context.Context, userID, podID uuid.UUID) (bool, error)
+
+	// CountByPodID returns the upvote count for a pod.
+	CountByPodID(ctx context.Context, podID uuid.UUID) (int, error)
+
+	// GetUpvotedPods returns paginated upvoted pods for a user.
+	GetUpvotedPods(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*Pod, int, error)
+}
+
+// UploadRequestRepository defines the interface for upload request data access.
+// Enables teacher-to-teacher collaboration for quality educational content.
+// Implements requirements 4.1, 4.3, 4.6.
+type UploadRequestRepository interface {
+	// Create creates a new upload request.
+	Create(ctx context.Context, request *UploadRequest) error
+
+	// FindByID finds an upload request by ID.
+	FindByID(ctx context.Context, id uuid.UUID) (*UploadRequest, error)
+
+	// FindByRequesterAndPod finds an upload request by requester ID and pod ID.
+	FindByRequesterAndPod(ctx context.Context, requesterID, podID uuid.UUID) (*UploadRequest, error)
+
+	// FindByPodOwner finds upload requests for a pod owner with optional status filter.
+	FindByPodOwner(ctx context.Context, ownerID uuid.UUID, status *UploadRequestStatus, limit, offset int) ([]*UploadRequest, int, error)
+
+	// FindByRequester finds upload requests made by a requester.
+	FindByRequester(ctx context.Context, requesterID uuid.UUID, limit, offset int) ([]*UploadRequest, int, error)
+
+	// FindApprovedByRequesterAndPod finds an approved upload request for a requester and pod.
+	FindApprovedByRequesterAndPod(ctx context.Context, requesterID, podID uuid.UUID) (*UploadRequest, error)
+
+	// Update updates an upload request.
+	Update(ctx context.Context, request *UploadRequest) error
+
+	// UpdateStatus updates the status of an upload request with optional rejection reason.
+	UpdateStatus(ctx context.Context, id uuid.UUID, status UploadRequestStatus, reason *string) error
+}
+
+// SharedPodRepository defines the interface for shared pod data access.
+// Enables teachers to share pods with students for guided learning.
+// Implements requirement 7.2.
+type SharedPodRepository interface {
+	// Create creates a new shared pod record.
+	Create(ctx context.Context, share *SharedPod) error
+
+	// Delete removes a shared pod record.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// FindByStudent finds shared pods for a student with pagination.
+	FindByStudent(ctx context.Context, studentID uuid.UUID, limit, offset int) ([]*SharedPod, int, error)
+
+	// FindByStudentWithDetails finds shared pods for a student with pod and teacher details.
+	FindByStudentWithDetails(ctx context.Context, studentID uuid.UUID, limit, offset int) ([]*SharedPodWithDetails, int, error)
+
+	// FindByTeacherAndStudent finds shared pods between a specific teacher and student.
+	FindByTeacherAndStudent(ctx context.Context, teacherID, studentID uuid.UUID) ([]*SharedPod, error)
+
+	// Exists checks if a pod is already shared with a student.
+	Exists(ctx context.Context, podID, studentID uuid.UUID) (bool, error)
 }

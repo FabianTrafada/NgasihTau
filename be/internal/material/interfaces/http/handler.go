@@ -40,6 +40,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	materials.Get("/:id/download", h.GetDownloadURL)
 	materials.Post("/:id/versions", h.CreateVersion)
 	materials.Get("/:id/versions", h.GetVersionHistory)
+	materials.Post("/:id/versions/:version/restore", h.RestoreVersion)
 	materials.Post("/:id/comments", h.AddComment)
 	materials.Get("/:id/comments", h.GetComments)
 	materials.Post("/:id/ratings", h.RateMaterial)

@@ -28,13 +28,13 @@ func NewPodRepository(db *pgxpool.Pool) *PodRepository {
 func (r *PodRepository) Create(ctx context.Context, pod *domain.Pod) error {
 	query := `
 		INSERT INTO pods (id, owner_id, name, slug, description, visibility, categories, tags, 
-			star_count, fork_count, view_count, forked_from_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			star_count, fork_count, view_count, is_verified, upvote_count, forked_from_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 	`
 	_, err := r.db.Exec(ctx, query,
 		pod.ID, pod.OwnerID, pod.Name, pod.Slug, pod.Description, pod.Visibility,
 		pod.Categories, pod.Tags,
-		pod.StarCount, pod.ForkCount, pod.ViewCount, pod.ForkedFromID,
+		pod.StarCount, pod.ForkCount, pod.ViewCount, pod.IsVerified, pod.UpvoteCount, pod.ForkedFromID,
 		pod.CreatedAt, pod.UpdatedAt,
 	)
 	if err != nil {
@@ -47,7 +47,7 @@ func (r *PodRepository) Create(ctx context.Context, pod *domain.Pod) error {
 func (r *PodRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Pod, error) {
 	query := `
 		SELECT id, owner_id, name, slug, description, visibility, categories, tags,
-			star_count, fork_count, view_count, forked_from_id, created_at, updated_at, deleted_at
+			star_count, fork_count, view_count, is_verified, upvote_count, forked_from_id, created_at, updated_at, deleted_at
 		FROM pods WHERE id = $1 AND deleted_at IS NULL
 	`
 	return r.scanPod(r.db.QueryRow(ctx, query, id))
@@ -57,7 +57,7 @@ func (r *PodRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Pod
 func (r *PodRepository) FindBySlug(ctx context.Context, slug string) (*domain.Pod, error) {
 	query := `
 		SELECT id, owner_id, name, slug, description, visibility, categories, tags,
-			star_count, fork_count, view_count, forked_from_id, created_at, updated_at, deleted_at
+			star_count, fork_count, view_count, is_verified, upvote_count, forked_from_id, created_at, updated_at, deleted_at
 		FROM pods WHERE slug = $1 AND deleted_at IS NULL
 	`
 	return r.scanPod(r.db.QueryRow(ctx, query, slug))
@@ -73,7 +73,7 @@ func (r *PodRepository) FindByOwnerID(ctx context.Context, ownerID uuid.UUID, li
 
 	query := `
 		SELECT id, owner_id, name, slug, description, visibility, categories, tags,
-			star_count, fork_count, view_count, forked_from_id, created_at, updated_at, deleted_at
+			star_count, fork_count, view_count, is_verified, upvote_count, forked_from_id, created_at, updated_at, deleted_at
 		FROM pods WHERE owner_id = $1 AND deleted_at IS NULL
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`
@@ -173,6 +173,28 @@ func (r *PodRepository) IncrementViewCount(ctx context.Context, id uuid.UUID) er
 	return nil
 }
 
+// IncrementUpvoteCount increments the upvote count for a pod.
+// Implements requirement 5.1.
+func (r *PodRepository) IncrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE pods SET upvote_count = upvote_count + 1 WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return errors.Internal("failed to increment upvote count", err)
+	}
+	return nil
+}
+
+// DecrementUpvoteCount decrements the upvote count for a pod.
+// Implements requirement 5.2.
+func (r *PodRepository) DecrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE pods SET upvote_count = GREATEST(upvote_count - 1, 0) WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return errors.Internal("failed to decrement upvote count", err)
+	}
+	return nil
+}
+
 // Search searches pods with filters.
 func (r *PodRepository) Search(ctx context.Context, query string, filters domain.PodFilters, limit, offset int) ([]*domain.Pod, int, error) {
 	var conditions []string
@@ -218,7 +240,7 @@ func (r *PodRepository) Search(ctx context.Context, query string, filters domain
 
 	selectQuery := fmt.Sprintf(`
 		SELECT id, owner_id, name, slug, description, visibility, categories, tags,
-			star_count, fork_count, view_count, forked_from_id, created_at, updated_at, deleted_at
+			star_count, fork_count, view_count, is_verified, upvote_count, forked_from_id, created_at, updated_at, deleted_at
 		FROM pods WHERE %s
 		ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, whereClause, limitArgIdx, offsetArgIdx)
 
@@ -245,7 +267,7 @@ func (r *PodRepository) GetPublicPods(ctx context.Context, limit, offset int) ([
 
 	query := `
 		SELECT id, owner_id, name, slug, description, visibility, categories, tags,
-			star_count, fork_count, view_count, forked_from_id, created_at, updated_at, deleted_at
+			star_count, fork_count, view_count, is_verified, upvote_count, forked_from_id, created_at, updated_at, deleted_at
 		FROM pods WHERE visibility = 'public' AND deleted_at IS NULL
 		ORDER BY created_at DESC LIMIT $1 OFFSET $2
 	`
@@ -269,7 +291,7 @@ func (r *PodRepository) scanPod(row pgx.Row) (*domain.Pod, error) {
 	err := row.Scan(
 		&pod.ID, &pod.OwnerID, &pod.Name, &pod.Slug, &pod.Description, &pod.Visibility,
 		&categories, &tags,
-		&pod.StarCount, &pod.ForkCount, &pod.ViewCount, &pod.ForkedFromID,
+		&pod.StarCount, &pod.ForkCount, &pod.ViewCount, &pod.IsVerified, &pod.UpvoteCount, &pod.ForkedFromID,
 		&pod.CreatedAt, &pod.UpdatedAt, &pod.DeletedAt,
 	)
 	if err != nil {
@@ -292,7 +314,7 @@ func (r *PodRepository) scanPods(rows pgx.Rows) ([]*domain.Pod, error) {
 		err := rows.Scan(
 			&pod.ID, &pod.OwnerID, &pod.Name, &pod.Slug, &pod.Description, &pod.Visibility,
 			&categories, &tags,
-			&pod.StarCount, &pod.ForkCount, &pod.ViewCount, &pod.ForkedFromID,
+			&pod.StarCount, &pod.ForkCount, &pod.ViewCount, &pod.IsVerified, &pod.UpvoteCount, &pod.ForkedFromID,
 			&pod.CreatedAt, &pod.UpdatedAt, &pod.DeletedAt,
 		)
 		if err != nil {

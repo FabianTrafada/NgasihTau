@@ -133,3 +133,15 @@ func (c *PodCache) InvalidateCollaborators(ctx context.Context, podID uuid.UUID)
 	key := PodCollaboratorsKey(podID.String())
 	return c.cache.Delete(ctx, key)
 }
+
+// InvalidateOnUpvoteChange invalidates pod cache when upvote count changes.
+// Implements requirement 5.1, 5.2: Cache invalidation when upvote count changes.
+func (c *PodCache) InvalidateOnUpvoteChange(ctx context.Context, podID uuid.UUID) error {
+	key := PodDetailsKey(podID.String())
+	if err := c.cache.Delete(ctx, key); err != nil {
+		log.Warn().Err(err).Str("pod_id", podID.String()).Msg("failed to invalidate pod cache on upvote change")
+		return err
+	}
+	log.Debug().Str("pod_id", podID.String()).Msg("invalidated pod cache on upvote change")
+	return nil
+}

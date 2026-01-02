@@ -126,6 +126,15 @@ func (m *mockMaterialRepo) IncrementVersion(ctx context.Context, id uuid.UUID) e
 	return nil
 }
 
+func (m *mockMaterialRepo) RestoreVersion(ctx context.Context, id uuid.UUID, version int, fileURL string) error {
+	mat, ok := m.materials[id]
+	if ok {
+		mat.CurrentVersion = version
+		mat.FileURL = fileURL
+	}
+	return nil
+}
+
 // Mock Version Repository
 type mockVersionRepo struct {
 	versions  map[uuid.UUID]*domain.MaterialVersion
@@ -563,6 +572,22 @@ func (m *mockEventPublisher) PublishCollaboratorInvited(ctx context.Context, eve
 	return nil
 }
 func (m *mockEventPublisher) PublishCommentCreated(ctx context.Context, event nats.CommentCreatedEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishTeacherVerified(ctx context.Context, event nats.TeacherVerifiedEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishUploadRequest(ctx context.Context, event nats.UploadRequestEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishPodShared(ctx context.Context, event nats.PodSharedEvent) error {
+	return nil
+}
+
+func (m *mockEventPublisher) PublishPodUpvoted(ctx context.Context, event nats.PodUpvotedEvent) error {
 	return nil
 }
 

@@ -128,6 +128,22 @@ func (m *mockPodRepo) IncrementViewCount(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
+func (m *mockPodRepo) IncrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	pod, ok := m.pods[id]
+	if ok {
+		pod.UpvoteCount++
+	}
+	return nil
+}
+
+func (m *mockPodRepo) DecrementUpvoteCount(ctx context.Context, id uuid.UUID) error {
+	pod, ok := m.pods[id]
+	if ok && pod.UpvoteCount > 0 {
+		pod.UpvoteCount--
+	}
+	return nil
+}
+
 func (m *mockPodRepo) Search(ctx context.Context, query string, filters domain.PodFilters, limit, offset int) ([]*domain.Pod, int, error) {
 	var result []*domain.Pod
 	for _, pod := range m.pods {
@@ -337,6 +353,131 @@ func (m *mockFollowRepo) CountByPodID(ctx context.Context, podID uuid.UUID) (int
 	return 0, nil
 }
 
+type mockUpvoteRepo struct {
+	upvotes map[string]bool
+}
+
+func newMockUpvoteRepo() *mockUpvoteRepo {
+	return &mockUpvoteRepo{
+		upvotes: make(map[string]bool),
+	}
+}
+
+func (m *mockUpvoteRepo) Create(ctx context.Context, upvote *domain.PodUpvote) error {
+	key := upvote.UserID.String() + ":" + upvote.PodID.String()
+	m.upvotes[key] = true
+	return nil
+}
+
+func (m *mockUpvoteRepo) Delete(ctx context.Context, userID, podID uuid.UUID) error {
+	key := userID.String() + ":" + podID.String()
+	delete(m.upvotes, key)
+	return nil
+}
+
+func (m *mockUpvoteRepo) Exists(ctx context.Context, userID, podID uuid.UUID) (bool, error) {
+	key := userID.String() + ":" + podID.String()
+	return m.upvotes[key], nil
+}
+
+func (m *mockUpvoteRepo) CountByPodID(ctx context.Context, podID uuid.UUID) (int, error) {
+	count := 0
+	for key := range m.upvotes {
+		if key[37:] == podID.String() {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *mockUpvoteRepo) GetUpvotedPods(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*domain.Pod, int, error) {
+	return nil, 0, nil
+}
+
+type mockUploadRequestRepo struct {
+	requests    map[uuid.UUID]*domain.UploadRequest
+	reqPodIndex map[string]*domain.UploadRequest // requesterID:podID -> request
+}
+
+func newMockUploadRequestRepo() *mockUploadRequestRepo {
+	return &mockUploadRequestRepo{
+		requests:    make(map[uuid.UUID]*domain.UploadRequest),
+		reqPodIndex: make(map[string]*domain.UploadRequest),
+	}
+}
+
+func (m *mockUploadRequestRepo) Create(ctx context.Context, request *domain.UploadRequest) error {
+	m.requests[request.ID] = request
+	key := request.RequesterID.String() + ":" + request.PodID.String()
+	m.reqPodIndex[key] = request
+	return nil
+}
+
+func (m *mockUploadRequestRepo) FindByID(ctx context.Context, id uuid.UUID) (*domain.UploadRequest, error) {
+	req, ok := m.requests[id]
+	if !ok {
+		return nil, errors.NotFound("upload request", id.String())
+	}
+	return req, nil
+}
+
+func (m *mockUploadRequestRepo) FindByRequesterAndPod(ctx context.Context, requesterID, podID uuid.UUID) (*domain.UploadRequest, error) {
+	key := requesterID.String() + ":" + podID.String()
+	req, ok := m.reqPodIndex[key]
+	if !ok {
+		return nil, errors.NotFound("upload request", key)
+	}
+	return req, nil
+}
+
+func (m *mockUploadRequestRepo) FindByPodOwner(ctx context.Context, ownerID uuid.UUID, status *domain.UploadRequestStatus, limit, offset int) ([]*domain.UploadRequest, int, error) {
+	var result []*domain.UploadRequest
+	for _, req := range m.requests {
+		if req.PodOwnerID == ownerID {
+			if status == nil || req.Status == *status {
+				result = append(result, req)
+			}
+		}
+	}
+	return result, len(result), nil
+}
+
+func (m *mockUploadRequestRepo) FindByRequester(ctx context.Context, requesterID uuid.UUID, limit, offset int) ([]*domain.UploadRequest, int, error) {
+	var result []*domain.UploadRequest
+	for _, req := range m.requests {
+		if req.RequesterID == requesterID {
+			result = append(result, req)
+		}
+	}
+	return result, len(result), nil
+}
+
+func (m *mockUploadRequestRepo) FindApprovedByRequesterAndPod(ctx context.Context, requesterID, podID uuid.UUID) (*domain.UploadRequest, error) {
+	key := requesterID.String() + ":" + podID.String()
+	req, ok := m.reqPodIndex[key]
+	if !ok || req.Status != domain.UploadRequestStatusApproved {
+		return nil, errors.NotFound("upload request", key)
+	}
+	return req, nil
+}
+
+func (m *mockUploadRequestRepo) Update(ctx context.Context, request *domain.UploadRequest) error {
+	m.requests[request.ID] = request
+	key := request.RequesterID.String() + ":" + request.PodID.String()
+	m.reqPodIndex[key] = request
+	return nil
+}
+
+func (m *mockUploadRequestRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.UploadRequestStatus, reason *string) error {
+	req, ok := m.requests[id]
+	if !ok {
+		return errors.NotFound("upload request", id.String())
+	}
+	req.Status = status
+	req.RejectionReason = reason
+	return nil
+}
+
 type mockActivityRepo struct {
 	activities map[uuid.UUID]*domain.Activity
 }
@@ -379,11 +520,108 @@ func (m *mockActivityRepo) DeleteByPodID(ctx context.Context, podID uuid.UUID) e
 	return nil
 }
 
+// mockSharedPodRepo implements domain.SharedPodRepository for testing
+type mockSharedPodRepo struct {
+	sharedPods    map[uuid.UUID]*domain.SharedPod
+	podStudentIdx map[string]*domain.SharedPod // podID:studentID -> sharedPod
+	studentShares map[uuid.UUID][]*domain.SharedPod
+}
+
+func newMockSharedPodRepo() *mockSharedPodRepo {
+	return &mockSharedPodRepo{
+		sharedPods:    make(map[uuid.UUID]*domain.SharedPod),
+		podStudentIdx: make(map[string]*domain.SharedPod),
+		studentShares: make(map[uuid.UUID][]*domain.SharedPod),
+	}
+}
+
+func (m *mockSharedPodRepo) Create(ctx context.Context, share *domain.SharedPod) error {
+	m.sharedPods[share.ID] = share
+	key := share.PodID.String() + ":" + share.StudentID.String()
+	m.podStudentIdx[key] = share
+	m.studentShares[share.StudentID] = append(m.studentShares[share.StudentID], share)
+	return nil
+}
+
+func (m *mockSharedPodRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	share, ok := m.sharedPods[id]
+	if !ok {
+		return errors.NotFound("shared pod", id.String())
+	}
+	key := share.PodID.String() + ":" + share.StudentID.String()
+	delete(m.podStudentIdx, key)
+	delete(m.sharedPods, id)
+	// Remove from studentShares
+	shares := m.studentShares[share.StudentID]
+	for i, s := range shares {
+		if s.ID == id {
+			m.studentShares[share.StudentID] = append(shares[:i], shares[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
+func (m *mockSharedPodRepo) FindByStudent(ctx context.Context, studentID uuid.UUID, limit, offset int) ([]*domain.SharedPod, int, error) {
+	shares := m.studentShares[studentID]
+	total := len(shares)
+	if offset >= total {
+		return []*domain.SharedPod{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return shares[offset:end], total, nil
+}
+
+func (m *mockSharedPodRepo) FindByStudentWithDetails(ctx context.Context, studentID uuid.UUID, limit, offset int) ([]*domain.SharedPodWithDetails, int, error) {
+	shares := m.studentShares[studentID]
+	total := len(shares)
+	if offset >= total {
+		return []*domain.SharedPodWithDetails{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	var result []*domain.SharedPodWithDetails
+	for _, share := range shares[offset:end] {
+		result = append(result, &domain.SharedPodWithDetails{
+			SharedPod:     *share,
+			PodName:       "Test Pod",
+			PodSlug:       "test-pod",
+			TeacherName:   "Test Teacher",
+			TeacherAvatar: nil,
+		})
+	}
+	return result, total, nil
+}
+
+func (m *mockSharedPodRepo) FindByTeacherAndStudent(ctx context.Context, teacherID, studentID uuid.UUID) ([]*domain.SharedPod, error) {
+	var result []*domain.SharedPod
+	for _, share := range m.sharedPods {
+		if share.TeacherID == teacherID && share.StudentID == studentID {
+			result = append(result, share)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockSharedPodRepo) Exists(ctx context.Context, podID, studentID uuid.UUID) (bool, error) {
+	key := podID.String() + ":" + studentID.String()
+	_, ok := m.podStudentIdx[key]
+	return ok, nil
+}
+
 // Helper to create a test service
 func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockActivityRepo) {
 	podRepo := newMockPodRepo()
 	collaboratorRepo := newMockCollaboratorRepo()
 	starRepo := newMockStarRepo()
+	upvoteRepo := newMockUpvoteRepo()
+	uploadReqRepo := newMockUploadRequestRepo()
+	sharedPodRepo := newMockSharedPodRepo()
 	followRepo := newMockFollowRepo()
 	activityRepo := newMockActivityRepo()
 	eventPublisher := NewNoOpEventPublisher()
@@ -392,9 +630,13 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 		podRepo,
 		collaboratorRepo,
 		starRepo,
+		upvoteRepo,
+		uploadReqRepo,
+		sharedPodRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
+		nil, // UserRoleChecker - nil for basic tests
 	)
 
 	return svc, podRepo, collaboratorRepo, activityRepo
@@ -516,7 +758,7 @@ func TestInviteCollaborator_Success(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -568,7 +810,7 @@ func TestInviteCollaborator_NotOwner(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -602,7 +844,7 @@ func TestInviteCollaborator_AlreadyCollaborator(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -641,7 +883,7 @@ func TestInviteCollaborator_CannotInviteOwner(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -673,7 +915,7 @@ func TestVerifyCollaborator_Success(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -703,7 +945,7 @@ func TestVerifyCollaborator_NotOwner(t *testing.T) {
 
 	// Create a pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -743,7 +985,7 @@ func TestForkPod_Success(t *testing.T) {
 
 	// Create original pod
 	originalOwnerID := uuid.New()
-	originalPod := domain.NewPod(originalOwnerID, "Original Pod", "original-pod", domain.VisibilityPublic)
+	originalPod := domain.NewPod(originalOwnerID, "Original Pod", "original-pod", domain.VisibilityPublic, false)
 	desc := "Original description"
 	originalPod.Description = &desc
 	originalPod.Categories = []string{"math"}
@@ -803,7 +1045,7 @@ func TestForkPod_PrivatePodNoAccess(t *testing.T) {
 
 	// Create private pod
 	originalOwnerID := uuid.New()
-	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate)
+	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
 	podRepo.pods[originalPod.ID] = originalPod
 	podRepo.slugIndex[originalPod.Slug] = originalPod
 
@@ -829,7 +1071,7 @@ func TestForkPod_PrivatePodWithAccess(t *testing.T) {
 
 	// Create private pod
 	originalOwnerID := uuid.New()
-	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate)
+	originalPod := domain.NewPod(originalOwnerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
 	podRepo.pods[originalPod.ID] = originalPod
 	podRepo.slugIndex[originalPod.Slug] = originalPod
 
@@ -882,7 +1124,7 @@ func TestCanUserAccessPod_PublicPod(t *testing.T) {
 
 	// Create public pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Public Pod", "public-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Public Pod", "public-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -912,7 +1154,7 @@ func TestCanUserAccessPod_PrivatePod(t *testing.T) {
 
 	// Create private pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Private Pod", "private-pod", domain.VisibilityPrivate)
+	pod := domain.NewPod(ownerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -966,7 +1208,7 @@ func TestCanUserUploadToPod_VerifiedContributor(t *testing.T) {
 
 	// Create pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -994,7 +1236,7 @@ func TestCanUserUploadToPod_UnverifiedContributor(t *testing.T) {
 
 	// Create pod
 	ownerID := uuid.New()
-	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic)
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
 	podRepo.pods[pod.ID] = pod
 	podRepo.slugIndex[pod.Slug] = pod
 
@@ -1013,5 +1255,591 @@ func TestCanUserUploadToPod_UnverifiedContributor(t *testing.T) {
 	}
 	if canUpload {
 		t.Error("Expected unverified contributor to NOT upload")
+	}
+}
+
+// Test: CanUserUploadToPod with approved upload request
+// Implements requirement 4.5: WHILE an upload request is approved, THE Material Service SHALL allow the requesting teacher to upload.
+
+func TestCanUserUploadToPod_ApprovedUploadRequest(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, uploadReqRepo := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Create a teacher who will request upload permission
+	requesterID := uuid.New()
+	roleChecker.teacherIDs[requesterID] = true
+
+	// Create an approved upload request
+	uploadReq := domain.NewUploadRequest(requesterID, pod.ID, ownerID, nil)
+	uploadReq.Status = domain.UploadRequestStatusApproved
+	uploadReqRepo.requests[uploadReq.ID] = uploadReq
+	key := requesterID.String() + ":" + pod.ID.String()
+	uploadReqRepo.reqPodIndex[key] = uploadReq
+
+	// Teacher with approved upload request can upload
+	canUpload, err := svc.CanUserUploadToPod(ctx, pod.ID, requesterID)
+	if err != nil {
+		t.Fatalf("CanUserUploadToPod failed: %v", err)
+	}
+	if !canUpload {
+		t.Error("Expected teacher with approved upload request to be able to upload")
+	}
+}
+
+func TestCanUserUploadToPod_PendingUploadRequest(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, uploadReqRepo := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Create a teacher who will request upload permission
+	requesterID := uuid.New()
+	roleChecker.teacherIDs[requesterID] = true
+
+	// Create a pending upload request (not approved yet)
+	uploadReq := domain.NewUploadRequest(requesterID, pod.ID, ownerID, nil)
+	uploadReq.Status = domain.UploadRequestStatusPending
+	uploadReqRepo.requests[uploadReq.ID] = uploadReq
+	key := requesterID.String() + ":" + pod.ID.String()
+	uploadReqRepo.reqPodIndex[key] = uploadReq
+
+	// Teacher with pending upload request cannot upload
+	canUpload, err := svc.CanUserUploadToPod(ctx, pod.ID, requesterID)
+	if err != nil {
+		t.Fatalf("CanUserUploadToPod failed: %v", err)
+	}
+	if canUpload {
+		t.Error("Expected teacher with pending upload request to NOT be able to upload")
+	}
+}
+
+func TestCanUserUploadToPod_RevokedUploadRequest(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, uploadReqRepo := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Create a teacher who had upload permission
+	requesterID := uuid.New()
+	roleChecker.teacherIDs[requesterID] = true
+
+	// Create a revoked upload request
+	uploadReq := domain.NewUploadRequest(requesterID, pod.ID, ownerID, nil)
+	uploadReq.Status = domain.UploadRequestStatusRevoked
+	uploadReqRepo.requests[uploadReq.ID] = uploadReq
+	key := requesterID.String() + ":" + pod.ID.String()
+	uploadReqRepo.reqPodIndex[key] = uploadReq
+
+	// Teacher with revoked upload request cannot upload
+	canUpload, err := svc.CanUserUploadToPod(ctx, pod.ID, requesterID)
+	if err != nil {
+		t.Fatalf("CanUserUploadToPod failed: %v", err)
+	}
+	if canUpload {
+		t.Error("Expected teacher with revoked upload request to NOT be able to upload")
+	}
+}
+
+// Test: Upvote Functionality
+// Implements requirements 5.1, 5.3
+
+func TestUpvotePod_Success(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Upvote the pod
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("UpvotePod failed: %v", err)
+	}
+
+	// Verify upvote count was incremented (requirement 5.1)
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+
+	// Verify user has upvoted
+	hasUpvoted, err := svc.HasUpvoted(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("HasUpvoted failed: %v", err)
+	}
+	if !hasUpvoted {
+		t.Error("Expected HasUpvoted to return true")
+	}
+}
+
+func TestUpvotePod_DuplicateUpvote(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// First upvote
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("First UpvotePod failed: %v", err)
+	}
+
+	// Try to upvote again (requirement 5.3: each user can upvote only once)
+	err = svc.UpvotePod(ctx, pod.ID, userID)
+	if err == nil {
+		t.Fatal("Expected error when upvoting twice")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeConflict {
+		t.Errorf("Expected conflict error code, got %s", appErr.Code)
+	}
+
+	// Verify upvote count is still 1
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+}
+
+func TestUpvotePod_PrivatePodNoAccess(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a private pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Private Pod", "private-pod", domain.VisibilityPrivate, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to upvote as non-collaborator
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err == nil {
+		t.Fatal("Expected error when upvoting private pod without access")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeForbidden {
+		t.Errorf("Expected forbidden error code, got %s", appErr.Code)
+	}
+}
+
+func TestUpvotePod_PodNotFound(t *testing.T) {
+	svc, _, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Try to upvote non-existent pod
+	userID := uuid.New()
+	nonExistentPodID := uuid.New()
+	err := svc.UpvotePod(ctx, nonExistentPodID, userID)
+	if err == nil {
+		t.Fatal("Expected error when upvoting non-existent pod")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+func TestUpvotePod_OwnerCanUpvote(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Owner can upvote their own pod
+	err := svc.UpvotePod(ctx, pod.ID, ownerID)
+	if err != nil {
+		t.Fatalf("UpvotePod by owner failed: %v", err)
+	}
+
+	// Verify upvote count was incremented
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+}
+
+// Test: RemoveUpvote Functionality
+// Implements requirement 5.2: WHEN a user removes their upvote
+
+func TestRemoveUpvote_Success(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// First upvote the pod
+	userID := uuid.New()
+	err := svc.UpvotePod(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("UpvotePod failed: %v", err)
+	}
+
+	// Verify upvote count is 1
+	if pod.UpvoteCount != 1 {
+		t.Errorf("Expected upvote count 1, got %d", pod.UpvoteCount)
+	}
+
+	// Remove the upvote (requirement 5.2)
+	err = svc.RemoveUpvote(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("RemoveUpvote failed: %v", err)
+	}
+
+	// Verify upvote count was decremented (requirement 5.2)
+	if pod.UpvoteCount != 0 {
+		t.Errorf("Expected upvote count 0, got %d", pod.UpvoteCount)
+	}
+
+	// Verify user no longer has upvoted
+	hasUpvoted, err := svc.HasUpvoted(ctx, pod.ID, userID)
+	if err != nil {
+		t.Fatalf("HasUpvoted failed: %v", err)
+	}
+	if hasUpvoted {
+		t.Error("Expected HasUpvoted to return false after removing upvote")
+	}
+}
+
+func TestRemoveUpvote_NotUpvoted(t *testing.T) {
+	svc, podRepo, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Create a public pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to remove upvote without having upvoted
+	userID := uuid.New()
+	err := svc.RemoveUpvote(ctx, pod.ID, userID)
+	if err == nil {
+		t.Fatal("Expected error when removing upvote that doesn't exist")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+func TestRemoveUpvote_PodNotFound(t *testing.T) {
+	svc, _, _, _ := newTestService()
+	ctx := context.Background()
+
+	// Try to remove upvote from non-existent pod
+	userID := uuid.New()
+	nonExistentPodID := uuid.New()
+	err := svc.RemoveUpvote(ctx, nonExistentPodID, userID)
+	if err == nil {
+		t.Fatal("Expected error when removing upvote from non-existent pod")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	// The error could be NotFound for the upvote check
+	if appErr.Code != errors.CodeNotFound {
+		t.Errorf("Expected not found error code, got %s", appErr.Code)
+	}
+}
+
+// Mock UserRoleChecker for testing teacher role validation
+type mockUserRoleChecker struct {
+	teacherIDs map[uuid.UUID]bool
+}
+
+func newMockUserRoleChecker() *mockUserRoleChecker {
+	return &mockUserRoleChecker{
+		teacherIDs: make(map[uuid.UUID]bool),
+	}
+}
+
+func (m *mockUserRoleChecker) IsTeacher(ctx context.Context, userID uuid.UUID) (bool, error) {
+	return m.teacherIDs[userID], nil
+}
+
+// Helper to create a test service with UserRoleChecker
+func newTestServiceWithRoleChecker(roleChecker UserRoleChecker) (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockUploadRequestRepo) {
+	podRepo := newMockPodRepo()
+	collaboratorRepo := newMockCollaboratorRepo()
+	starRepo := newMockStarRepo()
+	upvoteRepo := newMockUpvoteRepo()
+	uploadReqRepo := newMockUploadRequestRepo()
+	sharedPodRepo := newMockSharedPodRepo()
+	followRepo := newMockFollowRepo()
+	activityRepo := newMockActivityRepo()
+	eventPublisher := NewNoOpEventPublisher()
+
+	svc := NewPodService(
+		podRepo,
+		collaboratorRepo,
+		starRepo,
+		upvoteRepo,
+		uploadReqRepo,
+		sharedPodRepo,
+		followRepo,
+		activityRepo,
+		eventPublisher,
+		roleChecker,
+	)
+
+	return svc, podRepo, collaboratorRepo, uploadReqRepo
+}
+
+// Test: CreateUploadRequest with teacher role validation
+// Implements requirement 4.1: WHEN a teacher submits upload request to another teacher's pod
+
+func TestCreateUploadRequest_Success(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, uploadReqRepo := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Create upload request from another teacher
+	requesterID := uuid.New()
+	roleChecker.teacherIDs[requesterID] = true
+	message := "I would like to contribute to your pod"
+
+	request, err := svc.CreateUploadRequest(ctx, requesterID, pod.ID, &message)
+	if err != nil {
+		t.Fatalf("CreateUploadRequest failed: %v", err)
+	}
+
+	// Verify request was created
+	if request == nil {
+		t.Fatal("Expected upload request in result")
+	}
+	if request.RequesterID != requesterID {
+		t.Errorf("Expected requester ID %s, got %s", requesterID, request.RequesterID)
+	}
+	if request.PodID != pod.ID {
+		t.Errorf("Expected pod ID %s, got %s", pod.ID, request.PodID)
+	}
+	if request.PodOwnerID != ownerID {
+		t.Errorf("Expected pod owner ID %s, got %s", ownerID, request.PodOwnerID)
+	}
+	if request.Status != domain.UploadRequestStatusPending {
+		t.Errorf("Expected status pending, got %s", request.Status)
+	}
+	if request.Message == nil || *request.Message != message {
+		t.Error("Expected message to be set")
+	}
+
+	// Verify request was stored
+	if len(uploadReqRepo.requests) != 1 {
+		t.Errorf("Expected 1 upload request in repo, got %d", len(uploadReqRepo.requests))
+	}
+}
+
+func TestCreateUploadRequest_RequesterNotTeacher(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, _ := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to create upload request from a student (not a teacher)
+	requesterID := uuid.New()
+	// requesterID is NOT in teacherIDs, so they are a student
+
+	_, err := svc.CreateUploadRequest(ctx, requesterID, pod.ID, nil)
+	if err == nil {
+		t.Fatal("Expected error when student creates upload request")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeForbidden {
+		t.Errorf("Expected forbidden error code, got %s", appErr.Code)
+	}
+}
+
+func TestCreateUploadRequest_PodOwnerNotTeacher(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, _ := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a student (not a teacher)
+	ownerID := uuid.New()
+	// ownerID is NOT in teacherIDs, so they are a student
+	pod := domain.NewPod(ownerID, "Student Pod", "student-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to create upload request from a teacher to a student's pod
+	requesterID := uuid.New()
+	roleChecker.teacherIDs[requesterID] = true
+
+	_, err := svc.CreateUploadRequest(ctx, requesterID, pod.ID, nil)
+	if err == nil {
+		t.Fatal("Expected error when requesting upload to student's pod")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeBadRequest {
+		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+func TestCreateUploadRequest_CannotRequestOwnPod(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, _ := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Try to create upload request to own pod
+	_, err := svc.CreateUploadRequest(ctx, ownerID, pod.ID, nil)
+	if err == nil {
+		t.Fatal("Expected error when requesting upload to own pod")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeBadRequest {
+		t.Errorf("Expected bad request error code, got %s", appErr.Code)
+	}
+}
+
+func TestCreateUploadRequest_DuplicatePendingRequest(t *testing.T) {
+	roleChecker := newMockUserRoleChecker()
+	svc, podRepo, _, uploadReqRepo := newTestServiceWithRoleChecker(roleChecker)
+	ctx := context.Background()
+
+	// Create a pod owned by a teacher
+	ownerID := uuid.New()
+	roleChecker.teacherIDs[ownerID] = true
+	pod := domain.NewPod(ownerID, "Teacher Pod", "teacher-pod", domain.VisibilityPublic, true)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Create first upload request
+	requesterID := uuid.New()
+	roleChecker.teacherIDs[requesterID] = true
+
+	_, err := svc.CreateUploadRequest(ctx, requesterID, pod.ID, nil)
+	if err != nil {
+		t.Fatalf("First CreateUploadRequest failed: %v", err)
+	}
+
+	// Try to create another request (should fail because pending request exists)
+	_, err = svc.CreateUploadRequest(ctx, requesterID, pod.ID, nil)
+	if err == nil {
+		t.Fatal("Expected error when creating duplicate pending request")
+	}
+
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		t.Fatalf("Expected AppError, got %T", err)
+	}
+	if appErr.Code != errors.CodeConflict {
+		t.Errorf("Expected conflict error code, got %s", appErr.Code)
+	}
+
+	// Verify only one request exists
+	if len(uploadReqRepo.requests) != 1 {
+		t.Errorf("Expected 1 upload request in repo, got %d", len(uploadReqRepo.requests))
+	}
+}
+
+func TestCreateUploadRequest_WithoutRoleChecker(t *testing.T) {
+	// Test that CreateUploadRequest works without role checker (nil)
+	svc, podRepo, _, uploadReqRepo := newTestServiceWithRoleChecker(nil)
+	ctx := context.Background()
+
+	// Create a pod
+	ownerID := uuid.New()
+	pod := domain.NewPod(ownerID, "Test Pod", "test-pod", domain.VisibilityPublic, false)
+	podRepo.pods[pod.ID] = pod
+	podRepo.slugIndex[pod.Slug] = pod
+
+	// Create upload request (should work without role validation)
+	requesterID := uuid.New()
+	request, err := svc.CreateUploadRequest(ctx, requesterID, pod.ID, nil)
+	if err != nil {
+		t.Fatalf("CreateUploadRequest failed: %v", err)
+	}
+
+	// Verify request was created
+	if request == nil {
+		t.Fatal("Expected upload request in result")
+	}
+	if len(uploadReqRepo.requests) != 1 {
+		t.Errorf("Expected 1 upload request in repo, got %d", len(uploadReqRepo.requests))
 	}
 }

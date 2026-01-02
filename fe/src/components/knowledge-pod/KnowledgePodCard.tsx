@@ -1,15 +1,11 @@
 
 import React from 'react';
 import { Heart } from 'lucide-react';
-import { KnowledgePod } from '@/types';
+import { KnowledgePodCardProps } from '@/types/knowledgePods';
 
-interface KnowledgePodCardProps {
-  pod: KnowledgePod;
-  onToggleLike: (id: string) => void;
-  isLast?: boolean;
-}
 
-const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, onToggleLike, isLast }) => {
+
+const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, onToggleLike, isLast, isPersonal }) => {
   return (
     <div className={`p-6 flex flex-col md:flex-row md:items-start gap-4 transition-colors hover:bg-zinc-50/50 ${!isLast ? 'border-b border-black' : ''}`}>
       {/* Content Section */}
@@ -19,19 +15,23 @@ const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, onToggleLike, 
         </h3>
         <p className="text-zinc-500 text-sm md:text-base leading-relaxed max-w-2xl">
           {pod.description}
-        </p>
-        
+        </p>  
+
         {/* Interaction */}
-        <button 
-          onClick={() => onToggleLike(pod.id)}
-          className="flex items-center gap-2 group mt-4"
-        >
-          <Heart 
-            size={18} 
-            className={`transition-colors ${pod.isLiked ? 'fill-red-500 text-red-500' : 'text-zinc-400 group-hover:text-red-400'}`} 
-          />
-          <span className="text-sm font-medium text-zinc-600">Liked</span>
-        </button>
+        {isPersonal && (
+          <button
+            onClick={() => onToggleLike(pod.id)}
+            className="flex items-center gap-2 group mt-4"
+          >
+
+            <Heart
+              size={18}
+              className={`transition-colors ${pod.isLiked ? 'fill-red-500 text-red-500' : 'text-zinc-400 group-hover:text-red-400'}`}
+            />
+            <span className="text-sm font-medium text-zinc-600">Liked</span>
+          </button>
+        )}
+
       </div>
 
       {/* Metadata Section - Industrial / Mono Style */}
@@ -42,6 +42,13 @@ const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, onToggleLike, 
         <div className="flex items-center gap-2 md:text-right">
           <span className="mono text-xs font-medium text-zinc-400">{pod.date}</span>
         </div>
+
+        {!isPersonal && (
+          <div className="flex items-center gap-2 md:text-right">
+            <span className="mono text-xs font-medium text-zinc-400">{pod.isPublic}</span>
+          </div>
+        )}
+
       </div>
     </div>
   );

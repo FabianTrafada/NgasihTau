@@ -141,6 +141,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	backupCodeRepo := postgres.NewBackupCodeRepository(db)
 	followRepo := postgres.NewFollowRepository(db)
 	verificationTokenRepo := postgres.NewVerificationTokenRepository(db)
+	teacherVerificationRepo := postgres.NewTeacherVerificationRepository(db)
 	predefinedInterestRepo := postgres.NewPredefinedInterestRepository(db)
 	userLearningInterestRepo := postgres.NewUserLearningInterestRepository(db)
 
@@ -197,6 +198,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		backupCodeRepo,
 		followRepo,
 		verificationTokenRepo,
+		teacherVerificationRepo,
 		jwtManager,
 		googleClient,
 		eventPublisher,

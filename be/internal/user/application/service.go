@@ -56,6 +56,13 @@ type UserService interface {
 	// Session management (Requirement 1.3)
 	GetActiveSessions(ctx context.Context, userID uuid.UUID, currentTokenHash string) ([]*SessionInfo, error)
 	RevokeSession(ctx context.Context, userID, sessionID uuid.UUID) error
+
+	// Teacher Verification operations (Requirements 2.1, 2.2, 2.5)
+	SubmitTeacherVerification(ctx context.Context, userID uuid.UUID, input TeacherVerificationInput) (*domain.TeacherVerification, error)
+	GetVerificationStatus(ctx context.Context, userID uuid.UUID) (*domain.TeacherVerification, error)
+	ApproveVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID) error
+	RejectVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID, reason string) error
+	GetPendingVerifications(ctx context.Context, page, perPage int) (*VerificationListResult, error)
 }
 
 // RegisterInput contains the data required for user registration.
@@ -121,17 +128,36 @@ type SessionInfo struct {
 	IsCurrent  bool               `json:"is_current"`
 }
 
+// TeacherVerificationInput contains the data required for teacher verification request.
+// Implements requirements 2.1, 2.5, 3.3.
+type TeacherVerificationInput struct {
+	FullName       string                `json:"full_name" validate:"required,min=3,max=255"`
+	IDNumber       string                `json:"id_number" validate:"required,min=10,max=100"`
+	CredentialType domain.CredentialType `json:"credential_type" validate:"required,oneof=government_id educator_card professional_cert"`
+	DocumentRef    string                `json:"document_ref" validate:"required,max=500"`
+}
+
+// VerificationListResult contains a paginated list of teacher verifications.
+type VerificationListResult struct {
+	Verifications []*domain.TeacherVerification `json:"verifications"`
+	Total         int                           `json:"total"`
+	Page          int                           `json:"page"`
+	PerPage       int                           `json:"per_page"`
+	TotalPages    int                           `json:"total_pages"`
+}
+
 // userService implements the UserService interface.
 type userService struct {
-	userRepo              domain.UserRepository
-	oauthRepo             domain.OAuthAccountRepository
-	refreshTokenRepo      domain.RefreshTokenRepository
-	backupCodeRepo        domain.BackupCodeRepository
-	followRepo            domain.FollowRepository
-	verificationTokenRepo domain.VerificationTokenRepository
-	jwtManager            *jwt.Manager
-	googleClient          *oauth.GoogleClient
-	eventPublisher        natspkg.EventPublisher
+	userRepo                domain.UserRepository
+	oauthRepo               domain.OAuthAccountRepository
+	refreshTokenRepo        domain.RefreshTokenRepository
+	backupCodeRepo          domain.BackupCodeRepository
+	followRepo              domain.FollowRepository
+	verificationTokenRepo   domain.VerificationTokenRepository
+	teacherVerificationRepo domain.TeacherVerificationRepository
+	jwtManager              *jwt.Manager
+	googleClient            *oauth.GoogleClient
+	eventPublisher          natspkg.EventPublisher
 }
 
 // NewUserService creates a new UserService instance.
@@ -142,20 +168,22 @@ func NewUserService(
 	backupCodeRepo domain.BackupCodeRepository,
 	followRepo domain.FollowRepository,
 	verificationTokenRepo domain.VerificationTokenRepository,
+	teacherVerificationRepo domain.TeacherVerificationRepository,
 	jwtManager *jwt.Manager,
 	googleClient *oauth.GoogleClient,
 	eventPublisher natspkg.EventPublisher,
 ) UserService {
 	return &userService{
-		userRepo:              userRepo,
-		oauthRepo:             oauthRepo,
-		refreshTokenRepo:      refreshTokenRepo,
-		backupCodeRepo:        backupCodeRepo,
-		followRepo:            followRepo,
-		verificationTokenRepo: verificationTokenRepo,
-		jwtManager:            jwtManager,
-		googleClient:          googleClient,
-		eventPublisher:        eventPublisher,
+		userRepo:                userRepo,
+		oauthRepo:               oauthRepo,
+		refreshTokenRepo:        refreshTokenRepo,
+		backupCodeRepo:          backupCodeRepo,
+		followRepo:              followRepo,
+		verificationTokenRepo:   verificationTokenRepo,
+		teacherVerificationRepo: teacherVerificationRepo,
+		jwtManager:              jwtManager,
+		googleClient:            googleClient,
+		eventPublisher:          eventPublisher,
 	}
 }
 
@@ -1148,4 +1176,237 @@ func (s *userService) RevokeSession(ctx context.Context, userID, sessionID uuid.
 	}
 
 	return errors.NotFound("session", sessionID.String())
+}
+
+// SubmitTeacherVerification submits a teacher verification request.
+// Implements requirements 2.1, 2.5, 3.3: Teacher verification submission.
+func (s *userService) SubmitTeacherVerification(ctx context.Context, userID uuid.UUID, input TeacherVerificationInput) (*domain.TeacherVerification, error) {
+	// Validate input fields (Requirement 3.3)
+	if err := s.validateTeacherVerificationInput(input); err != nil {
+		return nil, err
+	}
+
+	// Check if user exists
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if user is already a teacher
+	if user.Role == domain.RoleTeacher {
+		return nil, errors.BadRequest("user is already a verified teacher")
+	}
+
+	// Check if a pending verification already exists for this user
+	existingPending, err := s.teacherVerificationRepo.ExistsPendingByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if existingPending {
+		return nil, errors.ConflictMsg("a pending verification request already exists for this user")
+	}
+
+	// Create new teacher verification with pending status (Requirement 2.1)
+	verification := domain.NewTeacherVerification(
+		userID,
+		input.FullName,
+		input.IDNumber,
+		input.CredentialType,
+		input.DocumentRef,
+	)
+
+	// Save verification to database
+	if err := s.teacherVerificationRepo.Create(ctx, verification); err != nil {
+		return nil, err
+	}
+
+	log.Info().
+		Str("user_id", userID.String()).
+		Str("verification_id", verification.ID.String()).
+		Str("credential_type", string(input.CredentialType)).
+		Msg("teacher verification request submitted")
+
+	return verification, nil
+}
+
+// validateTeacherVerificationInput validates the teacher verification input fields.
+// Implements requirement 3.3: Validation of required fields.
+func (s *userService) validateTeacherVerificationInput(input TeacherVerificationInput) error {
+	var details []errors.ErrorDetail
+
+	// Validate full_name (required, min 3, max 255)
+	if input.FullName == "" {
+		details = append(details, errors.ErrorDetail{Field: "full_name", Message: "full name is required"})
+	} else if len(input.FullName) < 3 {
+		details = append(details, errors.ErrorDetail{Field: "full_name", Message: "full name must be at least 3 characters"})
+	} else if len(input.FullName) > 255 {
+		details = append(details, errors.ErrorDetail{Field: "full_name", Message: "full name must not exceed 255 characters"})
+	}
+
+	// Validate id_number (required, min 10, max 100)
+	if input.IDNumber == "" {
+		details = append(details, errors.ErrorDetail{Field: "id_number", Message: "ID number is required"})
+	} else if len(input.IDNumber) < 10 {
+		details = append(details, errors.ErrorDetail{Field: "id_number", Message: "ID number must be at least 10 characters"})
+	} else if len(input.IDNumber) > 100 {
+		details = append(details, errors.ErrorDetail{Field: "id_number", Message: "ID number must not exceed 100 characters"})
+	}
+
+	// Validate credential_type (required, must be valid type)
+	if input.CredentialType == "" {
+		details = append(details, errors.ErrorDetail{Field: "credential_type", Message: "credential type is required"})
+	} else if !domain.IsValidCredentialType(input.CredentialType) {
+		details = append(details, errors.ErrorDetail{Field: "credential_type", Message: "credential type must be one of: government_id, educator_card, professional_cert"})
+	}
+
+	// Validate document_ref (required, max 500)
+	if input.DocumentRef == "" {
+		details = append(details, errors.ErrorDetail{Field: "document_ref", Message: "document reference is required"})
+	} else if len(input.DocumentRef) > 500 {
+		details = append(details, errors.ErrorDetail{Field: "document_ref", Message: "document reference must not exceed 500 characters"})
+	}
+
+	if len(details) > 0 {
+		return errors.Validation("validation failed", details...)
+	}
+
+	return nil
+}
+
+// GetVerificationStatus retrieves the current user's verification status.
+// Implements requirement 2.1: Teacher verification status check.
+func (s *userService) GetVerificationStatus(ctx context.Context, userID uuid.UUID) (*domain.TeacherVerification, error) {
+	return s.teacherVerificationRepo.FindByUserID(ctx, userID)
+}
+
+// ApproveVerification approves a teacher verification request.
+// Implements requirement 2.2: Teacher verification approval.
+// This method updates the verification status to approved and changes the user's role from student to teacher.
+func (s *userService) ApproveVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID) error {
+	// Find the verification request
+	verification, err := s.teacherVerificationRepo.FindByID(ctx, verificationID)
+	if err != nil {
+		return err
+	}
+
+	// Check if verification is still pending
+	if !verification.IsPending() {
+		return errors.BadRequest("verification request has already been reviewed")
+	}
+
+	// Get the user to update their role
+	user, err := s.userRepo.FindByID(ctx, verification.UserID)
+	if err != nil {
+		return err
+	}
+
+	// Check if user is already a teacher (shouldn't happen, but defensive check)
+	if user.Role == domain.RoleTeacher {
+		return errors.BadRequest("user is already a teacher")
+	}
+
+	// Update verification status to approved
+	verification.Approve(reviewerID)
+	if err := s.teacherVerificationRepo.Update(ctx, verification); err != nil {
+		return err
+	}
+
+	// Update user role from student to teacher (Requirement 2.2)
+	user.Role = domain.RoleTeacher
+	user.UpdatedAt = time.Now()
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+
+	log.Info().
+		Str("verification_id", verificationID.String()).
+		Str("user_id", verification.UserID.String()).
+		Str("reviewer_id", reviewerID.String()).
+		Msg("teacher verification approved, user role updated to teacher")
+
+	// Publish events for cache invalidation and notification
+	if s.eventPublisher != nil {
+		// Publish user.updated event for cache invalidation
+		if err := s.eventPublisher.PublishUserUpdated(ctx, verification.UserID); err != nil {
+			log.Error().Err(err).Str("user_id", verification.UserID.String()).Msg("failed to publish user updated event")
+		}
+
+		// Publish teacher verified event for notification
+		event := natspkg.TeacherVerifiedEvent{
+			UserID:         verification.UserID,
+			VerificationID: verification.ID,
+			FullName:       verification.FullName,
+			CredentialType: string(verification.CredentialType),
+		}
+		if err := s.eventPublisher.PublishTeacherVerified(ctx, event); err != nil {
+			log.Error().Err(err).Str("user_id", verification.UserID.String()).Msg("failed to publish teacher verified event")
+		}
+	}
+
+	return nil
+}
+
+// RejectVerification rejects a teacher verification request.
+// Implements requirement 2.2: Teacher verification rejection.
+// This method updates the verification status to rejected with a reason.
+// The user's role remains unchanged (stays as student).
+func (s *userService) RejectVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID, reason string) error {
+	// Find the verification request
+	verification, err := s.teacherVerificationRepo.FindByID(ctx, verificationID)
+	if err != nil {
+		return err
+	}
+
+	// Check if verification is still pending
+	if !verification.IsPending() {
+		return errors.BadRequest("verification request has already been reviewed")
+	}
+
+	// Validate that a reason is provided
+	if reason == "" {
+		return errors.BadRequest("rejection reason is required")
+	}
+
+	// Update verification status to rejected with reason
+	verification.Reject(reviewerID, reason)
+	if err := s.teacherVerificationRepo.Update(ctx, verification); err != nil {
+		return err
+	}
+
+	log.Info().
+		Str("verification_id", verificationID.String()).
+		Str("user_id", verification.UserID.String()).
+		Str("reviewer_id", reviewerID.String()).
+		Str("reason", reason).
+		Msg("teacher verification rejected")
+
+	return nil
+}
+
+// GetPendingVerifications retrieves paginated pending verification requests.
+// Used by admins to review pending verifications.
+func (s *userService) GetPendingVerifications(ctx context.Context, page, perPage int) (*VerificationListResult, error) {
+	// Validate pagination
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+
+	offset := (page - 1) * perPage
+	verifications, total, err := s.teacherVerificationRepo.FindPending(ctx, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + perPage - 1) / perPage
+
+	return &VerificationListResult{
+		Verifications: verifications,
+		Total:         total,
+		Page:          page,
+		PerPage:       perPage,
+		TotalPages:    totalPages,
+	}, nil
 }

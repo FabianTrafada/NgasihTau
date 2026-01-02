@@ -12,18 +12,20 @@ import (
 
 // Handler contains all HTTP handlers for the User Service.
 type Handler struct {
-	authHandler     *AuthHandler
-	userHandler     *UserHandler
-	interestHandler *InterestHandler
-	jwtManager      *jwt.Manager
+	authHandler         *AuthHandler
+	userHandler         *UserHandler
+	interestHandler     *InterestHandler
+	verificationHandler *VerificationHandler
+	jwtManager          *jwt.Manager
 }
 
 // NewHandler creates a new Handler with the given dependencies.
 func NewHandler(userService application.UserService, jwtManager *jwt.Manager) *Handler {
 	return &Handler{
-		authHandler: NewAuthHandler(userService),
-		userHandler: NewUserHandler(userService),
-		jwtManager:  jwtManager,
+		authHandler:         NewAuthHandler(userService),
+		userHandler:         NewUserHandler(userService),
+		verificationHandler: NewVerificationHandler(userService),
+		jwtManager:          jwtManager,
 	}
 }
 
@@ -34,10 +36,11 @@ func NewHandlerWithInterests(
 	jwtManager *jwt.Manager,
 ) *Handler {
 	return &Handler{
-		authHandler:     NewAuthHandler(userService),
-		userHandler:     NewUserHandler(userService),
-		interestHandler: NewInterestHandler(interestService),
-		jwtManager:      jwtManager,
+		authHandler:         NewAuthHandler(userService),
+		userHandler:         NewUserHandler(userService),
+		interestHandler:     NewInterestHandler(interestService),
+		verificationHandler: NewVerificationHandler(userService),
+		jwtManager:          jwtManager,
 	}
 }
 
@@ -73,6 +76,15 @@ func NewHandlerWithInterests(
 // Follow (protected):
 //   - POST   /api/v1/users/:id/follow
 //   - DELETE /api/v1/users/:id/follow
+//
+// Teacher Verification (protected):
+//   - POST /api/v1/users/verification/teacher (submit verification request)
+//   - GET  /api/v1/users/verification/status (get verification status)
+//
+// Admin Verification (protected - admin only):
+//   - GET  /api/v1/admin/verifications (list pending verifications)
+//   - POST /api/v1/admin/verifications/:id/approve (approve verification)
+//   - POST /api/v1/admin/verifications/:id/reject (reject verification)
 //
 // Learning Interests (public):
 //   - GET  /api/v1/interests/predefined (get all predefined interests)
@@ -138,6 +150,18 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Public follower/following lists
 	users.Get("/:id/followers", h.userHandler.GetFollowers)
 	users.Get("/:id/following", h.userHandler.GetFollowing)
+
+	// Teacher verification routes (protected)
+	verification := users.Group("/verification", middleware.Auth(h.jwtManager))
+	verification.Post("/teacher", h.verificationHandler.SubmitTeacherVerification)
+	verification.Get("/status", h.verificationHandler.GetVerificationStatus)
+
+	// Admin verification routes (protected - admin only)
+	// Note: Admin role check should be added via middleware in production
+	admin := api.Group("/admin", middleware.Auth(h.jwtManager))
+	admin.Get("/verifications", h.verificationHandler.GetPendingVerifications)
+	admin.Post("/verifications/:id/approve", h.verificationHandler.ApproveVerification)
+	admin.Post("/verifications/:id/reject", h.verificationHandler.RejectVerification)
 
 	// Interest routes (only if interest handler is initialized)
 	if h.interestHandler != nil {

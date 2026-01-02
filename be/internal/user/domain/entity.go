@@ -394,3 +394,114 @@ func NewUserLearningInterestCustom(userID uuid.UUID, customInterest string) *Use
 		CreatedAt:      time.Now(),
 	}
 }
+
+// VerificationStatus represents the status of teacher verification.
+type VerificationStatus string
+
+const (
+	// VerificationStatusPending is the initial status when verification is submitted.
+	VerificationStatusPending VerificationStatus = "pending"
+	// VerificationStatusApproved is when verification is approved by admin.
+	VerificationStatusApproved VerificationStatus = "approved"
+	// VerificationStatusRejected is when verification is rejected by admin.
+	VerificationStatusRejected VerificationStatus = "rejected"
+)
+
+// CredentialType represents the type of verification document.
+type CredentialType string
+
+const (
+	// CredentialTypeGovernmentID represents KTP/NIK.
+	CredentialTypeGovernmentID CredentialType = "government_id"
+	// CredentialTypeEducatorCard represents Kartu Pendidik.
+	CredentialTypeEducatorCard CredentialType = "educator_card"
+	// CredentialTypeProfessionalCert represents BNSP Certificate.
+	CredentialTypeProfessionalCert CredentialType = "professional_cert"
+)
+
+// TeacherVerification represents a teacher verification request.
+// Implements requirements 2.1, 2.5, 3.1, 3.2, 3.3.
+type TeacherVerification struct {
+	ID              uuid.UUID          `json:"id"`
+	UserID          uuid.UUID          `json:"user_id"`
+	FullName        string             `json:"full_name"`
+	IDNumber        string             `json:"id_number"`
+	CredentialType  CredentialType     `json:"credential_type"`
+	DocumentRef     string             `json:"document_ref"` // Reference only, not actual file
+	Status          VerificationStatus `json:"status"`
+	ReviewedBy      *uuid.UUID         `json:"reviewed_by,omitempty"`
+	ReviewedAt      *time.Time         `json:"reviewed_at,omitempty"`
+	RejectionReason *string            `json:"rejection_reason,omitempty"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+}
+
+// IsPending returns true if the verification is pending review.
+func (tv *TeacherVerification) IsPending() bool {
+	return tv.Status == VerificationStatusPending
+}
+
+// IsApproved returns true if the verification has been approved.
+func (tv *TeacherVerification) IsApproved() bool {
+	return tv.Status == VerificationStatusApproved
+}
+
+// IsRejected returns true if the verification has been rejected.
+func (tv *TeacherVerification) IsRejected() bool {
+	return tv.Status == VerificationStatusRejected
+}
+
+// NewTeacherVerification creates a new teacher verification request.
+// Sets default status to pending.
+func NewTeacherVerification(userID uuid.UUID, fullName, idNumber string, credentialType CredentialType, documentRef string) *TeacherVerification {
+	now := time.Now()
+	return &TeacherVerification{
+		ID:             uuid.New(),
+		UserID:         userID,
+		FullName:       fullName,
+		IDNumber:       idNumber,
+		CredentialType: credentialType,
+		DocumentRef:    documentRef,
+		Status:         VerificationStatusPending,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+}
+
+// Approve marks the verification as approved.
+func (tv *TeacherVerification) Approve(reviewerID uuid.UUID) {
+	now := time.Now()
+	tv.Status = VerificationStatusApproved
+	tv.ReviewedBy = &reviewerID
+	tv.ReviewedAt = &now
+	tv.UpdatedAt = now
+}
+
+// Reject marks the verification as rejected with a reason.
+func (tv *TeacherVerification) Reject(reviewerID uuid.UUID, reason string) {
+	now := time.Now()
+	tv.Status = VerificationStatusRejected
+	tv.ReviewedBy = &reviewerID
+	tv.ReviewedAt = &now
+	tv.RejectionReason = &reason
+	tv.UpdatedAt = now
+}
+
+// ValidCredentialTypes returns all valid credential types.
+func ValidCredentialTypes() []CredentialType {
+	return []CredentialType{
+		CredentialTypeGovernmentID,
+		CredentialTypeEducatorCard,
+		CredentialTypeProfessionalCert,
+	}
+}
+
+// IsValidCredentialType checks if the given credential type is valid.
+func IsValidCredentialType(ct CredentialType) bool {
+	for _, valid := range ValidCredentialTypes() {
+		if ct == valid {
+			return true
+		}
+	}
+	return false
+}

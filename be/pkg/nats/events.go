@@ -27,9 +27,10 @@ const (
 	SubjectEmailCollaboratorInvite = "email.collaborator_invite"
 
 	// User events
-	SubjectUserCreated  = "user.created"
-	SubjectUserUpdated  = "user.updated"
-	SubjectUserFollowed = "user.followed"
+	SubjectUserCreated     = "user.created"
+	SubjectUserUpdated     = "user.updated"
+	SubjectUserFollowed    = "user.followed"
+	SubjectTeacherVerified = "user.teacher_verified"
 
 	// Material events
 	SubjectMaterialUploaded  = "material.uploaded"
@@ -37,8 +38,11 @@ const (
 	SubjectMaterialDeleted   = "material.deleted"
 
 	// Pod events
-	SubjectPodCreated = "pod.created"
-	SubjectPodUpdated = "pod.updated"
+	SubjectPodCreated    = "pod.created"
+	SubjectPodUpdated    = "pod.updated"
+	SubjectPodUpvoted    = "pod.upvoted"
+	SubjectPodShared     = "pod.shared"
+	SubjectUploadRequest = "pod.upload_request"
 
 	// Collaborator events
 	SubjectCollaboratorInvited = "collaborator.invited"
@@ -50,9 +54,9 @@ const (
 // StreamSubjects maps stream names to their subjects.
 var StreamSubjects = map[string][]string{
 	StreamEmail:        {SubjectEmailVerification, SubjectEmailPasswordReset, SubjectEmailCollaboratorInvite},
-	StreamUser:         {SubjectUserCreated, SubjectUserUpdated, SubjectUserFollowed},
+	StreamUser:         {SubjectUserCreated, SubjectUserUpdated, SubjectUserFollowed, SubjectTeacherVerified},
 	StreamMaterial:     {SubjectMaterialUploaded, SubjectMaterialProcessed, SubjectMaterialDeleted},
-	StreamPod:          {SubjectPodCreated, SubjectPodUpdated},
+	StreamPod:          {SubjectPodCreated, SubjectPodUpdated, SubjectPodUpvoted, SubjectPodShared, SubjectUploadRequest},
 	StreamCollaborator: {SubjectCollaboratorInvited},
 	StreamComment:      {SubjectCommentCreated},
 }
@@ -158,6 +162,8 @@ type PodCreatedEvent struct {
 	Visibility  string    `json:"visibility"`
 	Categories  []string  `json:"categories,omitempty"`
 	Tags        []string  `json:"tags,omitempty"`
+	IsVerified  bool      `json:"is_verified"`  // True if created by teacher (Requirement 6.1)
+	UpvoteCount int       `json:"upvote_count"` // Trust indicator, always 0 for new pods (Requirement 6.2)
 }
 
 // PodUpdatedEvent is published when a pod is updated.
@@ -174,6 +180,8 @@ type PodUpdatedEvent struct {
 	StarCount   int       `json:"star_count"`
 	ForkCount   int       `json:"fork_count"`
 	ViewCount   int       `json:"view_count"`
+	IsVerified  bool      `json:"is_verified"`  // True if created by teacher (Requirement 6.1)
+	UpvoteCount int       `json:"upvote_count"` // Trust indicator (Requirement 6.2)
 }
 
 // CollaboratorInvitedEvent is published when a collaborator is invited.
@@ -192,4 +200,48 @@ type CommentCreatedEvent struct {
 	ParentID       *uuid.UUID `json:"parent_id,omitempty"`
 	ParentAuthorID *uuid.UUID `json:"parent_author_id,omitempty"`
 	Content        string     `json:"content"`
+}
+
+// TeacherVerifiedEvent is published when a teacher verification is approved.
+// Consumed by Notification Service to notify the user.
+type TeacherVerifiedEvent struct {
+	UserID         uuid.UUID `json:"user_id"`
+	VerificationID uuid.UUID `json:"verification_id"`
+	FullName       string    `json:"full_name"`
+	CredentialType string    `json:"credential_type"`
+}
+
+// UploadRequestEvent is published when an upload request is created, approved, or rejected.
+// Consumed by Notification Service to notify relevant parties.
+type UploadRequestEvent struct {
+	RequestID       uuid.UUID `json:"request_id"`
+	RequesterID     uuid.UUID `json:"requester_id"`
+	RequesterName   string    `json:"requester_name"`
+	PodID           uuid.UUID `json:"pod_id"`
+	PodName         string    `json:"pod_name"`
+	PodOwnerID      uuid.UUID `json:"pod_owner_id"`
+	Status          string    `json:"status"` // "pending", "approved", "rejected"
+	Message         string    `json:"message,omitempty"`
+	RejectionReason string    `json:"rejection_reason,omitempty"`
+}
+
+// PodSharedEvent is published when a teacher shares a pod with a student.
+// Consumed by Notification Service to notify the student.
+type PodSharedEvent struct {
+	ShareID     uuid.UUID `json:"share_id"`
+	PodID       uuid.UUID `json:"pod_id"`
+	PodName     string    `json:"pod_name"`
+	TeacherID   uuid.UUID `json:"teacher_id"`
+	TeacherName string    `json:"teacher_name"`
+	StudentID   uuid.UUID `json:"student_id"`
+	Message     string    `json:"message,omitempty"`
+}
+
+// PodUpvotedEvent is published when a user upvotes a pod.
+// Consumed by Search Service for re-indexing upvote count.
+type PodUpvotedEvent struct {
+	PodID       uuid.UUID `json:"pod_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	UpvoteCount int       `json:"upvote_count"`
+	IsUpvote    bool      `json:"is_upvote"` // true for upvote, false for remove upvote
 }

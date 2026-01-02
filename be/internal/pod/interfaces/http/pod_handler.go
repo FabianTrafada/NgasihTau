@@ -83,14 +83,19 @@ func (h *PodHandler) CreatePod(c *fiber.Ctx) error {
 // @Failure 404 {object} errors.ErrorResponse "Pod not found"
 // @Router /pods/{id} [get]
 func (h *PodHandler) GetPod(c *fiber.Ctx) error {
+	println("=== HANDLER START: GetPod ===")
+	
 	// Pod ID is extracted and validated by middleware
 	podID, ok := GetPodID(c)
+	println("GetPodID result:", ok, "podID:", podID.String())
 	if !ok {
 		// Fallback to parsing from params if middleware not used
 		idParam := c.Params("id")
+		println("Parsing podID from params:", idParam)
 		var err error
 		podID, err = uuid.Parse(idParam)
 		if err != nil {
+			println("ERROR: Invalid pod ID:", err.Error())
 			return errors.BadRequest("invalid pod ID")
 		}
 	}
@@ -98,12 +103,20 @@ func (h *PodHandler) GetPod(c *fiber.Ctx) error {
 	var viewerID *uuid.UUID
 	if uid, ok := middleware.GetUserID(c); ok && uid != uuid.Nil {
 		viewerID = &uid
+		println("Got viewerID:", uid.String())
+	} else {
+		println("No viewerID (public request)")
 	}
 
+	println("Calling podService.GetPod with podID:", podID.String())
 	pod, err := h.podService.GetPod(c.Context(), podID, viewerID)
 	if err != nil {
+		println("ERROR from GetPod service:", err.Error())
+		// Log the actual error for debugging
+		c.App().Config().ErrorHandler(c, err)
 		return err
 	}
+	println("Got pod successfully:", pod.Name)
 
 	// Auto-track view interaction for authenticated users
 	if viewerID != nil {
@@ -814,4 +827,410 @@ func (h *PodHandler) GetUserStarredPods(c *fiber.Ctx) error {
 
 	requestID := middleware.GetRequestID(c)
 	return c.JSON(response.List(requestID, result.Pods, result.Page, result.PerPage, result.Total))
+}
+
+// UpvotePod handles POST /api/v1/pods/:id/upvote
+// @Summary Upvote a Knowledge Pod
+// @Description Add an upvote to a pod as a trust indicator. Each user can only upvote a pod once.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Pod upvoted"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Failure 409 {object} errors.ErrorResponse "Already upvoted"
+// @Router /pods/{id}/upvote [post]
+func (h *PodHandler) UpvotePod(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Pod ID is extracted and validated by middleware
+	podID, ok := GetPodID(c)
+	if !ok {
+		var err error
+		podID, err = uuid.Parse(c.Params("id"))
+		if err != nil {
+			return errors.BadRequest("invalid pod ID")
+		}
+	}
+
+	if err := h.podService.UpvotePod(c.Context(), podID, userID); err != nil {
+		return err
+	}
+
+	// Auto-track upvote interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionUpvote,
+	})
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(requestID, fiber.Map{"upvoted": true}))
+}
+
+// RemoveUpvote handles DELETE /api/v1/pods/:id/upvote
+// @Summary Remove upvote from a Knowledge Pod
+// @Description Remove your upvote from a pod
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Upvote removed"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found or not upvoted"
+// @Router /pods/{id}/upvote [delete]
+func (h *PodHandler) RemoveUpvote(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Pod ID is extracted and validated by middleware
+	podID, ok := GetPodID(c)
+	if !ok {
+		var err error
+		podID, err = uuid.Parse(c.Params("id"))
+		if err != nil {
+			return errors.BadRequest("invalid pod ID")
+		}
+	}
+
+	if err := h.podService.RemoveUpvote(c.Context(), podID, userID); err != nil {
+		return err
+	}
+
+	// Auto-track remove upvote interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionRemoveUpvote,
+	})
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(requestID, fiber.Map{"upvoted": false}))
+}
+
+// GetUserUpvotedPods handles GET /api/v1/users/me/upvoted-pods
+// @Summary Get current user's upvoted pods
+// @Description Get a paginated list of pods upvoted by the current user
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.Pod] "List of upvoted pods"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me/upvoted-pods [get]
+func (h *PodHandler) GetUserUpvotedPods(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	page := c.QueryInt("page", 1)
+	perPage := c.QueryInt("per_page", 20)
+
+	result, err := h.podService.GetUpvotedPods(c.Context(), userID, page, perPage)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.List(requestID, result.Pods, result.Page, result.PerPage, result.Total))
+}
+
+// CreateUploadRequestInput represents the input for creating an upload request.
+// @Description Create upload request input
+type CreateUploadRequestInput struct {
+	Message *string `json:"message,omitempty" example:"I would like to contribute additional materials on advanced topics."`
+}
+
+// CreateUploadRequest handles POST /api/v1/pods/:id/upload-request
+// @Summary Request upload permission to a pod
+// @Description Request permission to upload materials to another teacher's pod. Only teachers can make this request.
+// @Tags Upload Requests
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param request body CreateUploadRequestInput false "Optional message for the request"
+// @Success 201 {object} response.Response[domain.UploadRequest] "Upload request created"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Only teachers can request upload permission"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Failure 409 {object} errors.ErrorResponse "Upload request already exists"
+// @Router /pods/{id}/upload-request [post]
+func (h *PodHandler) CreateUploadRequest(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Pod ID is extracted and validated by middleware
+	podID, ok := GetPodID(c)
+	if !ok {
+		var err error
+		podID, err = uuid.Parse(c.Params("id"))
+		if err != nil {
+			return errors.BadRequest("invalid pod ID")
+		}
+	}
+
+	var input CreateUploadRequestInput
+	if err := c.BodyParser(&input); err != nil {
+		// Body is optional, so ignore parse errors for empty body
+		input = CreateUploadRequestInput{}
+	}
+
+	uploadRequest, err := h.podService.CreateUploadRequest(c.Context(), userID, podID, input.Message)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, uploadRequest))
+}
+
+// GetUploadRequests handles GET /api/v1/users/me/upload-requests
+// @Summary Get upload requests for the current user
+// @Description Get a paginated list of upload requests received by the current user (as pod owner)
+// @Tags Upload Requests
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Param status query string false "Filter by status" Enums(pending, approved, rejected, revoked)
+// @Success 200 {object} response.PaginatedResponse[domain.UploadRequest] "List of upload requests"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me/upload-requests [get]
+func (h *PodHandler) GetUploadRequests(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	page := c.QueryInt("page", 1)
+	perPage := c.QueryInt("per_page", 20)
+
+	var status *domain.UploadRequestStatus
+	if statusStr := c.Query("status"); statusStr != "" {
+		s := domain.UploadRequestStatus(statusStr)
+		status = &s
+	}
+
+	result, err := h.podService.GetUploadRequestsForOwner(c.Context(), userID, status, page, perPage)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.List(requestID, result.UploadRequests, result.Page, result.PerPage, result.Total))
+}
+
+// ApproveUploadRequest handles POST /api/v1/upload-requests/:id/approve
+// @Summary Approve an upload request
+// @Description Approve an upload request, granting the requester permission to upload to your pod
+// @Tags Upload Requests
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Upload Request ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Upload request approved"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request ID"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Not the pod owner"
+// @Failure 404 {object} errors.ErrorResponse "Upload request not found"
+// @Router /upload-requests/{id}/approve [post]
+func (h *PodHandler) ApproveUploadRequest(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	requestID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return errors.BadRequest("invalid request ID")
+	}
+
+	if err := h.podService.ApproveUploadRequest(c.Context(), requestID, userID); err != nil {
+		return err
+	}
+
+	reqID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(reqID, fiber.Map{"approved": true}))
+}
+
+// RejectUploadRequestInput represents the input for rejecting an upload request.
+// @Description Reject upload request input
+type RejectUploadRequestInput struct {
+	Reason *string `json:"reason,omitempty" example:"Not accepting contributions at this time."`
+}
+
+// RejectUploadRequest handles POST /api/v1/upload-requests/:id/reject
+// @Summary Reject an upload request
+// @Description Reject an upload request with an optional reason
+// @Tags Upload Requests
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Upload Request ID" format(uuid)
+// @Param request body RejectUploadRequestInput false "Optional rejection reason"
+// @Success 200 {object} response.Response[map[string]bool] "Upload request rejected"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request ID"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Not the pod owner"
+// @Failure 404 {object} errors.ErrorResponse "Upload request not found"
+// @Router /upload-requests/{id}/reject [post]
+func (h *PodHandler) RejectUploadRequest(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	requestID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return errors.BadRequest("invalid request ID")
+	}
+
+	var input RejectUploadRequestInput
+	if err := c.BodyParser(&input); err != nil {
+		// Body is optional, so ignore parse errors for empty body
+		input = RejectUploadRequestInput{}
+	}
+
+	if err := h.podService.RejectUploadRequest(c.Context(), requestID, userID, input.Reason); err != nil {
+		return err
+	}
+
+	reqID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(reqID, fiber.Map{"rejected": true}))
+}
+
+// RevokeUploadPermission handles DELETE /api/v1/upload-requests/:id
+// @Summary Revoke upload permission
+// @Description Revoke a previously approved upload permission
+// @Tags Upload Requests
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Upload Request ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Upload permission revoked"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request ID"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Not the pod owner"
+// @Failure 404 {object} errors.ErrorResponse "Upload request not found"
+// @Router /upload-requests/{id} [delete]
+func (h *PodHandler) RevokeUploadPermission(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	requestID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return errors.BadRequest("invalid request ID")
+	}
+
+	if err := h.podService.RevokeUploadPermission(c.Context(), requestID, userID); err != nil {
+		return err
+	}
+
+	reqID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(reqID, fiber.Map{"revoked": true}))
+}
+
+// SharePodInput represents the input for sharing a pod with a student.
+// @Description Share pod with student input
+type SharePodInput struct {
+	StudentID uuid.UUID `json:"student_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Message   *string   `json:"message,omitempty" example:"I recommend this pod for your studies on Go programming."`
+}
+
+// SharePod handles POST /api/v1/pods/:id/share
+// @Summary Share a pod with a student
+// @Description Share a knowledge pod with a student. Only teachers can share pods.
+// @Tags Shared Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Param request body SharePodInput true "Share pod input"
+// @Success 201 {object} response.Response[domain.SharedPod] "Pod shared successfully"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 403 {object} errors.ErrorResponse "Only teachers can share pods"
+// @Failure 404 {object} errors.ErrorResponse "Pod or student not found"
+// @Failure 409 {object} errors.ErrorResponse "Pod already shared with this student"
+// @Router /pods/{id}/share [post]
+func (h *PodHandler) SharePod(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Pod ID is extracted and validated by middleware
+	podID, ok := GetPodID(c)
+	if !ok {
+		var err error
+		podID, err = uuid.Parse(c.Params("id"))
+		if err != nil {
+			return errors.BadRequest("invalid pod ID")
+		}
+	}
+
+	var input SharePodInput
+	if err := c.BodyParser(&input); err != nil {
+		return errors.BadRequest("invalid request body")
+	}
+
+	if err := h.validator.Struct(input); err != nil {
+		return err
+	}
+
+	sharedPod, err := h.podService.SharePodWithStudent(c.Context(), userID, podID, input.StudentID, input.Message)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, sharedPod))
+}
+
+// GetSharedPods handles GET /api/v1/users/me/shared-pods
+// @Summary Get pods shared with the current user
+// @Description Get a paginated list of pods that have been shared with the current user by teachers
+// @Tags Shared Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.SharedPodWithDetails] "List of shared pods"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me/shared-pods [get]
+func (h *PodHandler) GetSharedPods(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	page := c.QueryInt("page", 1)
+	perPage := c.QueryInt("per_page", 20)
+
+	result, err := h.podService.GetSharedPods(c.Context(), userID, page, perPage)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.List(requestID, result.SharedPods, result.Page, result.PerPage, result.Total))
 }

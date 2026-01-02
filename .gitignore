@@ -20,12 +20,14 @@ Thumbs.db
 be/vendor/
 
 # Binary files
-be/search-service
+# be/search-service
+be/*-service
 be/file-processor
-be/notification-service
-be/search-service
-be/pod-service
-be/ai-service
+# be/notification-service
+# be/search-service
+# be/pod-service
+# be/ai-service
+# be/user-service
 be/main
 be/app
 

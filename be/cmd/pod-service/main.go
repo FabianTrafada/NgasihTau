@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"ngasihtau/internal/common/config"
+	"ngasihtau/internal/common/errors"
 	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/internal/pod/application"
@@ -158,6 +159,9 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	podRepo := postgres.NewPodRepository(db)
 	collaboratorRepo := postgres.NewCollaboratorRepository(db)
 	starRepo := postgres.NewPodStarRepository(db)
+	upvoteRepo := postgres.NewPodUpvoteRepository(db)
+	uploadReqRepo := postgres.NewUploadRequestRepository(db)
+	sharedPodRepo := postgres.NewSharedPodRepository(db)
 	followRepo := postgres.NewPodFollowRepository(db)
 	activityRepo := postgres.NewActivityRepository(db)
 
@@ -180,9 +184,13 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		podRepo,
 		collaboratorRepo,
 		starRepo,
+		upvoteRepo,
+		uploadReqRepo,
+		sharedPodRepo,
 		followRepo,
 		activityRepo,
 		eventPublisher,
+		nil, // UserRoleChecker - will be initialized when user DB connection is available
 	)
 
 	recommendationService := application.NewRecommendationService(
@@ -276,14 +284,43 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 // errorHandler is the global error handler for Fiber.
 func errorHandler(c *fiber.Ctx, err error) error {
+	println("=== ERROR HANDLER CALLED ===")
+	println("Error type:", fmt.Sprintf("%T", err))
+	println("Error message:", err.Error())
+	println("Request path:", c.Path())
+	println("Request method:", c.Method())
+	
 	// Default to 500 Internal Server Error
 	code := fiber.StatusInternalServerError
 	message := "Internal Server Error"
 
+	// Check if it's an AppError first (most specific)
+	if appErr, ok := err.(*errors.AppError); ok {
+		code = appErr.HTTPStatus()
+		message = appErr.Message
+		println("AppError detected, code:", code, "message:", message)
+		
+		requestID := middleware.GetRequestID(c)
+		return c.Status(code).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    appErr.Code,
+				"message": message,
+			},
+			"meta": fiber.Map{
+				"timestamp":  time.Now().UTC().Format(time.RFC3339),
+				"request_id": requestID,
+			},
+		})
+	}
+	
 	// Check if it's a Fiber error
 	if e, ok := err.(*fiber.Error); ok {
 		code = e.Code
 		message = e.Message
+		println("Fiber error code:", code, "message:", message)
+	} else {
+		println("Non-fiber error, wrapping as 500")
 	}
 
 	requestID := middleware.GetRequestID(c)
