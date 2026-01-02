@@ -2,7 +2,15 @@
 
 import React, { useState } from 'react';
 import KnowledgePodCard from '@/components/knowledge-pod/KnowledgePodCard';
-import { KnowledgePod } from '@/types';
+
+interface KnowledgePod {
+  id: string;
+  title: string;
+  description: string;
+  fileCount: number;
+  date: string;
+  isLiked: boolean;
+}
 
 const KnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
