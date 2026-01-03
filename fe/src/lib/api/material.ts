@@ -53,6 +53,16 @@ export async function getMaterialPreviewUrl(materialId: string): Promise<string>
   }
 }
 
+export async function getMaterialDownloadUrl(materialId: string): Promise<string> {
+  try {
+    const response = await apiClient.get<{ data: { download_url: string } }>(`/api/v1/materials/${materialId}/download`);
+    return response.data.data.download_url || "";
+  } catch (error) {
+    console.error("Error fetching download URL:", error);
+    throw error;
+  }
+}
+
 /**
  * Send chat message ke material
  * Endpoint: POST /api/v1/materials/{id}/chat (routed to AI Service via Traefik)

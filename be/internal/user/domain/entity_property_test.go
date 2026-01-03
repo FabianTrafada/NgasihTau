@@ -12,6 +12,99 @@ import (
 	"github.com/leanovate/gopter/prop"
 )
 
+// **Feature: student-teacher-roles, Property 1: Default Student Role Assignment**
+// **Validates: Requirements 1.1**
+//
+// Property 1: Default Student Role Assignment
+// *For any* new user registration with valid data, the resulting user SHALL always
+// have the "student" role assigned by default.
+
+func TestProperty_DefaultStudentRoleAssignment(t *testing.T) {
+	parameters := gopter.DefaultTestParametersWithSeed(12345)
+	parameters.MinSuccessfulTests = 100
+
+	properties := gopter.NewProperties(parameters)
+
+	// Property 1.1: NewUser always assigns RoleStudent
+	properties.Property("NewUser always assigns student role", prop.ForAll(
+		func(email, passwordHash, name string) bool {
+			user := NewUser(email, passwordHash, name)
+			return user.Role == RoleStudent
+		},
+		genEmail(),
+		genPasswordHash(),
+		genUserName(),
+	))
+
+	// Property 1.2: NewUser never assigns teacher or verified_student role
+	properties.Property("NewUser never assigns teacher or verified_student role", prop.ForAll(
+		func(email, passwordHash, name string) bool {
+			user := NewUser(email, passwordHash, name)
+			return user.Role != RoleTeacher && user.Role != RoleVerifiedStudent
+		},
+		genEmail(),
+		genPasswordHash(),
+		genUserName(),
+	))
+
+	// Property 1.3: NewUser sets all required default fields correctly
+	properties.Property("NewUser sets all default fields correctly", prop.ForAll(
+		func(email, passwordHash, name string) bool {
+			user := NewUser(email, passwordHash, name)
+
+			return user.Email == email &&
+				user.PasswordHash == passwordHash &&
+				user.Name == name &&
+				user.Role == RoleStudent &&
+				user.EmailVerified == false &&
+				user.TwoFactorEnabled == false &&
+				user.Language == "id" &&
+				user.OnboardingCompleted == false &&
+				!user.CreatedAt.IsZero() &&
+				!user.UpdatedAt.IsZero()
+		},
+		genEmail(),
+		genPasswordHash(),
+		genUserName(),
+	))
+
+	properties.TestingRun(t)
+}
+
+// Generator for email addresses
+func genEmail() gopter.Gen {
+	return gen.AlphaString().SuchThat(func(s string) bool {
+		return len(s) > 0
+	}).Map(func(s string) string {
+		if len(s) == 0 {
+			s = "user"
+		}
+		return s + "@example.com"
+	})
+}
+
+// Generator for password hashes (simulating bcrypt hashes)
+func genPasswordHash() gopter.Gen {
+	return gen.AlphaString().Map(func(s string) string {
+		if len(s) == 0 {
+			return "$2a$10$defaulthash"
+		}
+		return "$2a$10$" + s
+	})
+}
+
+// Generator for user names
+func genUserName() gopter.Gen {
+	return gen.AlphaString().SuchThat(func(s string) bool {
+		return len(s) > 0
+	}).Map(func(s string) string {
+		if len(s) == 0 {
+			return "Default User"
+		}
+		return s
+	})
+}
+
 // **Feature: student-teacher-roles, Property 5: Verification Data Validation**
 // **Validates: Requirements 3.2, 3.3**
 //

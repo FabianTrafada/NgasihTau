@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import KnowledgePodCard from '@/components/knowledge-pod/KnowledgePodCard';
-import { KnowledgePod } from '@/types/knowledgePods';
+import { KnowledgePod } from '@/types';
 
 const MyKnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([

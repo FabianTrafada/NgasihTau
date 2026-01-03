@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -44,11 +45,11 @@ func (w *Worker) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to ensure material stream: %w", err)
 	}
 
-	// Subscribe to pod events
+	// Subscribe to pod events (created, updated, upvoted)
 	podCfg := natspkg.DefaultSubscribeConfig(
 		natspkg.StreamPod,
 		"search-service-pod-indexer",
-		[]string{natspkg.SubjectPodCreated, natspkg.SubjectPodUpdated},
+		[]string{natspkg.SubjectPodCreated, natspkg.SubjectPodUpdated, natspkg.SubjectPodUpvoted},
 	)
 	podCfg.MaxDeliver = 3
 	podCfg.AckWait = 30 * time.Second
@@ -57,7 +58,7 @@ func (w *Worker) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to pod events: %w", err)
 	}
-	log.Info().Msg("subscribed to pod.created and pod.updated events")
+	log.Info().Msg("subscribed to pod.created, pod.updated, and pod.upvoted events")
 
 	// Subscribe to material.processed events
 	materialCfg := natspkg.DefaultSubscribeConfig(
@@ -100,6 +101,8 @@ func (w *Worker) handlePodEvent(ctx context.Context, event natspkg.CloudEvent) e
 		return w.handlePodCreated(ctx, event)
 	case "pod.updated":
 		return w.handlePodUpdated(ctx, event)
+	case "pod.upvoted":
+		return w.handlePodUpvoted(ctx, event)
 	default:
 		log.Warn().Str("type", event.Type).Msg("unknown pod event type")
 		return nil
@@ -119,9 +122,12 @@ func (w *Worker) handlePodCreated(ctx context.Context, event natspkg.CloudEvent)
 		Str("name", data.Name).
 		Str("slug", data.Slug).
 		Str("visibility", data.Visibility).
+		Bool("is_verified", data.IsVerified).
+		Int("upvote_count", data.UpvoteCount).
 		Msg("indexing new pod")
 
 	// Create pod document for indexing with full data from event
+	// IsVerified and UpvoteCount are included for trust indicators (Requirements 6.1, 6.2)
 	podDoc := domain.PodDocument{
 		ID:          data.PodID.String(),
 		OwnerID:     data.OwnerID.String(),
@@ -134,6 +140,9 @@ func (w *Worker) handlePodCreated(ctx context.Context, event natspkg.CloudEvent)
 		StarCount:   0,
 		ForkCount:   0,
 		ViewCount:   0,
+		IsVerified:  data.IsVerified,                                      // True if created by teacher (Requirement 6.1)
+		UpvoteCount: data.UpvoteCount,                                     // Trust indicator from event (Requirement 6.2)
+		TrustScore:  computeTrustScore(data.IsVerified, data.UpvoteCount), // Computed trust score (Requirement 6.4, 6.5)
 		CreatedAt:   event.Time.Unix(),
 		UpdatedAt:   event.Time.Unix(),
 	}
@@ -147,6 +156,8 @@ func (w *Worker) handlePodCreated(ctx context.Context, event natspkg.CloudEvent)
 
 	log.Info().
 		Str("pod_id", data.PodID.String()).
+		Bool("is_verified", data.IsVerified).
+		Int("upvote_count", data.UpvoteCount).
 		Msg("successfully indexed pod")
 
 	return nil
@@ -164,9 +175,12 @@ func (w *Worker) handlePodUpdated(ctx context.Context, event natspkg.CloudEvent)
 		Str("pod_id", data.PodID.String()).
 		Str("name", data.Name).
 		Str("visibility", data.Visibility).
+		Bool("is_verified", data.IsVerified).
+		Int("upvote_count", data.UpvoteCount).
 		Msg("re-indexing updated pod")
 
 	// Create pod document for re-indexing with full data from event
+	// IsVerified and UpvoteCount are included for trust indicators (Requirements 6.1, 6.2)
 	podDoc := domain.PodDocument{
 		ID:          data.PodID.String(),
 		OwnerID:     data.OwnerID.String(),
@@ -179,6 +193,9 @@ func (w *Worker) handlePodUpdated(ctx context.Context, event natspkg.CloudEvent)
 		StarCount:   data.StarCount,
 		ForkCount:   data.ForkCount,
 		ViewCount:   data.ViewCount,
+		IsVerified:  data.IsVerified,                                      // True if created by teacher (Requirement 6.1)
+		UpvoteCount: data.UpvoteCount,                                     // Trust indicator (Requirement 6.2)
+		TrustScore:  computeTrustScore(data.IsVerified, data.UpvoteCount), // Computed trust score (Requirement 6.4, 6.5)
 		UpdatedAt:   event.Time.Unix(),
 	}
 
@@ -191,6 +208,8 @@ func (w *Worker) handlePodUpdated(ctx context.Context, event natspkg.CloudEvent)
 
 	log.Info().
 		Str("pod_id", data.PodID.String()).
+		Bool("is_verified", data.IsVerified).
+		Int("upvote_count", data.UpvoteCount).
 		Msg("successfully re-indexed pod")
 
 	return nil
@@ -280,4 +299,73 @@ func (w *Worker) handleMaterialDeleted(ctx context.Context, event natspkg.CloudE
 		Msg("successfully removed material from search index")
 
 	return nil
+}
+
+// handlePodUpvoted handles pod.upvoted events.
+// Updates the upvote count in the search index for trust ranking (Requirements 6.2, 6.4, 6.5).
+func (w *Worker) handlePodUpvoted(ctx context.Context, event natspkg.CloudEvent) error {
+	var data natspkg.PodUpvotedEvent
+	if err := json.Unmarshal(event.Data, &data); err != nil {
+		log.Error().Err(err).Msg("failed to parse pod.upvoted event")
+		return err
+	}
+
+	log.Info().
+		Str("pod_id", data.PodID.String()).
+		Int("upvote_count", data.UpvoteCount).
+		Bool("is_upvote", data.IsUpvote).
+		Msg("updating pod upvote count in search index")
+
+	// Update only the upvote count and trust score in the index
+	// We use a partial update to avoid overwriting other fields
+	if err := w.service.UpdatePodUpvoteCount(ctx, data.PodID.String(), data.UpvoteCount); err != nil {
+		log.Error().Err(err).
+			Str("pod_id", data.PodID.String()).
+			Msg("failed to update pod upvote count in index")
+		return err
+	}
+
+	log.Info().
+		Str("pod_id", data.PodID.String()).
+		Int("upvote_count", data.UpvoteCount).
+		Msg("successfully updated pod upvote count in search index")
+
+	return nil
+}
+
+// computeTrustScore computes the trust score for a pod based on verified status and upvote count.
+// Formula: trust_score = (0.6 * is_verified) + (0.4 * normalized_upvotes)
+// Normalized upvotes uses a logarithmic scale to prevent very high upvote counts from dominating.
+// Implements Requirements 6.4, 6.5.
+func computeTrustScore(isVerified bool, upvoteCount int) float64 {
+	const (
+		verifiedWeight = 0.6
+		upvoteWeight   = 0.4
+		// Use log scale normalization: log(1 + upvotes) / log(1 + maxExpectedUpvotes)
+		// Assuming max expected upvotes around 10000 for normalization
+		maxExpectedUpvotes = 10000.0
+	)
+
+	var verifiedScore float64
+	if isVerified {
+		verifiedScore = 1.0
+	}
+
+	// Logarithmic normalization of upvote count
+	var normalizedUpvotes float64
+	if upvoteCount > 0 {
+		normalizedUpvotes = log1p(float64(upvoteCount)) / log1p(maxExpectedUpvotes)
+		// Cap at 1.0
+		if normalizedUpvotes > 1.0 {
+			normalizedUpvotes = 1.0
+		}
+	}
+
+	return (verifiedWeight * verifiedScore) + (upvoteWeight * normalizedUpvotes)
+}
+
+// log1p returns the natural logarithm of 1 plus x.
+// This is more accurate than log(1+x) when x is small.
+func log1p(x float64) float64 {
+	return math.Log1p(x)
 }

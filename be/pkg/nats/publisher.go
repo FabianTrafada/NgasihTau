@@ -42,6 +42,18 @@ type EventPublisher interface {
 
 	// PublishCommentCreated publishes a comment created event.
 	PublishCommentCreated(ctx context.Context, event CommentCreatedEvent) error
+
+	// PublishTeacherVerified publishes a teacher verified event.
+	PublishTeacherVerified(ctx context.Context, event TeacherVerifiedEvent) error
+
+	// PublishUploadRequest publishes an upload request event.
+	PublishUploadRequest(ctx context.Context, event UploadRequestEvent) error
+
+	// PublishPodShared publishes a pod shared event.
+	PublishPodShared(ctx context.Context, event PodSharedEvent) error
+
+	// PublishPodUpvoted publishes a pod upvoted event.
+	PublishPodUpvoted(ctx context.Context, event PodUpvotedEvent) error
 }
 
 // Publisher implements EventPublisher using NATS JetStream.
@@ -114,6 +126,26 @@ func (p *Publisher) PublishCommentCreated(ctx context.Context, event CommentCrea
 	return p.client.Publish(ctx, SubjectCommentCreated, "comment.created", event)
 }
 
+// PublishTeacherVerified publishes a teacher verified event.
+func (p *Publisher) PublishTeacherVerified(ctx context.Context, event TeacherVerifiedEvent) error {
+	return p.client.Publish(ctx, SubjectTeacherVerified, "user.teacher_verified", event)
+}
+
+// PublishUploadRequest publishes an upload request event.
+func (p *Publisher) PublishUploadRequest(ctx context.Context, event UploadRequestEvent) error {
+	return p.client.Publish(ctx, SubjectUploadRequest, "pod.upload_request", event)
+}
+
+// PublishPodShared publishes a pod shared event.
+func (p *Publisher) PublishPodShared(ctx context.Context, event PodSharedEvent) error {
+	return p.client.Publish(ctx, SubjectPodShared, "pod.shared", event)
+}
+
+// PublishPodUpvoted publishes a pod upvoted event.
+func (p *Publisher) PublishPodUpvoted(ctx context.Context, event PodUpvotedEvent) error {
+	return p.client.Publish(ctx, SubjectPodUpvoted, "pod.upvoted", event)
+}
+
 // NoOpPublisher is a no-op implementation of EventPublisher for when NATS is not configured.
 type NoOpPublisher struct{}
 
@@ -174,5 +206,25 @@ func (p *NoOpPublisher) PublishCollaboratorInvited(ctx context.Context, event Co
 
 // PublishCommentCreated is a no-op.
 func (p *NoOpPublisher) PublishCommentCreated(ctx context.Context, event CommentCreatedEvent) error {
+	return nil
+}
+
+// PublishTeacherVerified is a no-op.
+func (p *NoOpPublisher) PublishTeacherVerified(ctx context.Context, event TeacherVerifiedEvent) error {
+	return nil
+}
+
+// PublishUploadRequest is a no-op.
+func (p *NoOpPublisher) PublishUploadRequest(ctx context.Context, event UploadRequestEvent) error {
+	return nil
+}
+
+// PublishPodShared is a no-op.
+func (p *NoOpPublisher) PublishPodShared(ctx context.Context, event PodSharedEvent) error {
+	return nil
+}
+
+// PublishPodUpvoted is a no-op.
+func (p *NoOpPublisher) PublishPodUpvoted(ctx context.Context, event PodUpvotedEvent) error {
 	return nil
 }
