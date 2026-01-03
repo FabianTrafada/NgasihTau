@@ -36,29 +36,6 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// Post-process CORS config: parse comma-separated strings into arrays
-	if corsOriginsStr := v.GetString("cors.allowed_origins"); corsOriginsStr != "" && len(cfg.CORS.AllowedOrigins) == 0 {
-		origins := strings.Split(corsOriginsStr, ",")
-		for i := range origins {
-			origins[i] = strings.TrimSpace(origins[i])
-		}
-		cfg.CORS.AllowedOrigins = origins
-	}
-	if corsMethodsStr := v.GetString("cors.allowed_methods"); corsMethodsStr != "" && len(cfg.CORS.AllowedMethods) == 0 {
-		methods := strings.Split(corsMethodsStr, ",")
-		for i := range methods {
-			methods[i] = strings.TrimSpace(methods[i])
-		}
-		cfg.CORS.AllowedMethods = methods
-	}
-	if corsHeadersStr := v.GetString("cors.allowed_headers"); corsHeadersStr != "" && len(cfg.CORS.AllowedHeaders) == 0 {
-		headers := strings.Split(corsHeadersStr, ",")
-		for i := range headers {
-			headers[i] = strings.TrimSpace(headers[i])
-		}
-		cfg.CORS.AllowedHeaders = headers
-	}
-
 	// Validate configuration
 	if err := Validate(&cfg); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
