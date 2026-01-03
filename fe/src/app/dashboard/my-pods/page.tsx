@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import KnowledgePodCard from '@/components/knowledge-pod/KnowledgePodCard';
 import { KnowledgePod } from '@/types/knowledgePods';
+import Link from 'next/link';
 
 const KnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
@@ -59,10 +60,11 @@ const KnowledgePage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2 min-w-max">
-         
-          <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-px hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
-            Upload Pod
-          </button>
+          <Link href="/dashboard/pod/create">
+            <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-px hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
+              Upload Pod
+            </button>
+          </Link>
         </div>
       </div>
 

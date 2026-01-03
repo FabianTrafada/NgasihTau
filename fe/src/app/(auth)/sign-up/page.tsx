@@ -139,7 +139,7 @@ export default function SignUpPage() {
                             )}
                         </div>
 
-                        <div>
+                        {/* <div>
                             <label
                                 htmlFor="name"
                                 className="block text-xs font-semibold text-[#2B2D42] mb-1 font-[(family-name:var(--font-plus-jakarta-sans))]"
@@ -159,7 +159,7 @@ export default function SignUpPage() {
                             {getFieldError("name") && (
                                 <p className="text-red-500 text-xs mt-1">{getFieldError("name")}</p>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Email Field */}
                         <div>

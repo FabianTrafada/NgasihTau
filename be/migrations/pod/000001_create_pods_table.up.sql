@@ -1,6 +1,9 @@
 -- Migration: Create pods table
 -- Requirements: 3, 3.1, 3.2
 
+-- Enable extensions
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE pods (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID NOT NULL,

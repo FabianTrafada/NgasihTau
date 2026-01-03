@@ -17,6 +17,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   // Menggunakan Regex agar bisa menangani dynamic route seperti /dashboard/my-pods/123
   const hideRightSidebarPatterns = [
     /^\/dashboard\/my-pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
+    /^\/dashboard\/pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
+    /^\/dashboard\/pod\/create$/, // matches /dashboard/pod/create
     /^\/dashboard\/my-pods$/, // matches /dashboard/my-pods 
   ];
 
