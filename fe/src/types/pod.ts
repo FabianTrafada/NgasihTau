@@ -19,3 +19,16 @@ export interface PodWithOwner extends Pod {
   owner_name: string;
   owner_title?: string;
 }
+
+export interface CreatePodInput {
+  name: string;
+  description?: string;
+  visibility: "public" | "private";
+  categories?: string[];
+  tags?: string[];
+
+}
+
+export interface CreatePodResponse {
+  data: Pod;
+}

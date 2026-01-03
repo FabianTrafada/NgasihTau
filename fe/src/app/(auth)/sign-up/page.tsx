@@ -26,6 +26,7 @@ export default function SignUpPage() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("");
 
     // Local validation errors
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -137,6 +138,28 @@ export default function SignUpPage() {
                                 <p className="text-red-500 text-xs mt-1">{getFieldError("name")}</p>
                             )}
                         </div>
+
+                        {/* <div>
+                            <label
+                                htmlFor="name"
+                                className="block text-xs font-semibold text-[#2B2D42] mb-1 font-[(family-name:var(--font-plus-jakarta-sans))]"
+                            >
+                               Username
+                            </label>
+                            <input
+                                type="text"
+                                id="username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className={`w-full text-[#2B2D42] px-3 py-2 border-[2px] rounded-md focus:outline-none transition-all font-[family-name:var(--font-inter)] bg-white text-sm ${getFieldError("username") ? "border-red-400" : "border-gray-300 focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)]"
+                                    }`}
+                                placeholder=""
+                                required
+                            />
+                            {getFieldError("name") && (
+                                <p className="text-red-500 text-xs mt-1">{getFieldError("name")}</p>
+                            )}
+                        </div> */}
 
                         {/* Email Field */}
                         <div>

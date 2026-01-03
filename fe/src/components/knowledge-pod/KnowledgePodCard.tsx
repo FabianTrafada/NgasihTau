@@ -41,7 +41,7 @@ const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, onToggleLike, 
         </div>
         <div className="flex items-center gap-2 md:text-right">
           <span className="mono text-xs font-medium text-zinc-400">{pod.date}</span>
-        </div>
+        </div>``
 
         {!isPersonal && (
           <div className="flex items-center gap-2 md:text-right">

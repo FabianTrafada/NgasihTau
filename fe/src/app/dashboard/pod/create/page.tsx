@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import { FormProvider, useFormContext } from '@/context/FormContext';
 import { Step } from '@/types';
 import Layout from '@/components/knowledge-pod/Layout';
