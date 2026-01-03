@@ -8,7 +8,6 @@ import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, get
 import { getUserDetail } from "@/lib/api/user";
 import { Material, ChatMessage } from "@/types/material";
 import { FormattedMessage } from "@/components/FormattedMessage";
-import { div } from "framer-motion/client";
 
 interface PageProps {
   params: Promise<{
@@ -50,7 +49,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
         if (materialData.pod_id !== pod_id) {
           console.warn("Pod ID mismatch:", { urlPodId: pod_id, materialPodId: materialData.pod_id });
           setIsNotFound(true);
-          setLoading(false);  
+          setLoading(false);
         }
 
         // Fetch user detail untuk validasi username

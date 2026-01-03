@@ -35,6 +35,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${plusJakartaSans.variable} ${inter.variable} antialiased`}
+        suppressHydrationWarning
       >
         <AuthProvider>
           <SmoothScroll />

@@ -6,31 +6,7 @@ import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
 import { LayoutDashboard, Sparkles, Folder, BookOpen } from 'lucide-react';
 
-const navItems = [
-  {
-    label: "Home",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "NgasihTau AI",
-    href: "/dashboard/ngasihtau-ai",
-    icon: Sparkles,
-  },
-  {
-    label: "Assets",
-    href: "/dashboard/assets",
-    icon: Folder,
-  },
-]
 
-const knowledgeItems = [
-  {
-    label: "Knowledge Spot",
-    href: "/dashboard/knowledge",
-    icon: BookOpen,
-  },
-]
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,9 +17,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       {/* Left Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        navItems={navItems}
-        knowledgeItems={knowledgeItems}
+        onClose={() => setSidebarOpen(false)}  
       />
 
       {/* Main Content Wrapper */}
