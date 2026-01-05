@@ -19,3 +19,11 @@ export interface PodWithOwner extends Pod {
   owner_name: string;
   owner_title?: string;
 }
+
+export interface KnowledgePodCardProps {
+  pod: Pod;
+  userId: string;
+  onToggleLike: (id: string) => void;
+  isLast?: boolean;
+  isPersonal?: boolean;
+}

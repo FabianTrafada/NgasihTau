@@ -26,14 +26,61 @@ export async function getPodMaterials(podId: string, limit: number = 20, offset:
     const response = await apiClient.get<{ data: Material }>(`/api/v1/pods/${podId}/materials`, {
       params: { limit, offset },
       headers: {
-       Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
     // API returns paginated response with data array
     const data = response.data?.data || response.data;
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching pod materials:", error);
+    throw error;
+  }
+}
+
+export interface PaginatedPodResponse {
+  data: Pod[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+/**
+ * Fetch pods milik user
+ * Endpoint: GET /api/v1/users/{id}/pods
+ */
+export async function getUserPods(userId: string, page: number = 1, perPage: number = 20): Promise<PaginatedPodResponse> {
+  try {
+    const response = await apiClient.get<PaginatedPodResponse>(`/api/v1/users/${userId}/pods`, {
+      params: { page, per_page: perPage },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user pods:", error);
+    throw error;
+  }
+}
+
+export interface CreatePodInput {
+  name: string;
+  description: string;
+  visibility: "public" | "private";
+  categories?: string[];
+  tags?: string[];
+}
+
+/**
+ * Create a new knowledge pod
+ * Endpoint: POST /api/v1/pods
+ */
+export async function createPod(input: CreatePodInput): Promise<Pod> {
+  try {
+    const response = await apiClient.post<{ data: Pod }>("/api/v1/pods", input);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error("Error creating pod:", error);
     throw error;
   }
 }
