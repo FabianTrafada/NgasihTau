@@ -39,6 +39,19 @@ http:
       service: user-service
       priority: 90
 
+    # Admin Routes (protected - admin only)
+    user-service-admin:
+      rule: "PathPrefix(`/api/v1/admin`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 95
+
     # Learning Interests Routes (Onboarding)
     user-service-interests:
       rule: "PathPrefix(`/api/v1/interests`)"
@@ -94,7 +107,7 @@ http:
       priority: 100
 
     # User pods endpoint - route to pod service
-    user-pod-:
+    user-pods:
       rule: "PathRegexp(`/api/v1/users/[^/]+/pods`)"
       entryPoints:
         - web
@@ -105,6 +118,94 @@ http:
         - rate-limit-general
       service: pod-service
       priority: 100
+
+    # User starred pods endpoint - route to pod service
+    user-starred:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/starred`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 100
+
+    # User followers/following endpoint - route to user service
+    user-followers:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/followers`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 100
+
+    user-following:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/following`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 100
+
+    # User's personal pod routes (me) - route to pod service
+    user-me-upvoted-pods:
+      rule: "Path(`/api/v1/users/me/upvoted-pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 110
+
+    user-me-upload-requests:
+      rule: "Path(`/api/v1/users/me/upload-requests`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 110
+
+    user-me-shared-pods:
+      rule: "Path(`/api/v1/users/me/shared-pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 110
+
+    # Upload requests management routes
+    pod-service-upload-requests:
+      rule: "PathPrefix(`/api/v1/upload-requests`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 95
 
     pod-service:
       rule: "PathPrefix(`/api/v1/pods`)"
