@@ -37,43 +37,13 @@ export default function KnowledgePage() {
     fetchData();
   }, []);
 
-  const [pods, setPods] = useState<KnowledgePod[]>([
-    {
-      id: "1",
-      title: "Cara Belajar Mobil Kopling (99% bisa 1% nya hanya tuhan ....)",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ...",
-      fileCount: 12,
-      date: "2 Jan 25",
-      isPublic: "private",
-    },
-    {
-      id: "2",
-      title: "Dasar Pemrograman React untuk Pemula",
-      description: "Panduan lengkap memahami component, props, dan state dalam React modern menggunakan TypeScript.",
-      fileCount: 8,
-      date: "5 Jan 25",
-      isPublic: "public",
-    },
-    {
-      id: "3",
-      title: "Manajemen Waktu untuk Mahasiswa Akhir",
-      description: "Tips dan trik mengelola jadwal skripsi tanpa mengabaikan kesehatan mental dan kehidupan sosial.",
-      fileCount: 5,
-      date: "10 Jan 25",
-      isPublic: "public",
-    },
-    {
-      id: "4",
-      title: "Food Photography dengan Smartphone",
-      description: "Cara mengambil foto makanan yang estetik hanya dengan modal kamera HP dan cahaya matahari.",
-      fileCount: 20,
-      date: "12 Jan 25",
-      isPublic: "private",
-    },
-  ]);
-
-  const handleToggleLike = (id: string) => {
-    setPods((prev) => prev.map((pod) => (pod.id === id ? { ...pod, isLiked: !pod.isLiked } : pod)));
+  const handleToggleLike = async (id: string, isStarred: boolean): Promise<void> => {
+    try {
+      await import("@/lib/utils/starPod").then((m) => m.toggleStarPod(id, isStarred));
+    } catch (error) {
+      console.error("Error toggling star:", error);
+      setError("Failed to toggle star");
+    }
   };
 
   return (
