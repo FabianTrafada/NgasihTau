@@ -1,5 +1,4 @@
 -- Migration: Create upload_requests table
--- Requirements: 4.1, 4.3, 4.6
 -- Purpose: Teacher-to-teacher collaboration for uploading materials to other teachers' pods
 
 CREATE TABLE upload_requests (
@@ -18,7 +17,7 @@ CREATE TABLE upload_requests (
     CONSTRAINT upload_requests_status_check CHECK (status IN ('pending', 'approved', 'rejected', 'revoked'))
 );
 
--- Indexes for pod_owner and requester as specified in task requirements
+-- Indexes for pod_owner and requester
 CREATE INDEX idx_upload_requests_pod_owner ON upload_requests(pod_owner_id, status);
 CREATE INDEX idx_upload_requests_requester ON upload_requests(requester_id);
 CREATE INDEX idx_upload_requests_pod_id ON upload_requests(pod_id);

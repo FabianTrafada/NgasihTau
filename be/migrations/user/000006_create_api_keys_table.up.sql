@@ -1,5 +1,4 @@
 -- Migration: Create api_keys table
--- Requirements: 22 (API Keys for programmatic access)
 
 CREATE TABLE api_keys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,5 +1,4 @@
 -- Migration: Create chat_sessions table
--- Requirements: 9
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

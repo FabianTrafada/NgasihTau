@@ -1,5 +1,4 @@
 -- Rollback: Drop comments table
--- Requirements: 5.2
 
 DROP TRIGGER IF EXISTS update_comments_updated_at ON comments;
 DROP FUNCTION IF EXISTS update_comments_updated_at_column();

@@ -1,5 +1,4 @@
 -- Migration: Create bookmarks table
--- Requirements: 5.4
 
 CREATE TABLE bookmarks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

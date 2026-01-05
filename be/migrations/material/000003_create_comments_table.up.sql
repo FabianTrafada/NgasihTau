@@ -1,5 +1,4 @@
 -- Migration: Create comments table
--- Requirements: 5.2
 
 CREATE TABLE comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

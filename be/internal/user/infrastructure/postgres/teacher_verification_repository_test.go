@@ -1,6 +1,5 @@
 // Package postgres contains unit tests for the TeacherVerificationRepository.
 // Tests CRUD operations and status updates.
-// Implements requirements 9.1, 9.3.
 package postgres
 
 import (

@@ -1,5 +1,4 @@
 -- Migration: Create materials table
--- Requirements: 5, 5.1, 5.2, 5.3, 5.4
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

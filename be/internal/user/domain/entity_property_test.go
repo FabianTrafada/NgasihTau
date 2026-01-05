@@ -13,7 +13,6 @@ import (
 )
 
 // **Feature: student-teacher-roles, Property 1: Default Student Role Assignment**
-// **Validates: Requirements 1.1**
 //
 // Property 1: Default Student Role Assignment
 // *For any* new user registration with valid data, the resulting user SHALL always
@@ -106,7 +105,6 @@ func genUserName() gopter.Gen {
 }
 
 // **Feature: student-teacher-roles, Property 5: Verification Data Validation**
-// **Validates: Requirements 3.2, 3.3**
 //
 // Property 5: Verification Data Validation
 // *For any* teacher verification submission:

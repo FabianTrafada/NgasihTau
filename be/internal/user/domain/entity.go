@@ -24,7 +24,6 @@ const (
 )
 
 // User represents a user account in the system.
-// Implements requirements 1, 2, 2.1.
 type User struct {
 	ID                  uuid.UUID  `json:"id"`
 	Email               string     `json:"email"`
@@ -420,7 +419,6 @@ const (
 )
 
 // TeacherVerification represents a teacher verification request.
-// Implements requirements 2.1, 2.5, 3.1, 3.2, 3.3.
 type TeacherVerification struct {
 	ID              uuid.UUID          `json:"id"`
 	UserID          uuid.UUID          `json:"user_id"`

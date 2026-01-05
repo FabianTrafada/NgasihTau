@@ -19,7 +19,6 @@ import (
 )
 
 // UserService defines the interface for user-related business operations.
-// Implements requirements 1, 1.1, 1.2, 1.3, 2, 2.1, 2.2.
 type UserService interface {
 	// Authentication operations (Requirement 1)
 	Register(ctx context.Context, input RegisterInput) (*AuthResult, error)
@@ -57,7 +56,7 @@ type UserService interface {
 	GetActiveSessions(ctx context.Context, userID uuid.UUID, currentTokenHash string) ([]*SessionInfo, error)
 	RevokeSession(ctx context.Context, userID, sessionID uuid.UUID) error
 
-	// Teacher Verification operations (Requirements 2.1, 2.2, 2.5)
+	// Teacher Verification operations
 	SubmitTeacherVerification(ctx context.Context, userID uuid.UUID, input TeacherVerificationInput) (*domain.TeacherVerification, error)
 	GetVerificationStatus(ctx context.Context, userID uuid.UUID) (*domain.TeacherVerification, error)
 	ApproveVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID) error
@@ -129,7 +128,6 @@ type SessionInfo struct {
 }
 
 // TeacherVerificationInput contains the data required for teacher verification request.
-// Implements requirements 2.1, 2.5, 3.3.
 type TeacherVerificationInput struct {
 	FullName       string                `json:"full_name" validate:"required,min=3,max=255"`
 	IDNumber       string                `json:"id_number" validate:"required,min=10,max=100"`
@@ -1179,7 +1177,6 @@ func (s *userService) RevokeSession(ctx context.Context, userID, sessionID uuid.
 }
 
 // SubmitTeacherVerification submits a teacher verification request.
-// Implements requirements 2.1, 2.5, 3.3: Teacher verification submission.
 func (s *userService) SubmitTeacherVerification(ctx context.Context, userID uuid.UUID, input TeacherVerificationInput) (*domain.TeacherVerification, error) {
 	// Validate input fields (Requirement 3.3)
 	if err := s.validateTeacherVerificationInput(input); err != nil {

@@ -1,5 +1,4 @@
 -- Migration: Create pod_stars table
--- Requirements: 3.2
 
 CREATE TABLE pod_stars (
     user_id UUID NOT NULL,

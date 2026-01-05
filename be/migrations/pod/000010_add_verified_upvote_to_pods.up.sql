@@ -1,5 +1,4 @@
 -- Migration: Add is_verified and upvote_count columns to pods table
--- Requirements: 1.4, 2.4, 6.1, 6.2
 -- Purpose: Support trust indicators for knowledge pods (verified badge and upvote count)
 
 -- Add is_verified column (true if created by teacher)
