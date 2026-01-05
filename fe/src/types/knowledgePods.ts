@@ -8,10 +8,3 @@ export interface KnowledgePod {
     isPublic?: "public" | "private";
 
 }
-
-export interface KnowledgePodCardProps {
-  pod: KnowledgePod;
-  onToggleLike: (id: string) => void;
-  isLast?: boolean;
-  isPersonal?: boolean;
-}

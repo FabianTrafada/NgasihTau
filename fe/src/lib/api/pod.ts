@@ -1,5 +1,5 @@
 import apiClient from "@/lib/api-client";
-import { CreatePodInput, CreatePodResponse, Pod } from "@/types/pod";
+import { Pod } from "@/types/pod";
 import { Material } from "@/types/material";
 
 /**
@@ -38,36 +38,49 @@ export async function getPodMaterials(podId: string, limit: number = 20, offset:
   }
 }
 
+export interface PaginatedPodResponse {
+  data: Pod[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+  };
+}
 
-export async function createPod(input: CreatePodInput): Promise<Pod> {
+/**
+ * Fetch pods milik user
+ * Endpoint: GET /api/v1/users/{id}/pods
+ */
+export async function getUserPods(userId: string, page: number = 1, perPage: number = 20): Promise<PaginatedPodResponse> {
   try {
-    const token = localStorage.getItem("access_token");
-
-    // Debug logging
-    console.log("Creating pod with payload:", input);
-    console.log("Token exists:", !!token);
-
-    const response = await apiClient.post<CreatePodResponse>("/api/v1/pods", input, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+    const response = await apiClient.get<PaginatedPodResponse>(`/api/v1/users/${userId}/pods`, {
+      params: { page, per_page: perPage },
     });
-
-    console.log("Create pod response:", response.data);
-    return response.data.data || response.data;
-  } catch (error: any) {
-    console.error("Error creating pod:", error);
-    console.error("Error response:", error.response?.data);
-    console.error("Error status:", error.response?.status);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user pods:", error);
     throw error;
   }
 }
 
-// export async function DetailPod(id) {
-  
-// }
+export interface CreatePodInput {
+  name: string;
+  description: string;
+  visibility: "public" | "private";
+  categories?: string[];
+  tags?: string[];
+}
 
-
-
-
+/**
+ * Create a new knowledge pod
+ * Endpoint: POST /api/v1/pods
+ */
+export async function createPod(input: CreatePodInput): Promise<Pod> {
+  try {
+    const response = await apiClient.post<{ data: Pod }>("/api/v1/pods", input);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error("Error creating pod:", error);
+    throw error;
+  }
+}

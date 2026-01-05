@@ -93,6 +93,19 @@ http:
       service: material-service
       priority: 100
 
+    # User pods endpoint - route to pod service
+    user-pod-:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 100
+
     pod-service:
       rule: "PathPrefix(`/api/v1/pods`)"
       entryPoints:
