@@ -122,7 +122,7 @@ http:
       priority: 100
 
     # User starred pods endpoint - route to pod service (NOT user service)
-    user-starred:
+    user-starred-pods:
       rule: "PathRegexp(`/api/v1/users/[^/]+/starred`)"
       entryPoints:
         - web
