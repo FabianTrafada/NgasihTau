@@ -64,9 +64,15 @@ export async function createPod(input: CreatePodInput): Promise<Pod> {
   }
 }
 
-// export async function DetailPod(id) {
-  
-// }
+export async function DetailPod(id: string) {
+  try {
+    const response = await apiClient.get<{ data: Pod }>(`/api/v1/pods/${id}`);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error("Error fetching pod detail:", error);
+    throw error;
+  }
+}
 
 
 
