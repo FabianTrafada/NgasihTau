@@ -85,13 +85,13 @@ const ConfiguratorPage: React.FC = () => {
 
   if (isSuccess) {
     return (
-      <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 duration-700">
-        <div className="w-24 h-24 bg-[#FF8A00] border-4 border-black flex items-center justify-center text-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <CheckCircle size={56} strokeWidth={3} />
+      <div className="h-full flex flex-col items-center justify-center space-y-6 animate-in zoom-in-95 duration-500">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+          <CheckCircle size={40} />
         </div>
-        <div className="text-center">
-          <h2 className="text-4xl font-black mb-3 uppercase italic tracking-tighter">Architected</h2>
-          <p className="font-mono text-gray-500 uppercase text-xs tracking-[0.3em]">POD_GEN_SUCCESS // SYNC_COMPLETE</p>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold text-[#2B2D42]">Pod Created Successfully!</h2>
+          <p className="text-gray-500">Your knowledge pod is now ready.</p>
         </div>
         <div className="bg-gray-50 border-2 border-dashed border-black p-4 w-full max-w-sm text-center">
           <p className="text-xs font-mono font-bold uppercase">Pod: {formData.name || "Untitled"}</p>
@@ -102,9 +102,9 @@ const ConfiguratorPage: React.FC = () => {
             resetForm();
             router.push("/dashboard/knowledge");
           }}
-          className="bg-black text-white font-black uppercase text-sm px-14 py-5 border-2 border-black neo-btn-shadow neo-btn-active transition-all"
+          className="bg-[#2B2D42] text-white font-medium text-sm px-8 py-3 rounded-md hover:bg-opacity-90 transition-all"
         >
-          Initialize New Build
+          Go to Dashboard
         </button>
       </div>
     );
@@ -112,9 +112,9 @@ const ConfiguratorPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-10">
-        <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Configurator</h2>
-        <div className="h-1 w-20 bg-[#FF8A00] border border-black"></div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-[#2B2D42]">Configuration</h2>
+        <p className="text-gray-500 text-sm mt-1">Finalize your pod settings before creation.</p>
       </div>
 
       {error && (
@@ -157,10 +157,12 @@ const ConfiguratorPage: React.FC = () => {
                   : "bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1"
               }`}
             >
-              <Lock size={28} />
+              <div className={`p-2 rounded-md w-fit ${formData.visibility === 'private' ? 'bg-[#FF8811] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                <Lock size={20} />
+              </div>
               <div>
-                <p className="font-black text-xl uppercase italic">Private</p>
-                <p className="text-[10px] font-mono mt-2 uppercase leading-relaxed opacity-60">Restricted access protocol. Only authorized entities may interface with this pod.</p>
+                <p className="font-bold text-[#2B2D42]">Private</p>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">Only you and invited users can access this pod.</p>
               </div>
             </button>
             <button
@@ -171,10 +173,12 @@ const ConfiguratorPage: React.FC = () => {
                   : "bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1"
               }`}
             >
-              <Globe size={28} />
+              <div className={`p-2 rounded-md w-fit ${formData.visibility === 'public' ? 'bg-[#FF8811] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                <Globe size={20} />
+              </div>
               <div>
-                <p className="font-black text-xl uppercase italic">Public</p>
-                <p className="text-[10px] font-mono mt-2 uppercase leading-relaxed opacity-60">Open-source architectural node. Available for global network integration.</p>
+                <p className="font-bold text-[#2B2D42]">Public</p>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">Anyone can view and learn from this pod.</p>
               </div>
             </button>
           </div>

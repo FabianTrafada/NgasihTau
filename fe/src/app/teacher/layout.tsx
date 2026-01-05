@@ -5,30 +5,7 @@ import Topbar from '@/components/dashboard/Topbar'
 import { RoleProtectedRoute } from '@/components/auth/RoleProtectedRoute'
 import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
-import { LayoutDashboard, Users, BookOpen, Settings } from 'lucide-react';
-
-const teacherNavItems = [
-    {
-        label: "Dashboard",
-        href: "/teacher/dashboard",
-        icon: LayoutDashboard,
-    },
-    {
-        label: "My Classes",
-        href: "/teacher/classes",
-        icon: Users,
-    },
-    {
-        label: "Materials",
-        href: "/teacher/materials",
-        icon: BookOpen,
-    },
-    {
-        label: "Settings",
-        href: "/teacher/settings",
-        icon: Settings,
-    }
-];
+import { TEACHER_SIDEBAR_GROUPS } from '@/lib/constants/navigation';
 
 const TeacherLayout = ({ children }: { children: React.ReactNode }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,8 +18,7 @@ const TeacherLayout = ({ children }: { children: React.ReactNode }) => {
                 <Sidebar
                     isOpen={sidebarOpen}
                     onClose={() => setSidebarOpen(false)}
-                    navItems={teacherNavItems}
-                    knowledgeItems={[]}
+                    groups={TEACHER_SIDEBAR_GROUPS}
                 />
 
                 {/* Main Content Wrapper */}

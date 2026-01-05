@@ -4,34 +4,9 @@ import RightSidebar from '@/components/dashboard/RightSidebar'
 import Topbar from '@/components/dashboard/Topbar'
 import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
-import { LayoutDashboard, Sparkles, Folder, BookOpen } from 'lucide-react';
 import { usePathname } from 'next/navigation'
 
-const navItems = [
-  {
-    label: "Home",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "NgasihTau AI",
-    href: "/dashboard/ngasihtau-ai",
-    icon: Sparkles,
-  },
-  {
-    label: "Assets",
-    href: "/dashboard/assets",
-    icon: Folder,
-  },
-]
 
-const knowledgeItems = [
-  {
-    label: "Knowledge Spot",
-    href: "/dashboard/knowledge",
-    icon: BookOpen,
-  },
-]
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -42,6 +17,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   // Menggunakan Regex agar bisa menangani dynamic route seperti /dashboard/my-pods/123
   const hideRightSidebarPatterns = [
     /^\/dashboard\/my-pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
+    /^\/dashboard\/pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
+    /^\/dashboard\/pod\/create$/, // matches /dashboard/pod/create
     /^\/dashboard\/my-pods$/, // matches /dashboard/my-pods 
   ];
 
@@ -53,8 +30,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        navItems={navItems}
-        knowledgeItems={knowledgeItems}
       />
 
       {/* Main Content Wrapper */}

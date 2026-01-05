@@ -1,71 +1,22 @@
 'use client'
 
 import { cn } from '@/lib/utils';
-import { BookOpen, LayoutDashboard, Sparkles, X, LucideIcon, File } from 'lucide-react';
+import { X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'
+import { NavGroup, USER_SIDEBAR_GROUPS } from '@/lib/constants/navigation';
 
-export interface NavItem {
-    label: string;
-    href: string;
-    icon: LucideIcon;
-}
-
-interface sidebarProps {
+interface SidebarProps {
     isOpen?: boolean;
     onClose?: () => void;
-    navItems?: NavItem[];
-    knowledgeItems?: NavItem[];
+    groups?: NavGroup[];
 }
 
-const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: propKnowledgeItems }: sidebarProps) => {
-
-
+const Sidebar = ({ isOpen, onClose, groups = USER_SIDEBAR_GROUPS }: SidebarProps) => {
     const pathname = usePathname();
-
-    const defaultNavItems = [
-        {
-            label: "Home",
-            href: "/dashboard",
-            icon: LayoutDashboard,
-        },
-        {
-            label: "NgasihTau AI",
-            href: "/dashboard/ngasihtau-ai",
-            icon: Sparkles,
-        },
-    
-    ]
-
-    const defaultKnowledgeItems = [
-        {
-            label: "Knowledge Spot",
-            href: "/dashboard/knowledge",
-            icon: BookOpen,
-        },
-    ]
-
-    const personalPods = [
-        {
-            label: "My Knowledge Pods",
-            href: "/dashboard/my-pods",
-            icon: File,
-        },
-        
-        
-    ]
-
-    const navItems = propNavItems || defaultNavItems;
-    const knowledgeItems = propKnowledgeItems || defaultKnowledgeItems;
-
-
-
-
-
 
     return (
         <>
-
             {isOpen && (
                 <div className={cn('fixed inset-0  z-30 lg:hidden transition-opacity duration-300', isOpen ? "opacity-100" : "opacity-0 pointer-events-none")} onClick={onClose} />
             )}
@@ -77,106 +28,46 @@ const Sidebar = ({ isOpen, onClose, navItems: propNavItems, knowledgeItems: prop
                     <X className='w-5 h-5 text-gray-600' />
                 </button>
 
-
-
                 {/* Logo */}
                 <Link href="/dashboard">
                     <div className="text-2xl font-bold mb-10">
-
                         <span className="text-[#FF8811]">Ngasih</span>
                         <span className="text-[#2B2D42]">Tau</span>
                     </div>
                 </Link>
+
                 {/* Navigation */}
                 <div className="space-y-6">
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-wider">
-                            Navigation
-                        </p>
-                        <nav className="space-y-2">
-                            {navItems.map((item) => {
-                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={cn(
-                                            "flex text-sm items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-                                            isActive
-                                                ? "bg-[#FF8811] text-white shadow-sm"
-                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                        )}
-                                    >
-                                        <item.icon className="w-4 h-4" />
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
-                    </div>
-
-
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-wider">
-                            Knowledge
-                        </p>
-                        <nav className="space-y-2">
-                            {knowledgeItems.map((item) => {
-                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={cn(
-                                            "flex items-center text-sm gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-                                            isActive
-                                                ? "bg-[#FF8811] text-white shadow-sm"
-                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                        )}
-                                    >
-                                        <item.icon className="w-4 h-4" />
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
-                    </div>
-
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-wider">
-                            Your Pods
-                        </p>
-                        <nav className="space-y-2">
-                            {personalPods.map((item) => {
-                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={cn(
-                                            "flex items-center text-sm gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-                                            isActive
-                                                ? "bg-[#FF8811] text-white shadow-sm"
-                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                        )}
-                                    >
-                                        <item.icon className="w-4 h-4" />
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
-                    </div>
-
-                    {/* knowledge spot */}
-
+                    {groups.map((group, groupIndex) => (
+                        <div key={groupIndex}>
+                            <p className="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-wider">
+                                {group.title}
+                            </p>
+                            <nav className="space-y-2">
+                                {group.items.map((item) => {
+                                    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={cn(
+                                                "flex text-sm items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                                                isActive
+                                                    ? "bg-[#FF8811] text-white shadow-sm"
+                                                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                            )}
+                                        >
+                                            <item.icon className="w-4 h-4" />
+                                            {item.label}
+                                        </Link>
+                                    );
+                                })}
+                            </nav>
+                        </div>
+                    ))}
                 </div>
-
-
             </aside>
         </>
-
-
     )
 }
 

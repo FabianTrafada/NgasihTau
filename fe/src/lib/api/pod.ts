@@ -26,8 +26,8 @@ export async function getPodMaterials(podId: string, limit: number = 20, offset:
     const response = await apiClient.get<{ data: Material }>(`/api/v1/pods/${podId}/materials`, {
       params: { limit, offset },
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        Authorization: `Bearer ${token}`
+      }
     });
     // API returns paginated response with data array
     const data = response.data?.data || response.data;
