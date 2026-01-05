@@ -1,16 +1,32 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Heart } from "lucide-react";
-import { KnowledgePodCardProps } from "@/types/pod";
+import { KnowledgePodCardProps, Pod } from "@/types/pod";
 import { useRouter } from "next/navigation";
+import { getStarredPod } from "@/lib/api/pod";
 
 const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, userId, onToggleLike, isLast, isPersonal }) => {
   const router = useRouter();
+  const [isStarred, setStarred] = React.useState(false);
 
   const handleCardClick = () => {
     if (userId) {
       router.push(`/${userId}/${pod.id}`);
     }
   };
+
+  useEffect(() => {
+    const fetchStarredPods = async () => {
+      try {
+        const starredPods = await getStarredPod(userId);
+        const isStarred = starredPods.some((starredPod) => starredPod.id === pod.id);
+        setStarred(isStarred);
+      } catch (error) {
+        console.error("Error fetching starred pods:", error);
+      }
+    };
+
+    fetchStarredPods();
+  }, [pod.id, userId]);
 
   return (
     <div onClick={handleCardClick} className={`p-6 flex flex-col md:flex-row md:items-start gap-4 transition-colors hover:bg-zinc-50/50 ${!isLast ? "border-b border-black" : ""}`}>
@@ -21,11 +37,20 @@ const KnowledgePodCard: React.FC<KnowledgePodCardProps> = ({ pod, userId, onTogg
 
         {/* Interaction */}
         {isPersonal && (
-          <button onClick={() => onToggleLike(pod.id)} className="flex items-center gap-2 group mt-4">
-            {/* <Heart
-              size={18}
-              className={`transition-colors ${pod.isLiked ? 'fill-red-500 text-red-500' : 'text-zinc-400 group-hover:text-red-400'}`}
-            /> */}
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                await onToggleLike(pod.id, isStarred);
+                setStarred(!isStarred);
+                console.log("Toggled like for pod:", pod.id, "isStarred:", !isStarred);
+              } catch (error) {
+                console.error("Error toggling star:", error);
+              }
+            }}
+            className="flex items-center gap-2 group mt-4"
+          >
+            <Heart size={18} className={`transition-colors ${isStarred ? "fill-red-500 text-red-500" : "text-zinc-400 group-hover:text-red-400"}`} />
             <span className="text-sm font-medium text-zinc-600">Liked</span>
           </button>
         )}
