@@ -10,6 +10,7 @@ import (
 	"ngasihtau/docs"
 	"ngasihtau/internal/ai/application"
 	"ngasihtau/internal/ai/domain"
+	"ngasihtau/internal/common/errors"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/pkg/jwt"
 )
@@ -37,6 +38,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	materials.Get("/chat/history", h.authMiddleware, h.GetChatHistory)
 	materials.Get("/chat/suggestions", h.authMiddleware, h.GetSuggestions)
 	materials.Post("/chat/export", h.authMiddleware, h.ExportChat)
+	materials.Post("/generate-questions", h.authMiddleware, h.GenerateQuestions)
+
+	ai := api.Group("/ai")
+	ai.Post("/materials/:id/generate-questions", h.authMiddleware, h.GenerateQuestions)
 
 	pods := api.Group("/pods/:id")
 	pods.Post("/chat", h.authMiddleware, h.PodChat)
@@ -52,6 +57,13 @@ type ExportChatRequest struct {
 	Format string `json:"format" validate:"required,oneof=pdf markdown"`
 }
 
+// GenerateQuestionsRequest represents the request body for question generation.
+// Implements requirement 12.2.
+type GenerateQuestionsRequest struct {
+	Count        int    `json:"count,omitempty"`         // default 5, max 20
+	QuestionType string `json:"question_type,omitempty"` // multiple_choice, true_false, short_answer, mixed
+}
+
 // ExportChat exports chat history to PDF or Markdown.
 // @Summary Export chat history
 // @Description Export chat history for a material to PDF or Markdown format
@@ -64,6 +76,7 @@ type ExportChatRequest struct {
 // @Success 200 {file} binary "Exported chat file"
 // @Failure 400 {object} docs.ErrorResponse "Invalid request"
 // @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Failure 403 {object} docs.ErrorResponse "Premium subscription required"
 // @Router /materials/{id}/chat/export [post]
 func (h *Handler) ExportChat(c *fiber.Ctx) error {
 	materialID, err := uuid.Parse(c.Params("id"))
@@ -78,6 +91,12 @@ func (h *Handler) ExportChat(c *fiber.Ctx) error {
 
 	userID := c.Locals("user_id").(uuid.UUID)
 
+	// Check if user has access to chat export feature (requires premium tier or higher)
+	// Implements requirements 11.1, 11.3
+	if err := h.service.CheckFeatureAccess(c.Context(), userID, application.FeatureChatExport); err != nil {
+		return h.handleFeatureAccessError(c, err)
+	}
+
 	output, err := h.service.ExportChat(c.Context(), application.ExportChatInput{
 		UserID:     userID,
 		MaterialID: materialID,
@@ -91,6 +110,46 @@ func (h *Handler) ExportChat(c *fiber.Ctx) error {
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", output.Filename))
 
 	return c.Send(output.Content)
+}
+
+// GenerateQuestions generates quiz questions from material content.
+// @Summary Generate quiz questions
+// @Description Generate quiz questions from material content using AI
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Material ID" format(uuid)
+// @Param request body GenerateQuestionsRequest true "Question generation options"
+// @Success 200 {object} docs.SuccessResponse "Generated questions"
+// @Failure 400 {object} docs.ErrorResponse "Invalid request"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Failure 403 {object} docs.ErrorResponse "Pro subscription required"
+// @Router /ai/materials/{id}/generate-questions [post]
+func (h *Handler) GenerateQuestions(c *fiber.Ctx) error {
+	materialID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return h.errorResponse(c, fiber.StatusBadRequest, "VALIDATION_ERROR", "Invalid material ID")
+	}
+
+	var req GenerateQuestionsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return h.errorResponse(c, fiber.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
+	}
+
+	userID := c.Locals("user_id").(uuid.UUID)
+
+	output, err := h.service.GenerateQuestions(c.Context(), application.GenerateQuestionsInput{
+		UserID:       userID,
+		MaterialID:   materialID,
+		Count:        req.Count,
+		QuestionType: req.QuestionType,
+	})
+	if err != nil {
+		return h.handleFeatureAccessError(c, err)
+	}
+
+	return h.successResponse(c, fiber.StatusOK, output)
 }
 
 // Chat handles AI chat with material context.
@@ -143,6 +202,7 @@ func (h *Handler) Chat(c *fiber.Ctx) error {
 // @Success 200 {object} docs.SuccessResponse "AI response with material citations"
 // @Failure 400 {object} docs.ErrorResponse "Invalid request"
 // @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Failure 403 {object} docs.ErrorResponse "Pro subscription required"
 // @Router /pods/{id}/chat [post]
 func (h *Handler) PodChat(c *fiber.Ctx) error {
 	podID, err := uuid.Parse(c.Params("id"))
@@ -156,6 +216,12 @@ func (h *Handler) PodChat(c *fiber.Ctx) error {
 	}
 
 	userID := c.Locals("user_id").(uuid.UUID)
+
+	// Check if user has access to pod-wide chat feature (requires pro tier)
+	// Implements requirements 11.2, 11.4
+	if err := h.service.CheckFeatureAccess(c.Context(), userID, application.FeaturePodWideChat); err != nil {
+		return h.handleFeatureAccessError(c, err)
+	}
 
 	output, err := h.service.Chat(c.Context(), application.ChatInput{
 		UserID:  userID,
@@ -313,6 +379,18 @@ func (h *Handler) errorResponse(c *fiber.Ctx, status int, code, message string) 
 			"request_id": middleware.GetRequestID(c),
 		},
 	})
+}
+
+// handleFeatureAccessError handles errors from feature access checks.
+// It returns appropriate HTTP status codes based on the error type.
+// Implements requirements 11.3, 11.4.
+func (h *Handler) handleFeatureAccessError(c *fiber.Ctx, err error) error {
+	// Check if it's an AppError with a specific code
+	if appErr, ok := err.(*errors.AppError); ok {
+		return h.errorResponse(c, appErr.HTTPStatus(), string(appErr.Code), appErr.Message)
+	}
+	// Default to internal error for unknown error types
+	return h.errorResponse(c, fiber.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 }
 
 func (h *Handler) paginatedResponse(c *fiber.Ctx, data interface{}, limit, offset, total int) error {

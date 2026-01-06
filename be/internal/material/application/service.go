@@ -14,6 +14,15 @@ import (
 	"ngasihtau/pkg/nats"
 )
 
+// StorageChecker defines the interface for storage quota checking.
+// This interface is implemented by the User Service's StorageService.
+// Implements requirements 3.1, 3.2, 3.3, 3.4, 3.5.
+type StorageChecker interface {
+	// CheckStorageQuota checks if user has enough storage for a file.
+	// Returns an error if the upload would exceed the user's storage quota.
+	CheckStorageQuota(ctx context.Context, userID uuid.UUID, fileSize int64) error
+}
+
 // Service provides material-related business operations.
 type Service struct {
 	materialRepo   domain.MaterialRepository
@@ -23,6 +32,7 @@ type Service struct {
 	bookmarkRepo   domain.BookmarkRepository
 	minioClient    MinIOClient
 	eventPublisher nats.EventPublisher
+	storageChecker StorageChecker
 }
 
 // MinIOClient defines the interface for MinIO operations.
@@ -51,6 +61,7 @@ type FileInfo struct {
 }
 
 // NewService creates a new Material Service.
+// The storageChecker parameter is optional - if nil, storage quota checks are skipped.
 func NewService(
 	materialRepo domain.MaterialRepository,
 	versionRepo domain.MaterialVersionRepository,
@@ -59,6 +70,7 @@ func NewService(
 	bookmarkRepo domain.BookmarkRepository,
 	minioClient MinIOClient,
 	eventPublisher nats.EventPublisher,
+	storageChecker StorageChecker,
 ) *Service {
 	return &Service{
 		materialRepo:   materialRepo,
@@ -68,6 +80,7 @@ func NewService(
 		bookmarkRepo:   bookmarkRepo,
 		minioClient:    minioClient,
 		eventPublisher: eventPublisher,
+		storageChecker: storageChecker,
 	}
 }
 
@@ -120,12 +133,26 @@ type ConfirmUploadInput struct {
 
 // ConfirmUpload confirms a file upload and creates a material record.
 // Implements requirement 5: Material Upload.
+// Implements requirements 3.1-3.5: Storage quota check before confirming upload.
 func (s *Service) ConfirmUpload(ctx context.Context, input ConfirmUploadInput) (*domain.Material, error) {
 	// Verify file exists in MinIO
 	fileInfo, err := s.minioClient.GetFileInfo(ctx, input.ObjectKey)
 	if err != nil {
 		log.Error().Err(err).Str("object_key", input.ObjectKey).Msg("file not found in storage")
 		return nil, fmt.Errorf("file not found or upload incomplete")
+	}
+
+	// Check storage quota before creating material record
+	// Implements requirements 3.1, 3.2, 3.3, 3.4, 3.5
+	if s.storageChecker != nil {
+		if err := s.storageChecker.CheckStorageQuota(ctx, input.UploaderID, fileInfo.Size); err != nil {
+			log.Warn().
+				Err(err).
+				Str("uploader_id", input.UploaderID.String()).
+				Int64("file_size", fileInfo.Size).
+				Msg("storage quota exceeded")
+			return nil, err
+		}
 	}
 
 	// Determine file type from object key
@@ -351,6 +378,7 @@ type CreateVersionInput struct {
 
 // CreateVersion creates a new version of a material.
 // Implements requirement 5.1: Material Versioning.
+// Implements requirements 3.1-3.5: Storage quota check before creating new version.
 func (s *Service) CreateVersion(ctx context.Context, input CreateVersionInput) (*domain.MaterialVersion, error) {
 	// Get file info
 	fileInfo, err := s.minioClient.GetFileInfo(ctx, input.ObjectKey)
@@ -362,6 +390,20 @@ func (s *Service) CreateVersion(ctx context.Context, input CreateVersionInput) (
 	material, err := s.materialRepo.FindByID(ctx, input.MaterialID)
 	if err != nil {
 		return nil, fmt.Errorf("material not found: %w", err)
+	}
+
+	// Check storage quota before creating new version
+	// Implements requirements 3.1, 3.2, 3.3, 3.4, 3.5
+	if s.storageChecker != nil {
+		if err := s.storageChecker.CheckStorageQuota(ctx, input.UploaderID, fileInfo.Size); err != nil {
+			log.Warn().
+				Err(err).
+				Str("uploader_id", input.UploaderID.String()).
+				Str("material_id", input.MaterialID.String()).
+				Int64("file_size", fileInfo.Size).
+				Msg("storage quota exceeded for new version")
+			return nil, err
+		}
 	}
 
 	// Get latest version number

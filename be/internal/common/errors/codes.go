@@ -39,6 +39,22 @@ const (
 
 	// CodeUnprocessable indicates the request was well-formed but semantically invalid.
 	CodeUnprocessable Code = "UNPROCESSABLE_ENTITY"
+
+	// CodeStorageQuotaExceeded indicates the user's storage quota has been exceeded.
+	// Implements Requirement 3.4: Upload rejection due to quota.
+	CodeStorageQuotaExceeded Code = "STORAGE_QUOTA_EXCEEDED"
+
+	// CodeAILimitExceeded indicates the user's daily AI message limit has been exceeded.
+	// Implements Requirement 9.5: AI limit rejection.
+	CodeAILimitExceeded Code = "AI_LIMIT_EXCEEDED"
+
+	// CodePremiumFeatureRequired indicates the feature requires premium tier or higher.
+	// Implements Requirement 11.3: Premium feature access rejection.
+	CodePremiumFeatureRequired Code = "PREMIUM_FEATURE_REQUIRED"
+
+	// CodeProFeatureRequired indicates the feature requires pro tier.
+	// Implements Requirement 12.6: Pro feature access rejection.
+	CodeProFeatureRequired Code = "PRO_FEATURE_REQUIRED"
 )
 
 // HTTPStatus returns the corresponding HTTP status code for an error code.
@@ -60,6 +76,14 @@ func (c Code) HTTPStatus() int {
 		return 422
 	case CodeRateLimited:
 		return 429
+	case CodeStorageQuotaExceeded:
+		return 403
+	case CodeAILimitExceeded:
+		return 429
+	case CodePremiumFeatureRequired:
+		return 403
+	case CodeProFeatureRequired:
+		return 403
 	case CodeInternalError:
 		return 500
 	case CodeServiceUnavailable:

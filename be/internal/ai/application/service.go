@@ -14,6 +14,58 @@ import (
 	"ngasihtau/internal/ai/domain"
 )
 
+// Feature constants define the premium and pro features for AI service.
+// These are used by the HTTP handler to check tier-based access.
+const (
+	// FeatureChatExport allows exporting chat conversations.
+	// Requires premium tier or higher.
+	// Implements requirement 11.1.
+	FeatureChatExport = "chat_export"
+
+	// FeaturePodWideChat allows AI chat across all materials in a pod.
+	// Requires pro tier.
+	// Implements requirement 11.2.
+	FeaturePodWideChat = "pod_wide_chat"
+
+	// FeatureQuestionGeneration allows generating quiz questions from materials.
+	// Requires pro tier.
+	// Implements requirement 12.1.
+	FeatureQuestionGeneration = "question_generation"
+)
+
+// Question type constants for generated questions.
+// Implements requirement 12.4.
+const (
+	QuestionTypeMultipleChoice = "multiple_choice"
+	QuestionTypeTrueFalse      = "true_false"
+	QuestionTypeShortAnswer    = "short_answer"
+	QuestionTypeMixed          = "mixed"
+)
+
+// Default and maximum values for question generation.
+// Implements requirement 12.3.
+const (
+	DefaultQuestionCount = 5
+	MaxQuestionCount     = 20
+)
+
+// AILimitChecker defines the interface for checking and tracking AI usage limits.
+// This interface is implemented by the User Service's AIService.
+type AILimitChecker interface {
+	// CheckAILimit checks if a user has remaining AI messages for today.
+	// Returns nil if the user can send AI messages, or an error if the limit is exceeded.
+	CheckAILimit(ctx context.Context, userID uuid.UUID) error
+
+	// IncrementAIUsage increments the user's daily AI usage count.
+	// Should be called after a successful AI chat message is processed.
+	IncrementAIUsage(ctx context.Context, userID uuid.UUID) error
+
+	// CanAccessFeature checks if a user's tier allows access to a specific feature.
+	// Returns nil if access is allowed, or an appropriate error if not.
+	// Implements requirements 11.1, 11.2, 11.3, 11.4, 12.1, 12.6.
+	CanAccessFeature(ctx context.Context, userID uuid.UUID, feature string) error
+}
+
 type Service struct {
 	chatSessionRepo  ChatSessionRepository
 	chatMessageRepo  ChatMessageRepository
@@ -21,6 +73,7 @@ type Service struct {
 	embeddingClient  EmbeddingClient
 	chatClient       ChatClient
 	fileProcessorURL string
+	aiLimitChecker   AILimitChecker
 }
 
 type ChatSessionRepository interface {
@@ -54,6 +107,7 @@ type EmbeddingClient interface {
 type ChatClient interface {
 	GenerateResponse(ctx context.Context, systemPrompt, userQuery string, contextChunks []string) (string, error)
 	GenerateSuggestions(ctx context.Context, content string, existingQuestions []string) ([]string, error)
+	GenerateQuestions(ctx context.Context, content string, count int, questionType string) ([]domain.GeneratedQuestion, error)
 }
 
 type ExportChatInput struct {
@@ -68,6 +122,21 @@ type ExportChatOutput struct {
 	ContentType string
 }
 
+// GenerateQuestionsInput represents the input for question generation.
+// Implements requirements 12.2, 12.3, 12.4.
+type GenerateQuestionsInput struct {
+	UserID       uuid.UUID
+	MaterialID   uuid.UUID
+	Count        int    // default 5, max 20
+	QuestionType string // multiple_choice, true_false, short_answer, mixed
+}
+
+// GenerateQuestionsOutput represents the output of question generation.
+// Implements requirement 12.5.
+type GenerateQuestionsOutput struct {
+	Questions []domain.GeneratedQuestion `json:"questions"`
+}
+
 type GetSuggestionsInput struct {
 	UserID     uuid.UUID
 	MaterialID uuid.UUID
@@ -80,6 +149,7 @@ func NewService(
 	embeddingClient EmbeddingClient,
 	chatClient ChatClient,
 	fileProcessorURL string,
+	aiLimitChecker AILimitChecker,
 ) *Service {
 	return &Service{
 		chatSessionRepo:  chatSessionRepo,
@@ -88,6 +158,7 @@ func NewService(
 		embeddingClient:  embeddingClient,
 		chatClient:       chatClient,
 		fileProcessorURL: fileProcessorURL,
+		aiLimitChecker:   aiLimitChecker,
 	}
 }
 
@@ -104,6 +175,14 @@ type ChatOutput struct {
 }
 
 func (s *Service) Chat(ctx context.Context, input ChatInput) (*ChatOutput, error) {
+	// Check AI limit before processing chat
+	// Implements Requirements 9.4, 9.5
+	if s.aiLimitChecker != nil {
+		if err := s.aiLimitChecker.CheckAILimit(ctx, input.UserID); err != nil {
+			return nil, err
+		}
+	}
+
 	// Determine chat mode
 	mode := domain.ChatModeMaterial
 	if input.PodID != nil && input.MaterialID == nil {
@@ -175,6 +254,15 @@ func (s *Service) Chat(ctx context.Context, input ChatInput) (*ChatOutput, error
 	assistantMessage := domain.NewChatMessage(session.ID, domain.MessageRoleAssistant, response, sources)
 	if err := s.chatMessageRepo.Create(ctx, assistantMessage); err != nil {
 		return nil, fmt.Errorf("failed to save assistant message: %w", err)
+	}
+
+	// Increment AI usage after successful processing
+	// Implements Requirement 9.3
+	if s.aiLimitChecker != nil {
+		if err := s.aiLimitChecker.IncrementAIUsage(ctx, input.UserID); err != nil {
+			// Log the error but don't fail the request since the chat was successful
+			log.Warn().Err(err).Str("user_id", input.UserID.String()).Msg("failed to increment AI usage")
+		}
 	}
 
 	return &ChatOutput{
@@ -277,6 +365,87 @@ func (s *Service) ProcessMaterial(ctx context.Context, materialID, podID uuid.UU
 
 func (s *Service) DeleteMaterialChunks(ctx context.Context, materialID uuid.UUID) error {
 	return s.vectorRepo.DeleteByMaterialID(ctx, materialID)
+}
+
+// CheckFeatureAccess checks if a user has access to a specific premium feature.
+// Returns nil if access is allowed, or an appropriate error if not.
+// Implements requirements 11.1, 11.2, 11.3, 11.4.
+func (s *Service) CheckFeatureAccess(ctx context.Context, userID uuid.UUID, feature string) error {
+	if s.aiLimitChecker == nil {
+		return nil // No limit checker configured, allow access
+	}
+	return s.aiLimitChecker.CanAccessFeature(ctx, userID, feature)
+}
+
+// GenerateQuestions generates quiz questions from material content.
+// Implements requirements 12.1, 12.2, 12.3, 12.4, 12.5, 12.6.
+func (s *Service) GenerateQuestions(ctx context.Context, input GenerateQuestionsInput) (*GenerateQuestionsOutput, error) {
+	// Check user has pro tier via CanAccessFeature
+	// Implements requirement 12.1, 12.6
+	if s.aiLimitChecker != nil {
+		if err := s.aiLimitChecker.CanAccessFeature(ctx, input.UserID, FeatureQuestionGeneration); err != nil {
+			return nil, err
+		}
+	}
+
+	// Validate and set default count
+	// Implements requirement 12.3
+	count := input.Count
+	if count <= 0 {
+		count = DefaultQuestionCount
+	}
+	if count > MaxQuestionCount {
+		count = MaxQuestionCount
+	}
+
+	// Validate question type
+	// Implements requirement 12.4
+	questionType := input.QuestionType
+	if questionType == "" {
+		questionType = QuestionTypeMixed
+	}
+	if !isValidQuestionType(questionType) {
+		questionType = QuestionTypeMixed
+	}
+
+	// Get material content from vector store
+	// We retrieve more chunks to have enough context for question generation
+	chunks, err := s.vectorRepo.Search(ctx, nil, &input.MaterialID, nil, 10)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get material content: %w", err)
+	}
+
+	if len(chunks) == 0 {
+		return nil, fmt.Errorf("no content found for material")
+	}
+
+	// Build content from chunks
+	var contentParts []string
+	for _, chunk := range chunks {
+		contentParts = append(contentParts, chunk.Text)
+	}
+	content := strings.Join(contentParts, "\n\n")
+
+	// Call AI provider to generate questions
+	// Implements requirements 12.2, 12.4, 12.5
+	questions, err := s.chatClient.GenerateQuestions(ctx, content, count, questionType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate questions: %w", err)
+	}
+
+	return &GenerateQuestionsOutput{
+		Questions: questions,
+	}, nil
+}
+
+// isValidQuestionType checks if the question type is valid.
+func isValidQuestionType(questionType string) bool {
+	switch questionType {
+	case QuestionTypeMultipleChoice, QuestionTypeTrueFalse, QuestionTypeShortAnswer, QuestionTypeMixed:
+		return true
+	default:
+		return false
+	}
 }
 
 func buildSystemPrompt(mode domain.ChatMode) string {

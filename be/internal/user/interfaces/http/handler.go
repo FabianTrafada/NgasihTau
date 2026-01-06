@@ -44,6 +44,39 @@ func NewHandlerWithInterests(
 	}
 }
 
+// NewHandlerWithStorage creates a new Handler with user service, interest service, and storage service.
+func NewHandlerWithStorage(
+	userService application.UserService,
+	interestService application.LearningInterestService,
+	storageService application.StorageService,
+	jwtManager *jwt.Manager,
+) *Handler {
+	return &Handler{
+		authHandler:         NewAuthHandler(userService),
+		userHandler:         NewUserHandlerWithStorage(userService, storageService),
+		interestHandler:     NewInterestHandler(interestService),
+		verificationHandler: NewVerificationHandler(userService),
+		jwtManager:          jwtManager,
+	}
+}
+
+// NewHandlerWithAllServices creates a new Handler with user service, interest service, storage service, and AI service.
+func NewHandlerWithAllServices(
+	userService application.UserService,
+	interestService application.LearningInterestService,
+	storageService application.StorageService,
+	aiService application.AIService,
+	jwtManager *jwt.Manager,
+) *Handler {
+	return &Handler{
+		authHandler:         NewAuthHandler(userService),
+		userHandler:         NewUserHandlerWithServices(userService, storageService, aiService),
+		interestHandler:     NewInterestHandler(interestService),
+		verificationHandler: NewVerificationHandler(userService),
+		jwtManager:          jwtManager,
+	}
+}
+
 // RegisterRoutes registers all User Service routes on the given Fiber app.
 // Routes are organized by functionality:
 //
@@ -69,6 +102,9 @@ func NewHandlerWithInterests(
 // User Profile (protected):
 //   - GET  /api/v1/users/me
 //   - PUT  /api/v1/users/me
+//   - GET  /api/v1/users/me/storage (get storage usage info)
+//   - PUT  /api/v1/users/me/tier (update user tier)
+//   - GET  /api/v1/users/me/ai-usage (get AI usage info)
 //
 // User Public Profile (public with optional auth):
 //   - GET  /api/v1/users/:id
@@ -139,6 +175,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected := users.Group("", middleware.Auth(h.jwtManager))
 	protected.Get("/me", h.userHandler.GetCurrentUser)
 	protected.Put("/me", h.userHandler.UpdateCurrentUser)
+	protected.Get("/me/storage", h.userHandler.GetStorageInfo)
+	protected.Put("/me/tier", h.userHandler.UpdateTier)
+	protected.Get("/me/ai-usage", h.userHandler.GetAIUsageInfo)
 
 	// Public user profile with optional auth (to check if following)
 	users.Get("/:id", middleware.OptionalAuth(h.jwtManager), h.userHandler.GetUser)

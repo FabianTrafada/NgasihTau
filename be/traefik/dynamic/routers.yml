@@ -76,7 +76,7 @@ http:
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - cors-headers  
         - security-headers
         - api-version
         - rate-limit-general

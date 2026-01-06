@@ -591,8 +591,21 @@ func (m *mockEventPublisher) PublishPodUpvoted(ctx context.Context, event nats.P
 	return nil
 }
 
+// Mock Storage Checker
+type mockStorageChecker struct {
+	checkErr error
+}
+
+func newMockStorageChecker() *mockStorageChecker {
+	return &mockStorageChecker{}
+}
+
+func (m *mockStorageChecker) CheckStorageQuota(ctx context.Context, userID uuid.UUID, fileSize int64) error {
+	return m.checkErr
+}
+
 // Helper to create a test service
-func newTestService() (*Service, *mockMaterialRepo, *mockVersionRepo, *mockCommentRepo, *mockRatingRepo, *mockBookmarkRepo, *mockMinIOClient, *mockEventPublisher) {
+func newTestService() (*Service, *mockMaterialRepo, *mockVersionRepo, *mockCommentRepo, *mockRatingRepo, *mockBookmarkRepo, *mockMinIOClient, *mockEventPublisher, *mockStorageChecker) {
 	materialRepo := newMockMaterialRepo()
 	versionRepo := newMockVersionRepo()
 	commentRepo := newMockCommentRepo()
@@ -600,6 +613,7 @@ func newTestService() (*Service, *mockMaterialRepo, *mockVersionRepo, *mockComme
 	bookmarkRepo := newMockBookmarkRepo()
 	minioClient := newMockMinIOClient()
 	eventPublisher := newMockEventPublisher()
+	storageChecker := newMockStorageChecker()
 
 	svc := NewService(
 		materialRepo,
@@ -609,14 +623,15 @@ func newTestService() (*Service, *mockMaterialRepo, *mockVersionRepo, *mockComme
 		bookmarkRepo,
 		minioClient,
 		eventPublisher,
+		storageChecker,
 	)
 
-	return svc, materialRepo, versionRepo, commentRepo, ratingRepo, bookmarkRepo, minioClient, eventPublisher
+	return svc, materialRepo, versionRepo, commentRepo, ratingRepo, bookmarkRepo, minioClient, eventPublisher, storageChecker
 }
 
 // Test: Presigned URL Generation
 func TestGetUploadURL_Success(t *testing.T) {
-	svc, _, _, _, _, _, _, _ := newTestService()
+	svc, _, _, _, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	input := UploadURLInput{
@@ -642,7 +657,7 @@ func TestGetUploadURL_Success(t *testing.T) {
 }
 
 func TestGetUploadURL_MinIOError(t *testing.T) {
-	svc, _, _, _, _, _, minioClient, _ := newTestService()
+	svc, _, _, _, _, _, minioClient, _, _ := newTestService()
 	ctx := context.Background()
 
 	minioClient.putURLErr = errors.New("minio connection error")
@@ -661,7 +676,7 @@ func TestGetUploadURL_MinIOError(t *testing.T) {
 
 // Test: Upload Confirmation Flow
 func TestConfirmUpload_Success(t *testing.T) {
-	svc, materialRepo, versionRepo, _, _, _, minioClient, eventPublisher := newTestService()
+	svc, materialRepo, versionRepo, _, _, _, minioClient, eventPublisher, _ := newTestService()
 	ctx := context.Background()
 
 	// Simulate file uploaded to MinIO
@@ -724,7 +739,7 @@ func TestConfirmUpload_Success(t *testing.T) {
 }
 
 func TestConfirmUpload_FileNotFound(t *testing.T) {
-	svc, _, _, _, _, _, _, _ := newTestService()
+	svc, _, _, _, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	input := ConfirmUploadInput{
@@ -741,7 +756,7 @@ func TestConfirmUpload_FileNotFound(t *testing.T) {
 }
 
 func TestConfirmUpload_UnsupportedFileType(t *testing.T) {
-	svc, _, _, _, _, _, minioClient, _ := newTestService()
+	svc, _, _, _, _, _, minioClient, _, _ := newTestService()
 	ctx := context.Background()
 
 	// Simulate file with unsupported extension
@@ -765,6 +780,35 @@ func TestConfirmUpload_UnsupportedFileType(t *testing.T) {
 	}
 }
 
+// Test: Storage Quota Check
+func TestConfirmUpload_StorageQuotaExceeded(t *testing.T) {
+	svc, _, _, _, _, _, minioClient, _, storageChecker := newTestService()
+	ctx := context.Background()
+
+	// Simulate file uploaded to MinIO
+	objectKey := "2025/01/01/test-uuid_document.pdf"
+	minioClient.files[objectKey] = &FileInfo{
+		Size:        1024 * 1024,
+		ContentType: "application/pdf",
+		ETag:        "abc123",
+	}
+
+	// Set storage checker to return quota exceeded error
+	storageChecker.checkErr = errors.New("storage quota exceeded")
+
+	input := ConfirmUploadInput{
+		ObjectKey:  objectKey,
+		PodID:      uuid.New(),
+		UploaderID: uuid.New(),
+		Title:      "Test Document",
+	}
+
+	_, err := svc.ConfirmUpload(ctx, input)
+	if err == nil {
+		t.Fatal("Expected error when storage quota exceeded")
+	}
+}
+
 // Helper function
 func strPtr(s string) *string {
 	return &s
@@ -772,7 +816,7 @@ func strPtr(s string) *string {
 
 // Test: Comment CRUD Operations
 func TestAddComment_Success(t *testing.T) {
-	svc, _, _, commentRepo, _, _, _, _ := newTestService()
+	svc, _, _, commentRepo, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	materialID := uuid.New()
@@ -812,7 +856,7 @@ func TestAddComment_Success(t *testing.T) {
 }
 
 func TestAddComment_WithParent(t *testing.T) {
-	svc, _, _, commentRepo, _, _, _, _ := newTestService()
+	svc, _, _, commentRepo, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	materialID := uuid.New()
@@ -841,7 +885,7 @@ func TestAddComment_WithParent(t *testing.T) {
 }
 
 func TestUpdateComment_Success(t *testing.T) {
-	svc, _, _, commentRepo, _, _, _, _ := newTestService()
+	svc, _, _, commentRepo, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	materialID := uuid.New()
@@ -871,7 +915,7 @@ func TestUpdateComment_Success(t *testing.T) {
 }
 
 func TestUpdateComment_NotOwner(t *testing.T) {
-	svc, _, _, commentRepo, _, _, _, _ := newTestService()
+	svc, _, _, commentRepo, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	materialID := uuid.New()
@@ -895,7 +939,7 @@ func TestUpdateComment_NotOwner(t *testing.T) {
 }
 
 func TestDeleteComment_Success(t *testing.T) {
-	svc, _, _, commentRepo, _, _, _, _ := newTestService()
+	svc, _, _, commentRepo, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	materialID := uuid.New()
@@ -917,7 +961,7 @@ func TestDeleteComment_Success(t *testing.T) {
 }
 
 func TestDeleteComment_NotOwner(t *testing.T) {
-	svc, _, _, commentRepo, _, _, _, _ := newTestService()
+	svc, _, _, commentRepo, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	materialID := uuid.New()
@@ -936,7 +980,7 @@ func TestDeleteComment_NotOwner(t *testing.T) {
 
 // Test: Rating Calculation
 func TestRateMaterial_NewRating(t *testing.T) {
-	svc, materialRepo, _, _, ratingRepo, _, _, _ := newTestService()
+	svc, materialRepo, _, _, ratingRepo, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	// Create material
@@ -981,7 +1025,7 @@ func TestRateMaterial_NewRating(t *testing.T) {
 }
 
 func TestRateMaterial_UpdateExistingRating(t *testing.T) {
-	svc, materialRepo, _, _, ratingRepo, _, _, _ := newTestService()
+	svc, materialRepo, _, _, ratingRepo, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	// Create material
@@ -1018,7 +1062,7 @@ func TestRateMaterial_UpdateExistingRating(t *testing.T) {
 }
 
 func TestRateMaterial_InvalidScore(t *testing.T) {
-	svc, _, _, _, _, _, _, _ := newTestService()
+	svc, _, _, _, _, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	// Test score too low
@@ -1042,7 +1086,7 @@ func TestRateMaterial_InvalidScore(t *testing.T) {
 }
 
 func TestRateMaterial_AverageCalculation(t *testing.T) {
-	svc, materialRepo, _, _, ratingRepo, _, _, _ := newTestService()
+	svc, materialRepo, _, _, ratingRepo, _, _, _, _ := newTestService()
 	ctx := context.Background()
 
 	// Create material

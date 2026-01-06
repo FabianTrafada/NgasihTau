@@ -184,7 +184,3 @@ Login akan mengembalikan `access_token` yang digunakan di header `Authorization:
 - Frontend README: `fe/README.md`
 - Koleksi Postman: `postman/NgasihTau_API.postman_collection.json`
 - Spesifikasi Swagger: `be/api/swagger/`
-
----
-
-Jika mau, saya dapat menambahkan `Makefile` singkat atau memperluas bagian Mulai Cepat dengan tangkapan layar, contoh nilai `.env`, atau tautan CI/deployment. ✅

@@ -3,6 +3,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -235,6 +236,7 @@ func (m *mockEmbeddingClient) GenerateEmbeddings(ctx context.Context, texts []st
 type mockChatClient struct {
 	response    string
 	suggestions []string
+	questions   []domain.GeneratedQuestion
 	err         error
 }
 
@@ -242,6 +244,15 @@ func newMockChatClient() *mockChatClient {
 	return &mockChatClient{
 		response:    "This is a test response based on the provided context.",
 		suggestions: []string{"What is the main topic?", "Can you explain more?", "What are the key points?"},
+		questions: []domain.GeneratedQuestion{
+			{
+				Question:    "What is the main concept?",
+				Type:        "multiple_choice",
+				Options:     []string{"A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"},
+				Answer:      "A. Option 1",
+				Explanation: "This is the correct answer because...",
+			},
+		},
 	}
 }
 
@@ -259,6 +270,40 @@ func (m *mockChatClient) GenerateSuggestions(ctx context.Context, content string
 	return m.suggestions, nil
 }
 
+func (m *mockChatClient) GenerateQuestions(ctx context.Context, content string, count int, questionType string) ([]domain.GeneratedQuestion, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	// Return up to count questions
+	if count > len(m.questions) {
+		return m.questions, nil
+	}
+	return m.questions[:count], nil
+}
+
+// mockAILimitChecker is a mock implementation of AILimitChecker for testing.
+type mockAILimitChecker struct {
+	checkErr        error
+	incrementErr    error
+	featureCheckErr error
+}
+
+func newMockAILimitChecker() *mockAILimitChecker {
+	return &mockAILimitChecker{}
+}
+
+func (m *mockAILimitChecker) CheckAILimit(ctx context.Context, userID uuid.UUID) error {
+	return m.checkErr
+}
+
+func (m *mockAILimitChecker) IncrementAIUsage(ctx context.Context, userID uuid.UUID) error {
+	return m.incrementErr
+}
+
+func (m *mockAILimitChecker) CanAccessFeature(ctx context.Context, userID uuid.UUID, feature string) error {
+	return m.featureCheckErr
+}
+
 // Helper to create a test service
 func newTestService() (*Service, *mockChatSessionRepo, *mockChatMessageRepo, *mockVectorRepo, *mockEmbeddingClient, *mockChatClient) {
 	sessionRepo := newMockChatSessionRepo()
@@ -266,6 +311,7 @@ func newTestService() (*Service, *mockChatSessionRepo, *mockChatMessageRepo, *mo
 	vectorRepo := newMockVectorRepo()
 	embeddingClient := newMockEmbeddingClient()
 	chatClient := newMockChatClient()
+	aiLimitChecker := newMockAILimitChecker()
 
 	svc := NewService(
 		sessionRepo,
@@ -274,6 +320,7 @@ func newTestService() (*Service, *mockChatSessionRepo, *mockChatMessageRepo, *mo
 		embeddingClient,
 		chatClient,
 		"http://localhost:8000",
+		aiLimitChecker,
 	)
 
 	return svc, sessionRepo, messageRepo, vectorRepo, embeddingClient, chatClient
@@ -1177,4 +1224,173 @@ func TestService_ExportChat_UnsupportedFormat(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error for unsupported format")
 	}
+}
+
+// Test: AI Limit Checking
+func TestService_Chat_AILimitExceeded(t *testing.T) {
+	sessionRepo := newMockChatSessionRepo()
+	messageRepo := newMockChatMessageRepo()
+	vectorRepo := newMockVectorRepo()
+	embeddingClient := newMockEmbeddingClient()
+	chatClient := newMockChatClient()
+	aiLimitChecker := newMockAILimitChecker()
+
+	// Set AI limit exceeded error
+	aiLimitChecker.checkErr = fmt.Errorf("daily AI message limit exceeded")
+
+	svc := NewService(
+		sessionRepo,
+		messageRepo,
+		vectorRepo,
+		embeddingClient,
+		chatClient,
+		"http://localhost:8000",
+		aiLimitChecker,
+	)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	materialID := uuid.New()
+
+	input := ChatInput{
+		UserID:     userID,
+		MaterialID: &materialID,
+		Message:    "What is this about?",
+	}
+
+	_, err := svc.Chat(ctx, input)
+	if err == nil {
+		t.Fatal("Expected error when AI limit is exceeded")
+	}
+	if err.Error() != "daily AI message limit exceeded" {
+		t.Errorf("Expected AI limit exceeded error, got: %v", err)
+	}
+}
+
+func TestService_Chat_AILimitIncrementsUsage(t *testing.T) {
+	sessionRepo := newMockChatSessionRepo()
+	messageRepo := newMockChatMessageRepo()
+	vectorRepo := newMockVectorRepo()
+	embeddingClient := newMockEmbeddingClient()
+	chatClient := newMockChatClient()
+	aiLimitChecker := &mockAILimitCheckerWithTracking{}
+
+	svc := NewService(
+		sessionRepo,
+		messageRepo,
+		vectorRepo,
+		embeddingClient,
+		chatClient,
+		"http://localhost:8000",
+		aiLimitChecker,
+	)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	materialID := uuid.New()
+	podID := uuid.New()
+
+	// Add some chunks to vector repo
+	vectorRepo.chunks = []domain.MaterialChunk{
+		{
+			ID:         "chunk1",
+			MaterialID: materialID,
+			PodID:      podID,
+			ChunkIndex: 0,
+			Text:       "This is relevant content about the topic.",
+		},
+	}
+
+	input := ChatInput{
+		UserID:     userID,
+		MaterialID: &materialID,
+		Message:    "What is this about?",
+	}
+
+	_, err := svc.Chat(ctx, input)
+	if err != nil {
+		t.Fatalf("Chat failed: %v", err)
+	}
+
+	// Verify that CheckAILimit was called
+	if !aiLimitChecker.checkCalled {
+		t.Error("Expected CheckAILimit to be called")
+	}
+
+	// Verify that IncrementAIUsage was called after successful chat
+	if !aiLimitChecker.incrementCalled {
+		t.Error("Expected IncrementAIUsage to be called after successful chat")
+	}
+}
+
+func TestService_Chat_NilAILimitChecker(t *testing.T) {
+	sessionRepo := newMockChatSessionRepo()
+	messageRepo := newMockChatMessageRepo()
+	vectorRepo := newMockVectorRepo()
+	embeddingClient := newMockEmbeddingClient()
+	chatClient := newMockChatClient()
+
+	// Create service with nil AILimitChecker
+	svc := NewService(
+		sessionRepo,
+		messageRepo,
+		vectorRepo,
+		embeddingClient,
+		chatClient,
+		"http://localhost:8000",
+		nil,
+	)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	materialID := uuid.New()
+	podID := uuid.New()
+
+	// Add some chunks to vector repo
+	vectorRepo.chunks = []domain.MaterialChunk{
+		{
+			ID:         "chunk1",
+			MaterialID: materialID,
+			PodID:      podID,
+			ChunkIndex: 0,
+			Text:       "This is relevant content about the topic.",
+		},
+	}
+
+	input := ChatInput{
+		UserID:     userID,
+		MaterialID: &materialID,
+		Message:    "What is this about?",
+	}
+
+	// Should work without AI limit checker
+	result, err := svc.Chat(ctx, input)
+	if err != nil {
+		t.Fatalf("Chat failed with nil AILimitChecker: %v", err)
+	}
+	if result.Message == nil {
+		t.Fatal("Expected message in result")
+	}
+}
+
+// mockAILimitCheckerWithTracking tracks calls to CheckAILimit and IncrementAIUsage.
+type mockAILimitCheckerWithTracking struct {
+	checkCalled     bool
+	incrementCalled bool
+	checkErr        error
+	incrementErr    error
+}
+
+func (m *mockAILimitCheckerWithTracking) CheckAILimit(ctx context.Context, userID uuid.UUID) error {
+	m.checkCalled = true
+	return m.checkErr
+}
+
+func (m *mockAILimitCheckerWithTracking) IncrementAIUsage(ctx context.Context, userID uuid.UUID) error {
+	m.incrementCalled = true
+	return m.incrementErr
+}
+
+func (m *mockAILimitCheckerWithTracking) CanAccessFeature(ctx context.Context, userID uuid.UUID, feature string) error {
+	return nil
 }

@@ -13,4 +13,5 @@ var (
 	_ domain.FollowRepository              = (*FollowRepository)(nil)
 	_ domain.VerificationTokenRepository   = (*VerificationTokenRepository)(nil)
 	_ domain.TeacherVerificationRepository = (*TeacherVerificationRepository)(nil)
+	_ domain.StorageRepository             = (*StorageRepository)(nil)
 )

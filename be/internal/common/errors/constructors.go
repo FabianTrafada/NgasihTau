@@ -131,3 +131,67 @@ func Unprocessable(message string) *AppError {
 		Message: message,
 	}
 }
+
+// StorageQuotaDetails contains details about storage quota exceeded error.
+// Implements Requirement 3.4: Error response with usage details.
+type StorageQuotaDetails struct {
+	CurrentUsage int64  `json:"current_usage"`
+	QuotaLimit   int64  `json:"quota_limit"`
+	RequiredSize int64  `json:"required_size"`
+	Tier         string `json:"tier"`
+}
+
+// StorageQuotaExceeded creates a storage quota exceeded error with usage details.
+// Implements Requirement 3.4: Upload rejection due to quota.
+func StorageQuotaExceeded(currentUsage, quotaLimit, requiredSize int64, tier string) *AppError {
+	return &AppError{
+		Code:    CodeStorageQuotaExceeded,
+		Message: "storage quota exceeded",
+		Details: []ErrorDetail{
+			{Field: "current_usage", Value: currentUsage},
+			{Field: "quota_limit", Value: quotaLimit},
+			{Field: "required_size", Value: requiredSize},
+			{Field: "tier", Value: tier},
+		},
+	}
+}
+
+// AILimitExceeded creates an AI daily limit exceeded error.
+// Implements Requirement 9.5: AI limit rejection.
+func AILimitExceeded(usedToday, dailyLimit int, tier string) *AppError {
+	return &AppError{
+		Code:    CodeAILimitExceeded,
+		Message: "daily AI message limit exceeded",
+		Details: []ErrorDetail{
+			{Field: "used_today", Value: usedToday},
+			{Field: "daily_limit", Value: dailyLimit},
+			{Field: "tier", Value: tier},
+		},
+	}
+}
+
+// PremiumFeatureRequired creates an error for premium-only features.
+// Implements Requirement 11.3: Premium feature access rejection.
+func PremiumFeatureRequired(feature string) *AppError {
+	return &AppError{
+		Code:    CodePremiumFeatureRequired,
+		Message: fmt.Sprintf("premium subscription required for feature: %s", feature),
+		Details: []ErrorDetail{
+			{Field: "feature", Value: feature},
+			{Field: "required_tier", Value: "premium"},
+		},
+	}
+}
+
+// ProFeatureRequired creates an error for pro-only features.
+// Implements Requirement 12.6: Pro feature access rejection.
+func ProFeatureRequired(feature string) *AppError {
+	return &AppError{
+		Code:    CodeProFeatureRequired,
+		Message: fmt.Sprintf("pro subscription required for feature: %s", feature),
+		Details: []ErrorDetail{
+			{Field: "feature", Value: feature},
+			{Field: "required_tier", Value: "pro"},
+		},
+	}
+}

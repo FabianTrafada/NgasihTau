@@ -55,6 +55,7 @@ func TestProperty_DefaultStudentRoleAssignment(t *testing.T) {
 				user.PasswordHash == passwordHash &&
 				user.Name == name &&
 				user.Role == RoleStudent &&
+				user.Tier == TierFree &&
 				user.EmailVerified == false &&
 				user.TwoFactorEnabled == false &&
 				user.Language == "id" &&

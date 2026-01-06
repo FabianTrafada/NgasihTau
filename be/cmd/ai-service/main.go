@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -24,6 +25,9 @@ import (
 	"ngasihtau/internal/common/config"
 	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
+	userapplication "ngasihtau/internal/user/application"
+	userpostgres "ngasihtau/internal/user/infrastructure/postgres"
+	userredis "ngasihtau/internal/user/infrastructure/redis"
 	"ngasihtau/pkg/jwt"
 	natspkg "ngasihtau/pkg/nats"
 )
@@ -31,6 +35,8 @@ import (
 type App struct {
 	httpServer    *fiber.App
 	db            *pgxpool.Pool
+	userDB        *pgxpool.Pool
+	redisClient   *redis.Client
 	natsClient    *natspkg.Client
 	qdrantClient  *qdrant.Client
 	healthChecker *health.Checker
@@ -111,7 +117,44 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	if err := db.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	log.Info().Msg("connected to database")
+	log.Info().Msg("connected to AI database")
+
+	// Connect to User database for AI limit checks
+	userDBConfig, err := pgxpool.ParseConfig(cfg.UserDB.DSN())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse user database config: %w", err)
+	}
+
+	userDBConfig.MaxConns = int32(cfg.UserDB.MaxOpenConns)
+	userDBConfig.MinConns = int32(cfg.UserDB.MaxIdleConns / 2)
+	userDBConfig.MaxConnLifetime = cfg.UserDB.ConnMaxLifetime
+	userDBConfig.MaxConnIdleTime = 5 * time.Minute
+
+	userDB, err := pgxpool.NewWithConfig(ctx, userDBConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to user database: %w", err)
+	}
+
+	if err := userDB.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping user database: %w", err)
+	}
+	log.Info().Msg("connected to User database")
+
+	// Connect to Redis for AI usage tracking
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:            cfg.Redis.Addr(),
+		Password:        cfg.Redis.Password,
+		DB:              cfg.Redis.DB,
+		PoolSize:        cfg.Redis.PoolSize,
+		MinIdleConns:    cfg.Redis.MinIdleConns,
+		PoolTimeout:     cfg.Redis.PoolTimeout,
+		ConnMaxIdleTime: cfg.Redis.IdleTimeout,
+	})
+
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+	log.Info().Msg("connected to Redis")
 
 	qdrantClient, err := qdrant.NewClient(qdrant.Config{
 		Host:           cfg.Qdrant.Host,
@@ -189,6 +232,13 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	chatSessionRepo := postgres.NewChatSessionRepository(db)
 	chatMessageRepo := postgres.NewChatMessageRepository(db)
 
+	// Initialize User repositories for AI limit checking
+	userRepo := userpostgres.NewUserRepository(userDB)
+	aiUsageRepo := userredis.NewAIUsageRepository(redisClient)
+
+	// Create AIService for limit checking
+	aiLimitChecker := userapplication.NewAIService(userRepo, aiUsageRepo, cfg.AILimit)
+
 	aiService := application.NewService(
 		chatSessionRepo,
 		chatMessageRepo,
@@ -196,6 +246,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		embeddingClient,
 		chatClient,
 		cfg.FileProcSvc.URL,
+		aiLimitChecker,
 	)
 
 	worker := application.NewWorker(aiService, natsClient, cfg.FileProcSvc.URL)
@@ -235,6 +286,10 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Initialize health checker
 	healthChecker := health.NewChecker("ai-service", "1.0.0")
 	healthChecker.AddDependency("postgres", health.PostgresCheck("postgres", db))
+	healthChecker.AddDependency("user_postgres", health.PostgresCheck("user_postgres", userDB))
+	healthChecker.AddDependency("redis", health.CustomCheck("redis", func(ctx context.Context) error {
+		return redisClient.Ping(ctx).Err()
+	}))
 	healthChecker.AddDependency("qdrant", health.QdrantCheck("qdrant", qdrantClient))
 	if natsClient != nil {
 		healthChecker.AddDependency("nats", health.NATSCheck("nats", natsClient))
@@ -246,6 +301,8 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	return &App{
 		httpServer:    fiberApp,
 		db:            db,
+		userDB:        userDB,
+		redisClient:   redisClient,
 		natsClient:    natsClient,
 		qdrantClient:  qdrantClient,
 		healthChecker: healthChecker,
@@ -267,6 +324,19 @@ func (a *App) Shutdown(ctx context.Context) error {
 	if a.natsClient != nil {
 		a.natsClient.Close()
 		log.Info().Msg("NATS connection closed")
+	}
+
+	if a.redisClient != nil {
+		if err := a.redisClient.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close Redis connection")
+		} else {
+			log.Info().Msg("Redis connection closed")
+		}
+	}
+
+	if a.userDB != nil {
+		a.userDB.Close()
+		log.Info().Msg("User database connection closed")
 	}
 
 	if a.db != nil {

@@ -121,6 +121,16 @@ type SuggestedQuestion struct {
 	Question string `json:"question"`
 }
 
+// GeneratedQuestion represents a single generated quiz question.
+// Implements requirements 12.4, 12.5.
+type GeneratedQuestion struct {
+	Question    string   `json:"question"`
+	Type        string   `json:"type"`
+	Options     []string `json:"options,omitempty"` // for multiple_choice
+	Answer      string   `json:"answer"`
+	Explanation string   `json:"explanation"`
+}
+
 func NewChatSession(userID uuid.UUID, materialID, podID *uuid.UUID, mode ChatMode) *ChatSession {
 	now := time.Now()
 	return &ChatSession{

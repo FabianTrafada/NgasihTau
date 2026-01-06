@@ -23,6 +23,53 @@ const (
 	RoleTeacher Role = "teacher"
 )
 
+// Tier represents a user's subscription tier.
+type Tier string
+
+const (
+	// TierFree is the default tier for new users.
+	TierFree Tier = "free"
+	// TierPremium is for users with premium subscription.
+	TierPremium Tier = "premium"
+	// TierPro is for users with pro subscription.
+	TierPro Tier = "pro"
+)
+
+// Order returns the numeric order of tiers for comparison.
+// Higher order means higher tier level.
+func (t Tier) Order() int {
+	switch t {
+	case TierFree:
+		return 0
+	case TierPremium:
+		return 1
+	case TierPro:
+		return 2
+	default:
+		return 0
+	}
+}
+
+// IsAtLeast checks if the tier is at least the given tier level.
+func (t Tier) IsAtLeast(other Tier) bool {
+	return t.Order() >= other.Order()
+}
+
+// ValidTiers returns all valid tier values.
+func ValidTiers() []Tier {
+	return []Tier{TierFree, TierPremium, TierPro}
+}
+
+// IsValidTier checks if the given tier is valid.
+func IsValidTier(t Tier) bool {
+	for _, valid := range ValidTiers() {
+		if t == valid {
+			return true
+		}
+	}
+	return false
+}
+
 // User represents a user account in the system.
 type User struct {
 	ID                  uuid.UUID  `json:"id"`
@@ -32,6 +79,7 @@ type User struct {
 	AvatarURL           *string    `json:"avatar_url,omitempty"`
 	Bio                 *string    `json:"bio,omitempty"`
 	Role                Role       `json:"role"`
+	Tier                Tier       `json:"tier"`
 	EmailVerified       bool       `json:"email_verified"`
 	TwoFactorEnabled    bool       `json:"two_factor_enabled"`
 	TwoFactorSecret     *string    `json:"-"` // Never expose in JSON
@@ -197,7 +245,7 @@ type UserStats struct {
 }
 
 // NewUser creates a new User with default values.
-// Sets default role to student and language to Indonesian.
+// Sets default role to student, tier to free, and language to Indonesian.
 func NewUser(email, passwordHash, name string) *User {
 	now := time.Now()
 	return &User{
@@ -206,6 +254,7 @@ func NewUser(email, passwordHash, name string) *User {
 		PasswordHash:        passwordHash,
 		Name:                name,
 		Role:                RoleStudent,
+		Tier:                TierFree,
 		EmailVerified:       false,
 		TwoFactorEnabled:    false,
 		Language:            "id",
@@ -502,4 +551,28 @@ func IsValidCredentialType(ct CredentialType) bool {
 		}
 	}
 	return false
+}
+
+// StorageInfo represents a user's storage usage information.
+// Implements Requirements 2.1-2.5 for storage information API response.
+type StorageInfo struct {
+	UsedBytes      int64   `json:"used_bytes"`
+	QuotaBytes     int64   `json:"quota_bytes"`
+	RemainingBytes int64   `json:"remaining_bytes"`
+	UsagePercent   float64 `json:"usage_percent"`
+	Tier           Tier    `json:"tier"`
+	Warning        string  `json:"warning,omitempty"`         // "warning" at 80%, "critical" at 90%
+	NextTier       *Tier   `json:"next_tier,omitempty"`       // Next tier upgrade option
+	NextTierQuota  *int64  `json:"next_tier_quota,omitempty"` // Quota for next tier in bytes
+}
+
+// AIUsageInfo represents a user's AI usage information.
+// Implements Requirements 10.1-10.4 for AI usage information API response.
+type AIUsageInfo struct {
+	UsedToday   int       `json:"used_today"`
+	DailyLimit  int       `json:"daily_limit"` // -1 for unlimited
+	Remaining   int       `json:"remaining"`   // -1 for unlimited
+	ResetAt     time.Time `json:"reset_at"`
+	Tier        Tier      `json:"tier"`
+	IsUnlimited bool      `json:"is_unlimited"`
 }

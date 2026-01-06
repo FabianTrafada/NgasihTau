@@ -144,6 +144,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	teacherVerificationRepo := postgres.NewTeacherVerificationRepository(db)
 	predefinedInterestRepo := postgres.NewPredefinedInterestRepository(db)
 	userLearningInterestRepo := postgres.NewUserLearningInterestRepository(db)
+	storageRepo := postgres.NewStorageRepository(db)
 
 	// Initialize Google OAuth client (optional - may not be configured)
 	var googleClient *oauth.GoogleClient
@@ -211,8 +212,15 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		userRepo,
 	)
 
+	// Initialize storage service
+	storageService := application.NewStorageService(
+		userRepo,
+		storageRepo,
+		cfg.Storage,
+	)
+
 	// Initialize HTTP handlers
-	handler := userhttp.NewHandlerWithInterests(userService, interestService, jwtManager)
+	handler := userhttp.NewHandlerWithStorage(userService, interestService, storageService, jwtManager)
 
 	// Initialize Fiber app
 	fiberApp := fiber.New(fiber.Config{
