@@ -26,8 +26,8 @@ export async function getPodMaterials(podId: string, limit: number = 20, offset:
     const response = await apiClient.get<{ data: Material }>(`/api/v1/pods/${podId}/materials`, {
       params: { limit, offset },
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
     // API returns paginated response with data array
     const data = response.data?.data || response.data;
@@ -81,6 +81,57 @@ export async function createPod(input: CreatePodInput): Promise<Pod> {
     return response.data.data || response.data;
   } catch (error) {
     console.error("Error creating pod:", error);
+    throw error;
+  }
+}
+
+export async function getStarredPod(userId: string, limit: number = 20, offset: number = 0): Promise<Pod[]> {
+  try {
+    const token = localStorage.getItem("access_token");
+    const page = Math.floor(offset / limit) + 1;
+    const response = await apiClient.get<{ data: Pod }>(`/api/v1/users/${userId}/starred`, {
+      params: { page, per_page: limit },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    // API returns paginated response with data array
+    const data = response.data?.data || response.data;
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching starred pod:", error);
+    throw error;
+  }
+}
+
+export async function starPod(podId: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("access_token");
+    await apiClient.post(
+      `/api/v1/pods/${podId}/star`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error starring pod:", error);
+    throw error;
+  }
+}
+
+export async function unstarPod(podId: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("access_token");
+    await apiClient.delete(`/api/v1/pods/${podId}/star`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error("Error unstarring pod:", error);
     throw error;
   }
 }

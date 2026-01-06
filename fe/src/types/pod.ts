@@ -1,3 +1,5 @@
+import { toggleStarPod } from "@/lib/utils/starPod";
+
 export interface Pod {
   id: string;
   owner_id: string;
@@ -23,7 +25,7 @@ export interface PodWithOwner extends Pod {
 export interface KnowledgePodCardProps {
   pod: Pod;
   userId: string;
-  onToggleLike: (id: string) => void;
+  onToggleLike: (id: string, isStarred: boolean) => Promise<void>;
   isLast?: boolean;
   isPersonal?: boolean;
 }

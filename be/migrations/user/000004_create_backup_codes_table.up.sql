@@ -1,5 +1,4 @@
 -- Migration: Create backup_codes table
--- Requirements: 1.1 (Two-Factor Authentication)
 
 CREATE TABLE backup_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

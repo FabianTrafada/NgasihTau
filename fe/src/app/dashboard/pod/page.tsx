@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import KnowledgePodCard from '@/components/knowledge-pod/KnowledgePodCard';
-import { KnowledgePod } from '@/types';
+import { KnowledgePod } from '@/types/knowledgePods';
 
 const MyKnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
@@ -71,7 +71,7 @@ const MyKnowledgePage: React.FC = () => {
       {/* Main Container - Industrial / Neo-brutalism Style */}
       <div className="bg-white border-2 border-r-4 border-black rounded-[12px] overflow-hidden shadow-[6px_6px_0px_0px_#FF8811]">
         <div className="flex flex-col">
-          {pods.map((pod, index) => (
+          {/* {pods.map((pod, index) => (
             <KnowledgePodCard 
               key={pod.id} 
               pod={pod} 
@@ -79,7 +79,7 @@ const MyKnowledgePage: React.FC = () => {
               isLast={index === pods.length - 1}
               isPersonal={true}
             />
-          ))}
+          ))} */}
         </div>
       </div>
       

@@ -1,5 +1,4 @@
 -- Migration: Create oauth_accounts table
--- Requirements: 1 (Google OAuth login)
 
 CREATE TABLE oauth_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

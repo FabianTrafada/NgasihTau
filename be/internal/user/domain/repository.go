@@ -235,7 +235,6 @@ type UserLearningInterestRepository interface {
 }
 
 // TeacherVerificationRepository defines the interface for teacher verification data access.
-// Implements requirements 2.1, 2.5, 3.1, 3.2, 3.3.
 type TeacherVerificationRepository interface {
 	// Create creates a new teacher verification request.
 	Create(ctx context.Context, verification *TeacherVerification) error

@@ -1,6 +1,8 @@
 package http
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 
@@ -813,6 +815,7 @@ func (h *PodHandler) GetUserPods(c *fiber.Ctx) error {
 // @Router /users/{id}/starred [get]
 func (h *PodHandler) GetUserStarredPods(c *fiber.Ctx) error {
 	userID, err := uuid.Parse(c.Params("id"))
+	fmt.Println(userID)
 	if err != nil {
 		return errors.BadRequest("invalid user ID")
 	}

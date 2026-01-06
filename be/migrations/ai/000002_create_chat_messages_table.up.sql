@@ -1,5 +1,4 @@
 -- Migration: Create chat_messages table
--- Requirements: 9, 9.3
 
 CREATE TABLE chat_messages (
                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

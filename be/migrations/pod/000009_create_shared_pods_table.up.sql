@@ -1,5 +1,4 @@
 -- Migration: Create shared_pods table
--- Requirements: 7.2
 -- Purpose: Teacher shares pod with student for guided learning
 
 CREATE TABLE shared_pods (
@@ -13,7 +12,7 @@ CREATE TABLE shared_pods (
     CONSTRAINT shared_pods_unique_pod_student UNIQUE(pod_id, student_id)
 );
 
--- Indexes for student and teacher as specified in task requirements
+-- Indexes for student and teacher
 CREATE INDEX idx_shared_pods_student ON shared_pods(student_id);
 CREATE INDEX idx_shared_pods_teacher ON shared_pods(teacher_id);
 CREATE INDEX idx_shared_pods_pod_id ON shared_pods(pod_id);

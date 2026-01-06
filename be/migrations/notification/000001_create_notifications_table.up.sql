@@ -14,7 +14,7 @@ CREATE TABLE notifications (
                                CONSTRAINT notifications_type_check CHECK (type IN ('pod_invite', 'new_material', 'comment_reply', 'new_follower', 'material_processed'))
 );
 
--- Indexes for user_id and read status (as per task requirements)
+-- Indexes for user_id and read status
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_user_id_read ON notifications(user_id, read);
 CREATE INDEX idx_notifications_user_id_created_at ON notifications(user_id, created_at DESC);

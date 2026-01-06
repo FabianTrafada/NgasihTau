@@ -1,5 +1,4 @@
 -- Migration: Create teacher_verifications table
--- Requirements: 2.1, 2.5, 3.1, 3.2
 
 CREATE TABLE teacher_verifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -20,7 +19,7 @@ CREATE TABLE teacher_verifications (
     CONSTRAINT teacher_verifications_credential_type_check CHECK (credential_type IN ('government_id', 'educator_card', 'professional_cert'))
 );
 
--- Indexes for status and user_id as specified in requirements
+-- Indexes for status and user_id
 CREATE INDEX idx_teacher_verifications_status ON teacher_verifications(status);
 CREATE INDEX idx_teacher_verifications_user_id ON teacher_verifications(user_id);
 

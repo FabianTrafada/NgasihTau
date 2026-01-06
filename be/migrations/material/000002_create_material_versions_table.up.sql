@@ -1,5 +1,4 @@
 -- Migration: Create material_versions table
--- Requirements: 5.1
 
 CREATE TABLE material_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
