@@ -38,6 +38,7 @@ func NewHandler(
 // Pod CRUD (mixed auth):
 //   - POST   /api/v1/pods (protected - create pod)
 //   - GET    /api/v1/pods (public - list pods with filters)
+//   - GET    /api/v1/pods/slug/:slug (public with optional auth - get pod by slug)
 //   - GET    /api/v1/pods/:id (public with optional auth - get pod, checks visibility)
 //   - PUT    /api/v1/pods/:id (protected - update pod, requires edit access)
 //   - DELETE /api/v1/pods/:id (protected - delete pod, requires owner access)
@@ -101,6 +102,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	// Public routes - list pods
 	pods.Get("", middleware.OptionalAuth(h.jwtManager), h.podHandler.ListPods)
+
+	// GET pod by slug - public with optional auth, checks visibility
+	pods.Get("/slug/:slug",
+		middleware.OptionalAuth(h.jwtManager),
+		h.podHandler.GetPodBySlug,
+	)
 
 	// Routes with pod ID that need permission checks
 	// GET pod - public with optional auth, checks visibility

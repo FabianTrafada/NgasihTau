@@ -71,6 +71,43 @@ func (h *PodHandler) CreatePod(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, pod))
 }
 
+// GetPodBySlug handles GET /api/v1/pods/slug/:slug
+// @Summary Get a Knowledge Pod by slug
+// @Description Get a Knowledge Pod by its URL-friendly slug. Private pods require authentication and access.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param slug path string true "Pod slug"
+// @Success 200 {object} response.Response[domain.Pod] "Pod details"
+// @Failure 403 {object} errors.ErrorResponse "Access denied to private pod"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Router /pods/slug/{slug} [get]
+func (h *PodHandler) GetPodBySlug(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return errors.BadRequest("slug is required")
+	}
+
+	var viewerID *uuid.UUID
+	if uid, ok := middleware.GetUserID(c); ok && uid != uuid.Nil {
+		viewerID = &uid
+	}
+
+	pod, err := h.podService.GetPodBySlug(c.Context(), slug, viewerID)
+	if err != nil {
+		return err
+	}
+
+	// Auto-track view interaction for authenticated users
+	if viewerID != nil {
+		go h.recommendationService.TrackView(c.Context(), *viewerID, pod.ID)
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(requestID, pod))
+}
+
 // GetPod handles GET /api/v1/pods/:id
 // @Summary Get a Knowledge Pod
 // @Description Get a Knowledge Pod by ID. Private pods require authentication and access.
@@ -86,7 +123,7 @@ func (h *PodHandler) CreatePod(c *fiber.Ctx) error {
 // @Router /pods/{id} [get]
 func (h *PodHandler) GetPod(c *fiber.Ctx) error {
 	println("=== HANDLER START: GetPod ===")
-	
+
 	// Pod ID is extracted and validated by middleware
 	podID, ok := GetPodID(c)
 	println("GetPodID result:", ok, "podID:", podID.String())
