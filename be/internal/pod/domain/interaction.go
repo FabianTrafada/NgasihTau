@@ -26,6 +26,8 @@ const (
 	InteractionSearchClick      InteractionType = "search_click"
 	InteractionUpvote           InteractionType = "upvote"
 	InteractionRemoveUpvote     InteractionType = "remove_upvote"
+	InteractionDownvote         InteractionType = "downvote"
+	InteractionRemoveDownvote   InteractionType = "remove_downvote"
 )
 
 // DefaultInteractionWeights defines the base weights for each interaction type.
@@ -43,6 +45,8 @@ var DefaultInteractionWeights = map[InteractionType]float64{
 	InteractionSearchClick:      3.0,
 	InteractionUpvote:           7.0,  // Trust indicator - higher weight than star
 	InteractionRemoveUpvote:     -4.0, // Negative weight for removing upvote
+	InteractionDownvote:         -7.0, // Negative trust indicator
+	InteractionRemoveDownvote:   4.0,  // Positive weight for removing downvote
 }
 
 // MaxTimeSpentSeconds is the cap for time spent weighting.

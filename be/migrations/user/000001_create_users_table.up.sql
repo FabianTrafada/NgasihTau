@@ -1,5 +1,4 @@
 -- Migration: Create users table
--- Requirements: 1, 2, 2.1
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 

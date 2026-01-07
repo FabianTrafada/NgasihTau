@@ -1,5 +1,4 @@
 -- Migration: Create pods table
--- Requirements: 3, 3.1, 3.2
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

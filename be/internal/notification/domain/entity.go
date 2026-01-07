@@ -141,7 +141,6 @@ func NewEmailTemplate(name, subject, htmlBody, textBody string) *EmailTemplate {
 }
 
 // NewUploadRequestNotification creates a notification for when a teacher requests upload permission.
-// Requirements: 4.2 - WHEN a pod owner receives an upload request, THE Notification Service SHALL send a notification to the pod owner.
 func NewUploadRequestNotification(podOwnerID uuid.UUID, requesterName string, podName string, podID uuid.UUID, uploadRequestID uuid.UUID) *Notification {
 	return NewNotification(
 		podOwnerID,
@@ -159,7 +158,6 @@ func NewUploadRequestNotification(podOwnerID uuid.UUID, requesterName string, po
 }
 
 // NewUploadRequestApprovedNotification creates a notification for when an upload request is approved.
-// Requirements: 4.3 - WHEN a pod owner approves an upload request, THE Pod Service SHALL grant temporary upload permission.
 func NewUploadRequestApprovedNotification(requesterID uuid.UUID, podOwnerName string, podName string, podID uuid.UUID, uploadRequestID uuid.UUID) *Notification {
 	return NewNotification(
 		requesterID,
@@ -177,7 +175,6 @@ func NewUploadRequestApprovedNotification(requesterID uuid.UUID, podOwnerName st
 }
 
 // NewUploadRequestRejectedNotification creates a notification for when an upload request is rejected.
-// Requirements: 4.4 - WHEN a pod owner rejects an upload request, THE Pod Service SHALL notify the requesting teacher with optional rejection reason.
 func NewUploadRequestRejectedNotification(requesterID uuid.UUID, podOwnerName string, podName string, podID uuid.UUID, uploadRequestID uuid.UUID, reason *string) *Notification {
 	message := fmt.Sprintf("Your request to upload materials to '%s' has been rejected by %s", podName, podOwnerName)
 	if reason != nil && *reason != "" {
@@ -201,7 +198,6 @@ func NewUploadRequestRejectedNotification(requesterID uuid.UUID, podOwnerName st
 }
 
 // NewPodSharedNotification creates a notification for when a teacher shares a pod with a student.
-// Requirements: 7.3 - WHEN a teacher shares a pod with a student, THE Notification Service SHALL notify the student about the shared pod.
 func NewPodSharedNotification(studentID uuid.UUID, teacherID uuid.UUID, teacherName string, podName string, podID uuid.UUID, message *string) *Notification {
 	notifMessage := fmt.Sprintf("%s has shared the pod '%s' with you", teacherName, podName)
 	if message != nil && *message != "" {
@@ -224,7 +220,6 @@ func NewPodSharedNotification(studentID uuid.UUID, teacherID uuid.UUID, teacherN
 }
 
 // NewTeacherVerifiedNotification creates a notification for when a teacher verification is approved.
-// Requirements: 2.2 - WHEN teacher verification is approved, THE User Service SHALL update the user role from "student" to "teacher".
 func NewTeacherVerifiedNotification(userID uuid.UUID) *Notification {
 	return NewNotification(
 		userID,

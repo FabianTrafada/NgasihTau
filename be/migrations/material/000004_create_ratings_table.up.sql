@@ -1,5 +1,4 @@
 -- Migration: Create ratings table
--- Requirements: 5.3
 
 CREATE TABLE ratings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

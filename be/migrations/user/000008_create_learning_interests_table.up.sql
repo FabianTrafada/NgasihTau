@@ -1,5 +1,4 @@
 -- Migration: Create learning interests tables
--- Requirements: Learning interests for first-time users to get personalized recommendations
 
 -- Predefined learning interests (provided by system)
 CREATE TABLE predefined_interests (

@@ -394,6 +394,47 @@ func (m *mockUpvoteRepo) GetUpvotedPods(ctx context.Context, userID uuid.UUID, l
 	return nil, 0, nil
 }
 
+type mockDownvoteRepo struct {
+	downvotes map[string]bool
+}
+
+func newMockDownvoteRepo() *mockDownvoteRepo {
+	return &mockDownvoteRepo{
+		downvotes: make(map[string]bool),
+	}
+}
+
+func (m *mockDownvoteRepo) Create(ctx context.Context, downvote *domain.PodDownvote) error {
+	key := downvote.UserID.String() + ":" + downvote.PodID.String()
+	m.downvotes[key] = true
+	return nil
+}
+
+func (m *mockDownvoteRepo) Delete(ctx context.Context, userID, podID uuid.UUID) error {
+	key := userID.String() + ":" + podID.String()
+	delete(m.downvotes, key)
+	return nil
+}
+
+func (m *mockDownvoteRepo) Exists(ctx context.Context, userID, podID uuid.UUID) (bool, error) {
+	key := userID.String() + ":" + podID.String()
+	return m.downvotes[key], nil
+}
+
+func (m *mockDownvoteRepo) CountByPodID(ctx context.Context, podID uuid.UUID) (int, error) {
+	count := 0
+	for key := range m.downvotes {
+		if key[37:] == podID.String() {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *mockDownvoteRepo) GetDownvotedPods(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*domain.Pod, int, error) {
+	return nil, 0, nil
+}
+
 type mockUploadRequestRepo struct {
 	requests    map[uuid.UUID]*domain.UploadRequest
 	reqPodIndex map[string]*domain.UploadRequest // requesterID:podID -> request
@@ -620,6 +661,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 	collaboratorRepo := newMockCollaboratorRepo()
 	starRepo := newMockStarRepo()
 	upvoteRepo := newMockUpvoteRepo()
+	downvoteRepo := newMockDownvoteRepo()
 	uploadReqRepo := newMockUploadRequestRepo()
 	sharedPodRepo := newMockSharedPodRepo()
 	followRepo := newMockFollowRepo()
@@ -631,6 +673,7 @@ func newTestService() (PodService, *mockPodRepo, *mockCollaboratorRepo, *mockAct
 		collaboratorRepo,
 		starRepo,
 		upvoteRepo,
+		downvoteRepo,
 		uploadReqRepo,
 		sharedPodRepo,
 		followRepo,
@@ -1616,6 +1659,7 @@ func newTestServiceWithRoleChecker(roleChecker UserRoleChecker) (PodService, *mo
 	collaboratorRepo := newMockCollaboratorRepo()
 	starRepo := newMockStarRepo()
 	upvoteRepo := newMockUpvoteRepo()
+	downvoteRepo := newMockDownvoteRepo()
 	uploadReqRepo := newMockUploadRequestRepo()
 	sharedPodRepo := newMockSharedPodRepo()
 	followRepo := newMockFollowRepo()
@@ -1627,6 +1671,7 @@ func newTestServiceWithRoleChecker(roleChecker UserRoleChecker) (PodService, *mo
 		collaboratorRepo,
 		starRepo,
 		upvoteRepo,
+		downvoteRepo,
 		uploadReqRepo,
 		sharedPodRepo,
 		followRepo,

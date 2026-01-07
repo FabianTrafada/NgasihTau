@@ -9,8 +9,6 @@
 # - Its own database
 # - A dedicated user with limited permissions
 # - Full access only to its own database
-#
-# Requirements: 10.3 (Clean Architecture - database per service)
 
 set -e
 set -u

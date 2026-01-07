@@ -38,6 +38,7 @@ func NewHandler(
 // Pod CRUD (mixed auth):
 //   - POST   /api/v1/pods (protected - create pod)
 //   - GET    /api/v1/pods (public - list pods with filters)
+//   - GET    /api/v1/pods/slug/:slug (public with optional auth - get pod by slug)
 //   - GET    /api/v1/pods/:id (public with optional auth - get pod, checks visibility)
 //   - PUT    /api/v1/pods/:id (protected - update pod, requires edit access)
 //   - DELETE /api/v1/pods/:id (protected - delete pod, requires owner access)
@@ -101,6 +102,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	// Public routes - list pods
 	pods.Get("", middleware.OptionalAuth(h.jwtManager), h.podHandler.ListPods)
+
+	// GET pod by slug - public with optional auth, checks visibility
+	pods.Get("/slug/:slug",
+		middleware.OptionalAuth(h.jwtManager),
+		h.podHandler.GetPodBySlug,
+	)
 
 	// Routes with pod ID that need permission checks
 	// GET pod - public with optional auth, checks visibility
@@ -181,6 +188,20 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 		h.podPermission.ExtractPodID(),
 		h.podPermission.RequireReadAccess(),
 		h.podHandler.RemoveUpvote,
+	)
+
+	// Downvote - requires read access (negative trust indicator)
+	pods.Post("/:id/downvote",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.DownvotePod,
+	)
+	pods.Delete("/:id/downvote",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.RemoveDownvote,
 	)
 
 	// Upload Request - requires read access (teacher collaboration)
@@ -288,6 +309,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	users.Get("/me/upvoted-pods",
 		middleware.Auth(h.jwtManager),
 		h.podHandler.GetUserUpvotedPods,
+	)
+
+	// User's downvoted pods (protected)
+	users.Get("/me/downvoted-pods",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.GetUserDownvotedPods,
 	)
 
 	// User's upload requests (protected)

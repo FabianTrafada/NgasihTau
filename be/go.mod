@@ -14,6 +14,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/leanovate/gopter v0.2.11
 	github.com/meilisearch/meilisearch-go v0.34.2
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/nats-io/nats.go v1.34.0
@@ -38,7 +39,6 @@ require (
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/leanovate/gopter v0.2.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
 )
 

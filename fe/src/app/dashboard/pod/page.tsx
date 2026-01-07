@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import FileListItem from "@/components/knowledge-pod/FileListItem";
+import FileListItem from '@/components/knowledge-pod/FileListItem';
 import { KnowledgePod } from '@/types/knowledgePods';
-
+import React, { useState } from 'react';
 const MyKnowledgePage: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
     {
@@ -72,20 +71,15 @@ const MyKnowledgePage: React.FC = () => {
       <div className="bg-white border-2 border-r-4 border-black rounded-[12px] overflow-hidden shadow-[6px_6px_0px_0px_#FF8811]">
         <div className="flex flex-col">
           {pods.map((pod, index) => (
-            <FileListItem
-              key={pod.id}
-              variant="pod"
-              userId="me"
-              podId={pod.id}
-              title={pod.title}
-              description={pod.description}
-              date={pod.date}
+            <FileListItem 
+              key={pod.id} 
+              pod={pod} 
               onToggleLike={handleToggleLike}
               isLast={index === pods.length - 1}
               isPersonal={true}
               isLiked={pod.isLiked}
             />
-          ))}
+          ))} 
         </div>
       </div>
 

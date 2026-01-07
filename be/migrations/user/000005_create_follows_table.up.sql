@@ -1,5 +1,4 @@
 -- Migration: Create follows table
--- Requirements: 2.2 (Follow Users)
 
 CREATE TABLE follows (
     follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

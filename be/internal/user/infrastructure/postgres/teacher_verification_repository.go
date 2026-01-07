@@ -13,7 +13,6 @@ import (
 )
 
 // TeacherVerificationRepository implements domain.TeacherVerificationRepository using PostgreSQL.
-// Implements requirements 2.1, 2.5 for teacher verification data access.
 type TeacherVerificationRepository struct {
 	db DBTX
 }

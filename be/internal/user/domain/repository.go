@@ -235,7 +235,6 @@ type UserLearningInterestRepository interface {
 }
 
 // TeacherVerificationRepository defines the interface for teacher verification data access.
-// Implements requirements 2.1, 2.5, 3.1, 3.2, 3.3.
 type TeacherVerificationRepository interface {
 	// Create creates a new teacher verification request.
 	Create(ctx context.Context, verification *TeacherVerification) error
@@ -263,4 +262,23 @@ type TeacherVerificationRepository interface {
 
 	// ExistsPendingByUserID checks if a pending verification request exists for a user.
 	ExistsPendingByUserID(ctx context.Context, userID uuid.UUID) (bool, error)
+}
+
+// StorageRepository defines the interface for storage calculation operations.
+// Implements requirement 8.2: Define StorageRepository interface in user domain layer.
+type StorageRepository interface {
+	// GetUserStorageUsage returns total bytes used by a user.
+	// Calculates storage by summing file_size of all non-deleted materials uploaded by the user.
+	GetUserStorageUsage(ctx context.Context, userID uuid.UUID) (int64, error)
+}
+
+// AIUsageRepository defines the interface for AI usage tracking operations.
+// Implements requirement 8.2: Define AIUsageRepository interface in user domain layer.
+type AIUsageRepository interface {
+	// GetDailyUsage returns today's AI message count for a user.
+	GetDailyUsage(ctx context.Context, userID uuid.UUID) (int, error)
+
+	// IncrementDailyUsage increments the daily AI message count for a user.
+	// The count should reset at midnight UTC.
+	IncrementDailyUsage(ctx context.Context, userID uuid.UUID) error
 }

@@ -283,6 +283,25 @@ type PodUpvoteRepository interface {
 	GetUpvotedPods(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*Pod, int, error)
 }
 
+// PodDownvoteRepository defines the interface for pod downvote data access.
+// Follows the existing PodUpvoteRepository pattern for consistency.
+type PodDownvoteRepository interface {
+	// Create creates a new downvote.
+	Create(ctx context.Context, downvote *PodDownvote) error
+
+	// Delete removes a downvote.
+	Delete(ctx context.Context, userID, podID uuid.UUID) error
+
+	// Exists checks if a downvote exists.
+	Exists(ctx context.Context, userID, podID uuid.UUID) (bool, error)
+
+	// CountByPodID returns the downvote count for a pod.
+	CountByPodID(ctx context.Context, podID uuid.UUID) (int, error)
+
+	// GetDownvotedPods returns paginated downvoted pods for a user.
+	GetDownvotedPods(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*Pod, int, error)
+}
+
 // UploadRequestRepository defines the interface for upload request data access.
 // Enables teacher-to-teacher collaboration for quality educational content.
 // Implements requirements 4.1, 4.3, 4.6.

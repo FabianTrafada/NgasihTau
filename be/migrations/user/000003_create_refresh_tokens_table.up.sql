@@ -1,5 +1,4 @@
 -- Migration: Create refresh_tokens table
--- Requirements: 1.3 (Session Management & Refresh Tokens)
 
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

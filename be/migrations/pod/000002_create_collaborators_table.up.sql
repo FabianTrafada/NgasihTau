@@ -1,5 +1,4 @@
 -- Migration: Create collaborators table
--- Requirements: 4
 
 CREATE TABLE collaborators (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

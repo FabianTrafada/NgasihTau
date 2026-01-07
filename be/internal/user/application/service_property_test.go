@@ -18,7 +18,6 @@ import (
 )
 
 // **Feature: student-teacher-roles, Property 3: Teacher Verification Workflow**
-// **Validates: Requirements 2.1, 2.2, 2.5**
 //
 // Property 3: Teacher Verification Workflow
 // *For any* teacher verification request with valid data:

@@ -56,12 +56,7 @@ tasks:
   dev:all:
     desc: Run all services in separate terminal windows
     cmds:
-      - task: dev:all:windows
-        platforms: [windows]
-      - task: dev:all:darwin
-        platforms: [darwin]
-      - task: dev:all:linux
-        platforms: [linux]
+      - task: dev:all:{{.OS}}
 
   dev:all:windows:
     desc: Run all services on Windows

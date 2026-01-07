@@ -42,6 +42,13 @@ type PodService interface {
 	HasUpvoted(ctx context.Context, podID, userID uuid.UUID) (bool, error)
 	GetUpvotedPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error)
 
+	// Downvote operations
+	// Downvotes are negative trust indicators
+	DownvotePod(ctx context.Context, podID, userID uuid.UUID) error
+	RemoveDownvote(ctx context.Context, podID, userID uuid.UUID) error
+	HasDownvoted(ctx context.Context, podID, userID uuid.UUID) (bool, error)
+	GetDownvotedPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error)
+
 	// Upload Request operations (Requirements 4.1, 4.3, 4.4, 4.6)
 	// Enables teacher-to-teacher collaboration for quality educational content
 	CreateUploadRequest(ctx context.Context, requesterID, podID uuid.UUID, message *string) (*domain.UploadRequest, error)
@@ -153,6 +160,7 @@ type podService struct {
 	collaboratorRepo domain.CollaboratorRepository
 	starRepo         domain.PodStarRepository
 	upvoteRepo       domain.PodUpvoteRepository
+	downvoteRepo     domain.PodDownvoteRepository
 	uploadReqRepo    domain.UploadRequestRepository
 	sharedPodRepo    domain.SharedPodRepository
 	followRepo       domain.PodFollowRepository
@@ -187,6 +195,7 @@ func NewPodService(
 	collaboratorRepo domain.CollaboratorRepository,
 	starRepo domain.PodStarRepository,
 	upvoteRepo domain.PodUpvoteRepository,
+	downvoteRepo domain.PodDownvoteRepository,
 	uploadReqRepo domain.UploadRequestRepository,
 	sharedPodRepo domain.SharedPodRepository,
 	followRepo domain.PodFollowRepository,
@@ -199,6 +208,7 @@ func NewPodService(
 		collaboratorRepo: collaboratorRepo,
 		starRepo:         starRepo,
 		upvoteRepo:       upvoteRepo,
+		downvoteRepo:     downvoteRepo,
 		uploadReqRepo:    uploadReqRepo,
 		sharedPodRepo:    sharedPodRepo,
 		followRepo:       followRepo,
@@ -725,6 +735,97 @@ func (s *podService) GetUpvotedPods(ctx context.Context, userID uuid.UUID, page,
 	offset := (page - 1) * perPage
 
 	pods, total, err := s.upvoteRepo.GetUpvotedPods(ctx, userID, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PodListResult{
+		Pods:       pods,
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: calculateTotalPages(total, perPage),
+	}, nil
+}
+
+// DownvotePod adds a downvote to a pod (negative trust indicator).
+func (s *podService) DownvotePod(ctx context.Context, podID, userID uuid.UUID) error {
+	// Check if pod exists and user can access it
+	canAccess, err := s.CanUserAccessPod(ctx, podID, &userID)
+	if err != nil {
+		return err
+	}
+	if !canAccess {
+		return errors.Forbidden("you do not have access to this pod")
+	}
+
+	// Check if already downvoted
+	exists, err := s.downvoteRepo.Exists(ctx, userID, podID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return errors.Conflict("downvote", "already downvoted")
+	}
+
+	// If user has upvoted, remove the upvote first
+	hasUpvoted, err := s.upvoteRepo.Exists(ctx, userID, podID)
+	if err != nil {
+		return err
+	}
+	if hasUpvoted {
+		if err := s.upvoteRepo.Delete(ctx, userID, podID); err != nil {
+			return err
+		}
+		if err := s.podRepo.DecrementUpvoteCount(ctx, podID); err != nil {
+			return err
+		}
+	}
+
+	// Create downvote
+	downvote := domain.NewPodDownvote(userID, podID)
+	if err := s.downvoteRepo.Create(ctx, downvote); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveDownvote removes a downvote from a pod.
+func (s *podService) RemoveDownvote(ctx context.Context, podID, userID uuid.UUID) error {
+	// Check if downvoted
+	exists, err := s.downvoteRepo.Exists(ctx, userID, podID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.NotFound("downvote", "not downvoted")
+	}
+
+	// Delete downvote
+	if err := s.downvoteRepo.Delete(ctx, userID, podID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// HasDownvoted checks if a user has downvoted a pod.
+func (s *podService) HasDownvoted(ctx context.Context, podID, userID uuid.UUID) (bool, error) {
+	return s.downvoteRepo.Exists(ctx, userID, podID)
+}
+
+// GetDownvotedPods returns pods downvoted by a user.
+func (s *podService) GetDownvotedPods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	offset := (page - 1) * perPage
+
+	pods, total, err := s.downvoteRepo.GetDownvotedPods(ctx, userID, perPage, offset)
 	if err != nil {
 		return nil, err
 	}

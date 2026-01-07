@@ -161,10 +161,9 @@ const KnowledgePodDetail = () => {
                     {files.map((file, index) => (
                         <FileListItem
                             key={index}
-                            variant="file"
                             materialId={`dummy-${index}`}
-                            userId="me"
-                            podId="current-pod"
+                            podId=''
+                            userId=''
                             title={file.title}
                             description={file.description}
                             likes={file.likes}

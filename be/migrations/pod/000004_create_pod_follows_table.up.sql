@@ -1,5 +1,4 @@
 -- Migration: Create pod_follows table
--- Requirements: 12
 
 CREATE TABLE pod_follows (
     user_id UUID NOT NULL,

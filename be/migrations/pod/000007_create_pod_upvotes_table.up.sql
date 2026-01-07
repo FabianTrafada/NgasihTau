@@ -1,5 +1,4 @@
 -- Migration: Create pod_upvotes table
--- Requirements: 5.1, 5.2, 5.3
 
 CREATE TABLE pod_upvotes (
     user_id UUID NOT NULL,

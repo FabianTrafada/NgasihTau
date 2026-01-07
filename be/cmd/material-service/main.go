@@ -24,6 +24,8 @@ import (
 	minioclient "ngasihtau/internal/material/infrastructure/minio"
 	"ngasihtau/internal/material/infrastructure/postgres"
 	materialhttp "ngasihtau/internal/material/interfaces/http"
+	userapplication "ngasihtau/internal/user/application"
+	userpostgres "ngasihtau/internal/user/infrastructure/postgres"
 	"ngasihtau/pkg/jwt"
 	"ngasihtau/pkg/nats"
 )
@@ -96,6 +98,7 @@ func main() {
 type App struct {
 	httpServer    *fiber.App
 	db            *pgxpool.Pool
+	userDB        *pgxpool.Pool
 	natsClient    *nats.Client
 	minioClient   *minioclient.Client
 	healthChecker *health.Checker
@@ -103,7 +106,7 @@ type App struct {
 
 // initializeApp creates and configures the application with all dependencies.
 func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
-	// Initialize database connection pool
+	// Initialize database connection pool for Material DB
 	dbConfig, err := pgxpool.ParseConfig(cfg.MaterialDB.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database config: %w", err)
@@ -123,7 +126,30 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	if err := db.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	log.Info().Msg("connected to database")
+	log.Info().Msg("connected to material database")
+
+	// Initialize User DB connection pool for storage quota checking
+	// Implements requirements 3.1-3.5: Storage quota check integration
+	userDBConfig, err := pgxpool.ParseConfig(cfg.UserDB.DSN())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse user database config: %w", err)
+	}
+
+	userDBConfig.MaxConns = int32(cfg.UserDB.MaxOpenConns)
+	userDBConfig.MinConns = int32(cfg.UserDB.MaxIdleConns / 2)
+	userDBConfig.MaxConnLifetime = cfg.UserDB.ConnMaxLifetime
+	userDBConfig.MaxConnIdleTime = 5 * time.Minute
+
+	userDB, err := pgxpool.NewWithConfig(ctx, userDBConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to user database: %w", err)
+	}
+
+	// Verify user database connection
+	if err := userDB.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping user database: %w", err)
+	}
+	log.Info().Msg("connected to user database")
 
 	// Initialize MinIO client
 	minioClient, err := minioclient.NewClient(minioclient.Config{
@@ -184,6 +210,20 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	ratingRepo := postgres.NewRatingRepository(db)
 	bookmarkRepo := postgres.NewBookmarkRepository(db)
 
+	// Initialize user repositories for storage quota checking
+	// Implements requirements 3.1-3.5: Storage quota check integration
+	userRepo := userpostgres.NewUserRepository(userDB)
+	// Storage repository uses Material DB since it queries the materials table
+	storageRepo := userpostgres.NewStorageRepository(db)
+
+	// Initialize storage service for quota checking
+	// Implements requirements 3.1-3.5: Storage quota check integration
+	storageService := userapplication.NewStorageService(
+		userRepo,
+		storageRepo,
+		cfg.Storage,
+	)
+
 	// Initialize services
 	materialService := application.NewService(
 		materialRepo,
@@ -193,6 +233,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		bookmarkRepo,
 		minioClient,
 		eventPublisher,
+		storageService,
 	)
 
 	// Initialize HTTP handlers
@@ -230,6 +271,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Initialize health checker
 	healthChecker := health.NewChecker("material-service", "1.0.0")
 	healthChecker.AddDependency("postgres", health.PostgresCheck("postgres", db))
+	healthChecker.AddDependency("user-postgres", health.PostgresCheck("user-postgres", userDB))
 	healthChecker.AddDependency("minio", health.MinIOCheck("minio", minioClient))
 	if natsClient != nil {
 		healthChecker.AddDependency("nats", health.NATSCheck("nats", natsClient))
@@ -241,6 +283,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	return &App{
 		httpServer:    fiberApp,
 		db:            db,
+		userDB:        userDB,
 		natsClient:    natsClient,
 		minioClient:   minioClient,
 		healthChecker: healthChecker,
@@ -271,7 +314,13 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Close database pool
 	if a.db != nil {
 		a.db.Close()
-		log.Info().Msg("database connection closed")
+		log.Info().Msg("material database connection closed")
+	}
+
+	// Close user database pool
+	if a.userDB != nil {
+		a.userDB.Close()
+		log.Info().Msg("user database connection closed")
 	}
 
 	return nil

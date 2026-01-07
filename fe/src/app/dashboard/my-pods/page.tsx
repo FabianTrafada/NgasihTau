@@ -38,10 +38,13 @@ export default function KnowledgePage() {
     fetchData();
   }, []);
 
-  const [pods, setPods] = useState<KnowledgePod[]>([]);
-
-  const handleToggleLike = (id: string) => {
-    setPods((prev) => prev.map((pod) => (pod.id === id ? { ...pod, isLiked: !pod.isLiked } : pod)));
+  const handleToggleLike = async (id: string, isStarred: boolean): Promise<void> => {
+    try {
+      await import("@/lib/utils/starPod").then((m) => m.toggleStarPod(id, isStarred));
+    } catch (error) {
+      console.error("Error toggling star:", error);
+      setError("Failed to toggle star");
+    }
   };
 
   return (

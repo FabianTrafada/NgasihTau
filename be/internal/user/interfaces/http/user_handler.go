@@ -18,13 +18,32 @@ import (
 
 // UserHandler handles user profile and follow-related HTTP requests.
 type UserHandler struct {
-	userService application.UserService
+	userService    application.UserService
+	storageService application.StorageService
+	aiService      application.AIService
 }
 
 // NewUserHandler creates a new UserHandler.
 func NewUserHandler(userService application.UserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
+	}
+}
+
+// NewUserHandlerWithStorage creates a new UserHandler with storage service.
+func NewUserHandlerWithStorage(userService application.UserService, storageService application.StorageService) *UserHandler {
+	return &UserHandler{
+		userService:    userService,
+		storageService: storageService,
+	}
+}
+
+// NewUserHandlerWithServices creates a new UserHandler with storage and AI services.
+func NewUserHandlerWithServices(userService application.UserService, storageService application.StorageService, aiService application.AIService) *UserHandler {
+	return &UserHandler{
+		userService:    userService,
+		storageService: storageService,
+		aiService:      aiService,
 	}
 }
 
@@ -407,4 +426,200 @@ func (h *UserHandler) GetFollowing(c *fiber.Ctx) error {
 		result.PerPage,
 		result.Total,
 	))
+}
+
+// StorageInfoResponse represents storage information in API responses.
+type StorageInfoResponse struct {
+	UsedBytes      int64   `json:"used_bytes"`
+	QuotaBytes     int64   `json:"quota_bytes"`
+	RemainingBytes int64   `json:"remaining_bytes"`
+	UsagePercent   float64 `json:"usage_percent"`
+	Tier           string  `json:"tier"`
+	Warning        string  `json:"warning,omitempty"`
+	NextTier       *string `json:"next_tier,omitempty"`
+	NextTierQuota  *int64  `json:"next_tier_quota,omitempty"`
+}
+
+// ToStorageInfoResponse converts a domain.StorageInfo to StorageInfoResponse.
+func ToStorageInfoResponse(info *domain.StorageInfo) *StorageInfoResponse {
+	if info == nil {
+		return nil
+	}
+
+	resp := &StorageInfoResponse{
+		UsedBytes:      info.UsedBytes,
+		QuotaBytes:     info.QuotaBytes,
+		RemainingBytes: info.RemainingBytes,
+		UsagePercent:   info.UsagePercent,
+		Tier:           string(info.Tier),
+		Warning:        info.Warning,
+	}
+
+	if info.NextTier != nil {
+		nextTierStr := string(*info.NextTier)
+		resp.NextTier = &nextTierStr
+	}
+
+	if info.NextTierQuota != nil {
+		resp.NextTierQuota = info.NextTierQuota
+	}
+
+	return resp
+}
+
+// GetStorageInfo handles getting the current user's storage information.
+// @Summary Get current user storage info
+// @Description Get the authenticated user's storage usage, quota, and tier information
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[StorageInfoResponse] "Storage information"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 500 {object} errors.ErrorResponse "Internal server error"
+// @Router /users/me/storage [get]
+func (h *UserHandler) GetStorageInfo(c *fiber.Ctx) error {
+	requestID := middleware.GetRequestID(c)
+
+	// Get user ID from context (set by auth middleware)
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return sendError(c, requestID, errors.Unauthorized(""))
+	}
+
+	// Check if storage service is available
+	if h.storageService == nil {
+		return sendError(c, requestID, errors.Internal("storage service not available", nil))
+	}
+
+	// Call service
+	info, err := h.storageService.GetStorageInfo(c.Context(), userID)
+	if err != nil {
+		return sendError(c, requestID, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, ToStorageInfoResponse(info)))
+}
+
+// UpdateTierRequest represents the request body for tier update.
+type UpdateTierRequest struct {
+	Tier string `json:"tier" validate:"required,oneof=free premium pro"`
+}
+
+// UpdateTierResponse represents the response for tier update.
+type UpdateTierResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Tier string    `json:"tier"`
+}
+
+// UpdateTier handles updating the current user's subscription tier.
+// @Summary Update current user tier
+// @Description Update the authenticated user's subscription tier
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UpdateTierRequest true "Tier update data"
+// @Success 200 {object} response.Response[UpdateTierResponse] "Updated tier info"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body or tier value"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 500 {object} errors.ErrorResponse "Internal server error"
+// @Router /users/me/tier [put]
+func (h *UserHandler) UpdateTier(c *fiber.Ctx) error {
+	requestID := middleware.GetRequestID(c)
+
+	// Get user ID from context (set by auth middleware)
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return sendError(c, requestID, errors.Unauthorized(""))
+	}
+
+	// Check if storage service is available
+	if h.storageService == nil {
+		return sendError(c, requestID, errors.Internal("storage service not available", nil))
+	}
+
+	var req UpdateTierRequest
+	if err := c.BodyParser(&req); err != nil {
+		return sendError(c, requestID, errors.BadRequest("invalid request body"))
+	}
+
+	// Validate request
+	if err := validator.Get().Struct(&req); err != nil {
+		return sendError(c, requestID, err)
+	}
+
+	// Convert string to domain.Tier
+	tier := domain.Tier(req.Tier)
+
+	// Call service to update tier
+	if err := h.storageService.UpdateTier(c.Context(), userID, tier); err != nil {
+		return sendError(c, requestID, err)
+	}
+
+	// Return updated tier info
+	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, &UpdateTierResponse{
+		ID:   userID,
+		Tier: req.Tier,
+	}))
+}
+
+// AIUsageInfoResponse represents AI usage information in API responses.
+type AIUsageInfoResponse struct {
+	UsedToday   int    `json:"used_today"`
+	DailyLimit  int    `json:"daily_limit"`
+	Remaining   int    `json:"remaining"`
+	ResetAt     string `json:"reset_at"`
+	Tier        string `json:"tier"`
+	IsUnlimited bool   `json:"is_unlimited"`
+}
+
+// ToAIUsageInfoResponse converts a domain.AIUsageInfo to AIUsageInfoResponse.
+func ToAIUsageInfoResponse(info *domain.AIUsageInfo) *AIUsageInfoResponse {
+	if info == nil {
+		return nil
+	}
+
+	return &AIUsageInfoResponse{
+		UsedToday:   info.UsedToday,
+		DailyLimit:  info.DailyLimit,
+		Remaining:   info.Remaining,
+		ResetAt:     info.ResetAt.Format(time.RFC3339),
+		Tier:        string(info.Tier),
+		IsUnlimited: info.IsUnlimited,
+	}
+}
+
+// GetAIUsageInfo handles getting the current user's AI usage information.
+// @Summary Get current user AI usage info
+// @Description Get the authenticated user's AI usage, daily limit, and remaining messages
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[AIUsageInfoResponse] "AI usage information"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 500 {object} errors.ErrorResponse "Internal server error"
+// @Router /users/me/ai-usage [get]
+func (h *UserHandler) GetAIUsageInfo(c *fiber.Ctx) error {
+	requestID := middleware.GetRequestID(c)
+
+	// Get user ID from context (set by auth middleware)
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return sendError(c, requestID, errors.Unauthorized(""))
+	}
+
+	// Check if AI service is available
+	if h.aiService == nil {
+		return sendError(c, requestID, errors.Internal("AI service not available", nil))
+	}
+
+	// Call service
+	info, err := h.aiService.GetAIUsageInfo(c.Context(), userID)
+	if err != nil {
+		return sendError(c, requestID, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, ToAIUsageInfoResponse(info)))
 }

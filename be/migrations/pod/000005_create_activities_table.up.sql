@@ -1,5 +1,4 @@
 -- Migration: Create activities table
--- Requirements: 12
 
 CREATE TABLE activities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -152,6 +152,14 @@ type PodUpvote struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// PodDownvote represents a user's downvote on a Knowledge Pod (negative trust indicator).
+// This is distinct from PodUpvote and allows users to express disapproval.
+type PodDownvote struct {
+	UserID    uuid.UUID `json:"user_id"`
+	PodID     uuid.UUID `json:"pod_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // PodFollow represents a follow relationship with a Knowledge Pod.
 // Implements requirement 12.
 type PodFollow struct {
@@ -315,6 +323,15 @@ func NewPodStar(userID, podID uuid.UUID) *PodStar {
 // Implements requirements 5.1, 5.2.
 func NewPodUpvote(userID, podID uuid.UUID) *PodUpvote {
 	return &PodUpvote{
+		UserID:    userID,
+		PodID:     podID,
+		CreatedAt: time.Now(),
+	}
+}
+
+// NewPodDownvote creates a new PodDownvote (negative trust indicator).
+func NewPodDownvote(userID, podID uuid.UUID) *PodDownvote {
+	return &PodDownvote{
 		UserID:    userID,
 		PodID:     podID,
 		CreatedAt: time.Now(),
