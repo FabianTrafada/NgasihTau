@@ -1,5 +1,6 @@
 'use client';
 import { useAuth } from '@/lib/auth-context';
+import { useId } from 'react';
 
 import { LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
@@ -15,6 +16,7 @@ interface TopbarProps {
 const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
     const { user, logout } = useAuth();
     const router = useRouter();
+    const dropdownId = useId();
 
 
     const handleLogout = async () => {
@@ -121,13 +123,13 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div
-                            role="button"
-                            tabIndex={0}
+                        <button
+                            type="button"
+                            id={dropdownId}
                             className="flex items-center justify-center w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-[#FF8811] text-white font-bold  shadow-sm cursor-pointer select-none border-2 border-[#2B2D42] hover:opacity-90 transition-opacity text-sm lg:text-base"
                         >
                             {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
+                        </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="p-4 w-64 text-3xl border  border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42]  " align="end" >
                         <DropdownMenuLabel>

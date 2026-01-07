@@ -162,8 +162,9 @@ const KnowledgePodDetail = () => {
                         <FileListItem
                             key={index}
                             materialId={`dummy-${index}`}
-                            podId=''
-                            userId=''
+                            podId={'current-pod'}
+                            userId={'me'}
+                            variant="file"
                             title={file.title}
                             description={file.description}
                             likes={file.likes}

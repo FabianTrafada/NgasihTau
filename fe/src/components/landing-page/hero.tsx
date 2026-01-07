@@ -35,7 +35,7 @@ export function Hero() {
                     Ubah Rasa <br />
                     Keingintahuan <br />
 
-                    <span className="relative  inline-block text-[#FF8811] font-extrabold  text-shadow-[1px_4px_0px_#2B2D42]">
+                    <span className="relative  inline-block text-[#FF8811] font-bold">
                         <Highlighter action="underline" color="#FF8811" strokeWidth={5} padding={1}>
 
                             menjadi {" "}

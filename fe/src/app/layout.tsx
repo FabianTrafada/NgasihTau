@@ -32,10 +32,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning={true}>
       <body
         className={`${plusJakartaSans.variable} ${inter.variable} antialiased`}
-        suppressHydrationWarning
+        suppressHydrationWarning={true}
       >
         <AuthProvider>
           <SmoothScroll />

@@ -72,6 +72,7 @@ const MyKnowledgePage: React.FC = () => {
         <div className="flex flex-col">
           {pods.map((pod, index) => (
             <FileListItem 
+              variant='pod'
               key={pod.id} 
               pod={pod} 
               onToggleLike={handleToggleLike}

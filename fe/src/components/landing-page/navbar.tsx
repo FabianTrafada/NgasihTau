@@ -18,8 +18,11 @@ export function Navbar() {
             {/* Logo */}
             <Link href="/">
                 <div className="text-2xl font-bold font-family-name:var(--font-plus-jakarta-sans) text-[#2B2D42] flex items-center gap-2">
-                    <span className="text-[#FF8811]">Ngasih</span>
-                    <span className="text-[#2B2D42]">Tau</span>
+                    <span className="text-[#FF8811]">
+                        Ngasih
+                        {""}
+                        <span className="text-[#2B2D42]">Tau</span>
+                    </span>
                 </div>
             </Link>
             {/* Desktop Links */}
