@@ -7,7 +7,8 @@ import FileListItem from "@/components/knowledge-pod/FileListItem";
 import { SearchSection } from "@/components/landing-page/search-section";
 import { getPodDetail, getPodMaterials } from "@/lib/api/pod";
 import { getUserDetail } from "@/lib/api/user";
-import { Pod, PodMaterial } from "@/types/pod";
+import { Pod } from "@/types/pod";
+import { Material } from "@/types/material";
 import { ProtectedRoute } from "@/components/auth";
 
 interface PageProps {
@@ -23,7 +24,7 @@ export default function KnowledgePodDetail({ params }: PageProps) {
 
   // State untuk pod data
   const [pod, setPod] = useState<Pod | null>(null);
-  const [materials, setMaterials] = useState<PodMaterial[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
@@ -154,6 +155,9 @@ export default function KnowledgePodDetail({ params }: PageProps) {
               materials.map((material, index) => (
                 <FileListItem
                   key={material.id}
+                  materialId={material.id}
+                  userId={pod.owner_id}
+                  podId={pod.id}
                   title={material.title}
                   description={material.description || ""}
                   likes={material.download_count.toString()}

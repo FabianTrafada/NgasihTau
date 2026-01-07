@@ -20,15 +20,10 @@ export interface PodWithOwner extends Pod {
   owner_title?: string;
 }
 
-export interface CreatePodInput {
-  name: string;
-  description?: string;
-  visibility: "public" | "private";
-  categories?: string[];
-  tags?: string[];
-
-}
-
-export interface CreatePodResponse {
-  data: Pod;
+export interface KnowledgePodCardProps {
+  pod: Pod;
+  userId: string;
+  onToggleLike: (id: string) => void;
+  isLast?: boolean;
+  isPersonal?: boolean;
 }
