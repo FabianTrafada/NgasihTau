@@ -8,9 +8,9 @@ interface ChatbotLogCardProps {
 
 const ChatbotLogCard = ({ title, snippet }: ChatbotLogCardProps) => {
   return (
-    <div className="bg-white border-2 border-[#2B2D42] p-5 flex items-center justify-between shadow-[4px_4px_0px_0px_#2B2D42] cursor-pointer hover:shadow-[4px_4px_0px_0px_#FF8811] hover:translate-x-[2px] hover:translate-y-[2px] transition-all group">
-      <div className="flex gap-4 items-start">
-        <div className="w-10 h-10 bg-gray-50 flex items-center justify-center flex-shrink-0 border-2 border-[#2B2D42]">
+    <div className="bg-white border-2 border-[#2B2D42] p-5 flex flex-col sm:flex-row items-center justify-between shadow-[4px_4px_0px_0px_#2B2D42] cursor-pointer hover:shadow-[4px_4px_0px_0px_#FF8811] hover:translate-x-[2px] hover:translate-y-[2px] transition-all group gap-3 shrink">
+      <div className="flex gap-3 items-center w-full sm:w-auto">
+        <div className="size-8 bg-gray-50 flex items-center justify-center shrink-0  border-2 border-[#2B2D42]">
           <MessageSquare className="w-5 h-5 text-[#2B2D42]" />
         </div>
         <div>

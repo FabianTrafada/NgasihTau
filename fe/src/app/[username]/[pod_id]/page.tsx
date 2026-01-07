@@ -154,9 +154,10 @@ export default function KnowledgePodDetail({ params }: PageProps) {
             ) : (
               materials.map((material, index) => (
                 <FileListItem
-                  key={material.id}
+                  key={material.id || index}
+                  variant="file"
                   materialId={material.id}
-                  userId={pod.owner_id}
+                  userId={pod.owner_id || "User"}
                   podId={pod.id}
                   title={material.title}
                   description={material.description || ""}

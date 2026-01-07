@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { Eye, BadgeCheck, FileText } from 'lucide-react';
-import FileListItem from '@/components/knowledge-pod/FileListItem'; // Sesuaikan path-nya
-import { SearchSection } from '@/components/landing-page/search-section';
 import { Pod } from '@/types/pod';
 import { Material } from '@/types/material';
 import { getPodDetail, getPodMaterials } from '@/lib/api/pod';
 import { useParams } from 'next/navigation';
+import FileListItem from '@/components/knowledge-pod/FileListItem';
 
 const KnowledgePodDetail = () => {
   const files = [

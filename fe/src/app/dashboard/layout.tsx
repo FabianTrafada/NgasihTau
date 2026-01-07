@@ -1,65 +1,86 @@
 'use client'
-import Sidebar from '@/components/dashboard/Sidebar'
 import RightSidebar from '@/components/dashboard/RightSidebar'
 import Topbar from '@/components/dashboard/Topbar'
-import { cn } from '@/lib/utils'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import React, { useState } from 'react'
 import { usePathname } from 'next/navigation'
+import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
+import { USER_SIDEBAR_GROUPS } from '@/lib/constants/navigation'
 
 
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
 
-  // Daftar pola path yang tidak menampilkan RightSidebar
-  // Menggunakan Regex agar bisa menangani dynamic route seperti /dashboard/my-pods/123
   const hideRightSidebarPatterns = [
-    /^\/dashboard\/my-pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
-    /^\/dashboard\/pods\/[^/]+$/, // Matches /dashboard/my-pods/[id]
-    /^\/dashboard\/pod\/create$/, // matches /dashboard/pod/create
-    /^\/dashboard\/my-pods$/, // matches /dashboard/my-pods 
+    /^\/dashboard\/my-pods\/[^/]+$/,
+    /^\/dashboard\/pods\/[^/]+$/,
+    /^\/dashboard\/pod\/create$/,
+    /^\/dashboard\/my-pods$/,
   ];
 
+  const hideSidebarPatterns = [
+    /^\/dashboard\/pod\/create$/,
+    /^\/dashboard\/pods\/[^/]+$/,
+  ]
+
+
   const shouldHideRightSidebar = hideRightSidebarPatterns.some(pattern => pattern.test(pathname));
-
+  const shouldHideSidebar = hideSidebarPatterns.some(pattern => pattern.test(pathname));
   return (
-    <div className='flex min-h-screen bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
-      {/* Left Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+    <SidebarProvider defaultOpen={false}>
+      <div className='flex min-h-screen w-full bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
 
-      {/* Main Content Wrapper */}
-      <div className={cn(
-        "flex-1 flex flex-col transition-all duration-300",
-        "ml-0 lg:ml-64"
-      )}>
+        {/* 2. Masukkan USER_SIDEBAR_GROUPS ke dalam prop groups */}
 
-        <Topbar
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          onRightMenuClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-          sidebarOpen={sidebarOpen}
-        />
+        {!shouldHideSidebar && (
+          <>
+            <DashboardSidebar groups={USER_SIDEBAR_GROUPS} />
+            <SidebarInset className="flex flex-col min-w-0 bg-[#FFFBF7]  ml-var(--sidebar-width)
+">
+              <Topbar
+                onRightMenuClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+              />
 
-        <div className="flex flex-1 overflow-hidden">
-          <main className='flex-1 overflow-y-auto'>
-            {children}
-          </main>
+              <div className="flex flex-1 overflow-hidden">
+                <main className='flex-1 overflow-y-auto'>
+                  {children}
+                </main>
 
-          {!shouldHideRightSidebar && (
-            <RightSidebar
-              // {/* Right Sidebar - Now part of layout */}
-              isOpen={rightSidebarOpen}
-              onClose={() => setRightSidebarOpen(false)}
-            />
+                {!shouldHideRightSidebar && (
+                  <RightSidebar
+                    isOpen={rightSidebarOpen}
+                    onClose={() => setRightSidebarOpen(false)}
+                  />
+                )}
+              </div>
+            </SidebarInset>
+          </>
+        )}
 
-          )}
-        </div>
+        {shouldHideSidebar && (
+          <div className="flex flex-col min-w-0 flex-1 bg-[#FFFBF7]">
+            <Topbar onRightMenuClick={() => setRightSidebarOpen(!rightSidebarOpen)} />
+
+            <div className="flex flex-1 overflow-hidden">
+              <main className="flex-1 overflow-y-auto">
+                {children}
+              </main>
+
+              {!shouldHideRightSidebar && (
+                <RightSidebar
+                  isOpen={rightSidebarOpen}
+                  onClose={() => setRightSidebarOpen(false)}
+                />
+              )}
+            </div>
+          </div>
+
+        )}
+
       </div>
-    </div>
+    </SidebarProvider>
   )
 }
 

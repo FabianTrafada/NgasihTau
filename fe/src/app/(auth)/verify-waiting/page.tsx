@@ -25,6 +25,8 @@ function VerifyWaitingContent() {
 
     const [state, setState] = useState<WaitingState>("waiting");
     const [email, setEmail] = useState<string>("");
+    const [resendState, setResendState] = useState<"idle" | "sending" | "success" | "error">("idle");
+    const [resendMessage, setResendMessage] = useState<string>("");
 
     // Get email from query params or user
     useEffect(() => {
@@ -48,6 +50,47 @@ function VerifyWaitingContent() {
             setState("waiting");
         }
     }, [isAuthenticated, authLoading, refreshUser]);
+
+    // Resend verification email
+    const handleResendEmail = async () => {
+        if (resendState === "sending") return;
+
+        try {
+            setResendState("sending");
+            setResendMessage("");
+
+            const response = await fetch("/api/auth/resend-verification", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email: email || user?.email }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to resend verification email");
+            }
+
+            setResendState("success");
+            setResendMessage("Verification email sent successfully!");
+
+            // Reset success message after 5 seconds
+            setTimeout(() => {
+                setResendState("idle");
+                setResendMessage("");
+            }, 5000);
+        } catch (error) {
+            console.error("Error resending verification email:", error);
+            setResendState("error");
+            setResendMessage("Failed to resend email. Please try again.");
+
+            // Reset error message after 5 seconds
+            setTimeout(() => {
+                setResendState("idle");
+                setResendMessage("");
+            }, 5000);
+        }
+    };
 
     // Check if user is verified after refresh
     useEffect(() => {
@@ -137,6 +180,9 @@ function VerifyWaitingContent() {
                             email={email}
                             isChecking={state === "checking"}
                             onRefresh={checkVerificationStatus}
+                            onResend={handleResendEmail}
+                            resendState={resendState}
+                            resendMessage={resendMessage}
                         />
                     )}
                 </div>
@@ -169,11 +215,17 @@ export default function VerifyWaitingPage() {
 function WaitingContent({
     email,
     isChecking,
-    onRefresh
+    onRefresh,
+    onResend,
+    resendState,
+    resendMessage
 }: {
     email: string;
     isChecking: boolean;
     onRefresh: () => void;
+    onResend: () => void;
+    resendState: "idle" | "sending" | "success" | "error";
+    resendMessage: string;
 }) {
     return (
         <>
@@ -274,12 +326,30 @@ function WaitingContent({
             </button>
 
             {/* Resend link */}
-            <p className="text-center mt-4 text-gray-500 text-sm font-[family-name:var(--font-inter)]">
-                Didn't receive the email?{" "}
-                <button className="text-[#FF8811] font-semibold hover:text-[#FF8811]/80 transition-colors cursor-pointer">
-                    Resend
-                </button>
-            </p>
+            <div className="text-center mt-4">
+                <p className="text-gray-500 text-sm font-[family-name:var(--font-inter)]">
+                    Didn't receive the email?{" "}
+                    <button
+                        onClick={onResend}
+                        disabled={resendState === "sending"}
+                        className="text-[#FF8811] font-semibold hover:text-[#FF8811]/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {resendState === "sending" ? "Sending..." : "Resend"}
+                    </button>
+                </p>
+
+                {/* Resend feedback message */}
+                {resendMessage && (
+                    <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`text-sm mt-2 font-[family-name:var(--font-inter)] ${resendState === "success" ? "text-green-600" : "text-red-600"
+                            }`}
+                    >
+                        {resendMessage}
+                    </motion.p>
+                )}
+            </div>
         </>
     );
 }

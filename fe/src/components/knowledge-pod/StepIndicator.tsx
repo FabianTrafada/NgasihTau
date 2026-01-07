@@ -35,7 +35,7 @@ const StepIndicator = () => {
             return (
               <div key={step.id} className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 md:w-14 md:h-14 border-4 transition-all duration-500 flex items-center justify-center font-black text-sm md:text-xl ${
+                  className={`w-6 h-6 md:w-12 md:h-12 border-4 transition-all duration-500 flex items-center justify-center font-black text-xs md:text-xl ${
                     isCompleted 
                       ? 'bg-[#FF8A00] text-black border-black' 
                       : isActive 

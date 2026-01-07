@@ -40,16 +40,11 @@ const RightSidebar = ({ onClose, isOpen }: RightSidebarProps) => {
 
     return (
         <>
-
-            {/* mobile overlay */}
-            <div className={cn("fixed inset-0  z-40 xl:hidden transition-opacity duration-300", isOpen ? "opacity-100" : "opacity-0 pointer-events-none")} onClick={onClose} />
-
-
             {/* sidebar */}
-            <aside className={cn("w-80 bg-[#FFFBF7] border  border-gray-200 p-6 flex flex-col h-screen overflow-hidden fixed ", "right-0 top-0 z-20  transition-transform duration-300 xl:translate-x-0 xl:sticky xl:top-0 xl:h-screen xl:z-0", isOpen ? "translate-x-0" : "translate-x-full")}>
+            <aside className={cn("w-(--sidebar-width) bg-[#FFFBF7] border  border-l-black p-6 flex flex-col h-screen overflow-hidden fixed ", "right-0 top-0 z-20  transition-transform duration-300 xl:translate-x-0 xl:sticky xl:top-0 xl:h-screen xl:z-0", isOpen ? "translate-x-0" : "translate-x-full")}>
 
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold text-[#2B2D42]">Knowledge Community</h2>
+                    <h2 className="font-bold  font-family-name:var(--font-plus-jakarta-sans) text-[#2B2D42]">Knowledge Community</h2>
 
                     <button
                         onClick={onClose}
@@ -65,7 +60,7 @@ const RightSidebar = ({ onClose, isOpen }: RightSidebarProps) => {
                     <input
                         type="text"
                         placeholder="Search community..."
-                        className="w-full pl-9 pr-4 py-2 bg-white border-2 border-[#2B2D42] rounded-lg text-sm focus:outline-none focus:shadow-[2px_2px_0px_0px_#FF8811] transition-all placeholder:text-gray-400 text-[#2B2D42]"
+                        className=" max-w-md pl-9 pr-7 py-2 bg-white border-2 border-[#2B2D42] rounded-lg text-sm shadow-[2px_2px_0px_0px_#2B2D42]  focus:outline-none focus:shadow-[2px_2px_0px_0px_#FF8811] transition-all placeholder:text-gray-400 text-[#2B2D42]"
                     />
                 </div>
 
@@ -75,15 +70,15 @@ const RightSidebar = ({ onClose, isOpen }: RightSidebarProps) => {
                         <div key={idx} className="group cursor-pointer">
                             <div className="flex items-start justify-between mb-1">
                                 <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-xl border-2 border-[#2B2D42] shadow-[2px_2px_0px_0px_#2B2D42] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-hover:shadow-none transition-all">
-                                        {comm.icon}
+                                    <div className="w-8 h-8 aspect-square bg-white flex items-center justify-center text-xl border-2 border-[#2B2D42] shadow-[2px_2px_0px_0px_#2B2D42] group-hover:translate-x-px group-hover:translate-y-px group-hover:shadow-none transition-all">
+                                        <span className="text-md">{comm.icon}</span>
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-[#2B2D42] leading-tight mb-0.5 group-hover:text-[#FF8811] transition-colors">
+                                        <h3 className="text-xs font-bold text-[#2B2D42] leading-tight mb-0.5 group-hover:text-[#FF8811] transition-colors">
                                             {comm.title}
                                         </h3>
                                         <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                                            <span>{comm.author}</span>
+                                            <span className="text-[10px]">{comm.author}</span>
                                             <span>👑</span>
                                         </div>
                                         <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-1">

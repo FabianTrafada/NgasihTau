@@ -16,7 +16,7 @@ export function KnowledgePods() {
                     className="md:w-1/2 pt-10"
                 >
                     <h2 className="text-4xl md:text-5xl font-bold text-[#2B2D42] mb-6 leading-tight">
-                        unlock Knowledge <br />
+                        Unlock Knowledge <br />
                         Pods
                     </h2>
                     <p className="text-gray-600 font-[family-name:var(--font-inter)] text-lg leading-relaxed max-w-md">
