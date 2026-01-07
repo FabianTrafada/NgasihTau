@@ -9,16 +9,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen industrial-grid flex flex-col items-center py-12 md:py-20 px-6">
+    <div className="min-h-screen industrial-grid flex flex-col items-center py-8 md:py-16 px-4">
       <div className="w-full max-w-4xl flex flex-col items-center">
         {/* Header Section */}
         <header className="mb-10 text-center w-full">
-          <h1 className="text-4xl md:text-5xl font-black text-black tracking-tighter mb-3 uppercase italic">
+          <h1 className="text-4xl md:text-5xl font-black text-black tracking-tighter mb-3 font-[family-name:var(--font-plus-jakarta-sans)]">
             Knowledge Pods
           </h1>
-          <p className="text-gray-500 font-mono text-[10px] uppercase tracking-[0.3em]">
-            System.Architecture // v2.0-Alpha
-          </p>
         </header>
 
         {/* Step Indicator - Sekarang otomatis sinkron dengan context */}
@@ -35,13 +32,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         {/* Technical Footer */}
-        <footer className="mt-12 w-full flex justify-between items-center px-2 opacity-30 font-mono text-[9px] uppercase tracking-tighter">
-          <div className="flex gap-4">
-            <span>NODE: PRD-09</span>
-            <span className="hidden md:inline">STATUS: CONNECTED</span>
-          </div>
-          <div>© {new Date().getFullYear()} // KNOWLEDGE_ARCHITECT_SYSTEMS</div>
-        </footer>
       </div>
     </div>
   );

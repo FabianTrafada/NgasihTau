@@ -156,11 +156,15 @@ const KnowledgePodDetail = () => {
             {/* <SearchSection/> */}
 
             {/* Files List Container */}
-            <div className="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_#FF8811]">
                 <div className="flex flex-col">
                     {files.map((file, index) => (
                         <FileListItem
                             key={index}
+                            variant="file"
+                            materialId={`dummy-${index}`}
+                            userId="me"
+                            podId="current-pod"
                             title={file.title}
                             description={file.description}
                             likes={file.likes}

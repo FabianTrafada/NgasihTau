@@ -84,7 +84,7 @@ export default function UserPublicProfilePage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {pods.map((pod) => (
-                <Link href={`/pod/${pod.id}`} key={pod.id}>
+                <Link href={`/pods/${pod.id}`} key={pod.id}>
                   <div className="h-full border rounded-lg p-6 hover:shadow-lg hover:border-primary transition-all cursor-pointer">
                     <h3 className="font-semibold text-lg mb-2 line-clamp-2">{pod.name}</h3>
                     {pod.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{pod.description}</p>}

@@ -1,10 +1,12 @@
 'use client'
-import Sidebar from '@/components/dashboard/Sidebar'
 import RightSidebar from '@/components/dashboard/RightSidebar'
 import Topbar from '@/components/dashboard/Topbar'
 import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
-import { LayoutDashboard, Sparkles, Folder, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Folder, BookOpen, Sidebar } from 'lucide-react';
+import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
+import { USER_SIDEBAR_GROUPS } from '@/lib/constants/navigation'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
 
 
@@ -13,38 +15,24 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
 
   return (
-    <div className='flex min-h-screen bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
-      {/* Left Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}  
-      />
+    <SidebarProvider defaultOpen={false}>
+      <div className='flex min-h-screen w-full bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
+        {/* 2. Masukkan USER_SIDEBAR_GROUPS ke dalam prop groups */}
+        {/* <DashboardSidebar groups={USER_SIDEBAR_GROUPS} /> */}
 
-      {/* Main Content Wrapper */}
-      <div className={cn(
-        "flex-1 flex flex-col transition-all duration-300",
-        "ml-0 lg:ml-64"
-      )}>
+        <SidebarInset className="flex flex-col min-w-0 bg-[#FFFBF7]">
+          <Topbar
+            onRightMenuClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+          />
 
-        <Topbar
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          onRightMenuClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-          sidebarOpen={sidebarOpen}
-        />
-
-        <div className="flex flex-1 overflow-hidden">
-          <main className='flex-1 overflow-y-auto'>
-            {children}
-          </main>
-
-          {/* Right Sidebar - Now part of layout */}
-          {/* <RightSidebar
-            isOpen={rightSidebarOpen}
-            onClose={() => setRightSidebarOpen(false)}
-          /> */}
-        </div>
+          <div className="flex flex-1 overflow-hidden">
+            <main className='flex-1 overflow-y-auto'>
+              {children}
+            </main>
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   )
 }
 

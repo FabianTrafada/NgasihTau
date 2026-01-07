@@ -1,21 +1,20 @@
 'use client';
 import { useAuth } from '@/lib/auth-context';
 
-import { Bell, LogOut, PanelLeft, PanelLeftClose, Search, Settings, User, Users } from 'lucide-react'
+import { LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import { shouldShowSidebar } from '@/lib/constants/isShowed';
+
 interface TopbarProps {
-    onMenuClick?: () => void;
     onRightMenuClick?: () => void; // New prop for right sidebar
-    sidebarOpen?: boolean;
+
 }
 
-const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) => {
+const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
     const { user, logout } = useAuth();
-
     const router = useRouter();
-
 
 
     const handleLogout = async () => {
@@ -30,16 +29,9 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) =>
     }
 
     return (
-        <header className='h-16 lg:h-20 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-gray-200'>
+        <header className='h-12 lg:h-16 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-black'>
             {/* Left Section */}
             <div className='flex items-center gap-4'>
-                <button
-                    onClick={onMenuClick}
-                    className='p-2 rounded-lg hover:bg-gray-100 lg:hidden'
-                    title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-                >
-                    {sidebarOpen ? <PanelLeftClose className='w-6 h-6 text-gray-600' /> : <PanelLeft className='w-6 h-6 text-gray-600' />}
-                </button>
 
                 {/* Searchbar */}
                 <div className='relative w-48 sm:w-64 lg:w-96'>
@@ -47,7 +39,7 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) =>
                     <input
                         type="text"
                         placeholder='Search'
-                        className='w-full pl-10 pr-4 py-2 lg:py-2.5 bg-gray-100/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8811]/20 focus:border-[#ff8811] transition-all text-sm lg:text-base'
+                        className='w-full h-8 pl-10 pr-4 py-2 lg:py-2.5 border-[#2B2D42] border-2 rounded-none focus:outline-none   focus:shadow-[2px_2px_0px_0px_#FF8811] transition-all text-sm lg:text-base shadow-[4px_4px_0px_0px_#2B2D42]'
                     />
                 </div>
             </div>
@@ -59,7 +51,7 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) =>
                     onClick={onRightMenuClick}
                     className='p-2 text-gray-600 hover:text-[#FF8811] xl:hidden'
                 >
-                    <Users className="w-6 h-6" />
+                    <Users className="w-6 h-6 lg:w-8 md:h-8 font-bold text-black" />
                 </button>
 
 
@@ -124,25 +116,26 @@ const Topbar = ({ onMenuClick, onRightMenuClick, sidebarOpen, }: TopbarProps) =>
                             </Link>
                         </div>
                     </DropdownMenuContent>
-                </DropdownMenu> */}  
-
-
-
+                </DropdownMenu> */}
 
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base outline-none">
+                        <div
+                            role="button"
+                            tabIndex={0}
+                            className="flex items-center justify-center w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-[#FF8811] text-white font-bold  shadow-sm cursor-pointer select-none border-2 border-[#2B2D42] hover:opacity-90 transition-opacity text-sm lg:text-base"
+                        >
                             {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </button>
+                        </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="p-4 w-64 text-3xl border  border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42]  " align="end" >
                         <DropdownMenuLabel>
                             <div className='flex items-center gap-2 mb-4'>
-                                <div className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base">
-                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                <div className="shrink-0 w-8 h-8 sm:w-8 sm:h-8 lg:w-9 lg:h-9 rounded-full bg-[#FF8811] flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-sm lg:text-base border-2 border-[#2B2D42]">
+                                    {user?.name?.charAt(0).toUpperCase() || ''}
                                 </div>
-                                <span className='text-gray-400 text-sm'>Hello, {user?.name || 'User'}</span>
+                                <span className='text-gray-400 text-sm '>Hello, {user?.name || 'User'}</span>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />

@@ -26,4 +26,5 @@ export interface KnowledgePodCardProps {
   onToggleLike: (id: string) => void;
   isLast?: boolean;
   isPersonal?: boolean;
+  isPublic?: "Public" | "Private";
 }

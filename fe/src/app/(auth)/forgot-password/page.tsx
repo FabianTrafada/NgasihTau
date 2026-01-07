@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
                 <div className="absolute top-2 left-2 w-full h-full bg-[#FF8811] rounded-2xl" />
 
                 {/* Main Card */}
-                <div className="bg-white rounded-2xl p-8 relative border-2 border-[#2B2D42]/10">
+                <div className="bg-white rounded-2xl p-8 relative border-2 border-[#2B2D42]">
 
                     {/* Back Button */}
                     <Link
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
                                 id="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full text-[#2B2D42] px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#FF8811]/50 focus:border-[#FF8811] transition-all font-[family-name:var(--font-inter)]"
+                                className="w-full text-[#2B2D42] px-4 py-3 border-2 border-gray-300 rounded-md bg-white focus:outline-none transition-all text-center text-2xl tracking-widest focus:border-[#FF8811] focus:shadow-[3px_3px_0px_0px_rgba(255,136,17,1)] font-(family-name:var(--font-inter))"
                                 placeholder=""
                                 required
                             />
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
                         {/* Send Button */}
                         <button
                             type="submit"
-                            className="cursor-pointer w-full  bg-[#FF8811] text-white py-3 rounded-sm font-semibold hover:bg-[#FF8811]/90 transition-colors  font-[family-name:var(--font-plus-jakarta-sans)]"
+                            className="cursor-pointer w-full border-2  bg-[#FF8811] text-white py-3 rounded-sm font-semibold border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#2B2D42] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowe  font-(family-name:var(--font-plus-jakarta-sans))"
                         >
                             Send
                         </button>

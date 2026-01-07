@@ -24,8 +24,7 @@ const GeneralPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-10">
-        <h2 className="text-3xl font-black uppercase tracking-tight mb-2">General</h2>
-        <div className="h-1 w-20 bg-[#FF8A00] border border-black"></div>
+        <h2 className="text-3xl font-black uppercase font-[family-name:var(--font-plus-jakarta-sans)] mb-2">General</h2>
       </div>
 
       <div className="space-y-8 flex-1">

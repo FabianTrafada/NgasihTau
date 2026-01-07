@@ -17,16 +17,16 @@ export function Navbar() {
         >
             {/* Logo */}
             <Link href="/">
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold font-family-name:var(--font-plus-jakarta-sans) text-[#2B2D42] flex items-center gap-2">
                     <span className="text-[#FF8811]">Ngasih</span>
                     <span className="text-[#2B2D42]">Tau</span>
                 </div>
             </Link>
             {/* Desktop Links */}
-            <div className="hidden md:flex items-center gap-8 font-semibold text-[#2B2D42]">
+            <div className="hidden md:flex items-center gap-8 font-semibold text-[#2B2D42] font-family-name:var(--font-plus-jakarta-sans)">
                 <Link href="#features" className="hover:text-[#FF8811] transition-colors">Features</Link>
                 <Link href="/mentors" className="hover:text-[#FF8811] transition-colors">About</Link>
-                <Link href="#testimonials" className="hover:text-[#FF8811] transition-colors">testimonials</Link>
+                <Link href="#testimonials" className="hover:text-[#FF8811] transition-colors">Testimonials</Link>
             </div>
 
             {/* CTA Button */}
