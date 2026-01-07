@@ -160,6 +160,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	collaboratorRepo := postgres.NewCollaboratorRepository(db)
 	starRepo := postgres.NewPodStarRepository(db)
 	upvoteRepo := postgres.NewPodUpvoteRepository(db)
+	downvoteRepo := postgres.NewPodDownvoteRepository(db)
 	uploadReqRepo := postgres.NewUploadRequestRepository(db)
 	sharedPodRepo := postgres.NewSharedPodRepository(db)
 	followRepo := postgres.NewPodFollowRepository(db)
@@ -185,6 +186,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		collaboratorRepo,
 		starRepo,
 		upvoteRepo,
+		downvoteRepo,
 		uploadReqRepo,
 		sharedPodRepo,
 		followRepo,
@@ -289,7 +291,7 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	println("Error message:", err.Error())
 	println("Request path:", c.Path())
 	println("Request method:", c.Method())
-	
+
 	// Default to 500 Internal Server Error
 	code := fiber.StatusInternalServerError
 	message := "Internal Server Error"
@@ -299,7 +301,7 @@ func errorHandler(c *fiber.Ctx, err error) error {
 		code = appErr.HTTPStatus()
 		message = appErr.Message
 		println("AppError detected, code:", code, "message:", message)
-		
+
 		requestID := middleware.GetRequestID(c)
 		return c.Status(code).JSON(fiber.Map{
 			"success": false,
@@ -313,7 +315,7 @@ func errorHandler(c *fiber.Ctx, err error) error {
 			},
 		})
 	}
-	
+
 	// Check if it's a Fiber error
 	if e, ok := err.(*fiber.Error); ok {
 		code = e.Code

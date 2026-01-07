@@ -190,6 +190,20 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 		h.podHandler.RemoveUpvote,
 	)
 
+	// Downvote - requires read access (negative trust indicator)
+	pods.Post("/:id/downvote",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.DownvotePod,
+	)
+	pods.Delete("/:id/downvote",
+		middleware.Auth(h.jwtManager),
+		h.podPermission.ExtractPodID(),
+		h.podPermission.RequireReadAccess(),
+		h.podHandler.RemoveDownvote,
+	)
+
 	// Upload Request - requires read access (teacher collaboration)
 	pods.Post("/:id/upload-request",
 		middleware.Auth(h.jwtManager),
@@ -295,6 +309,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	users.Get("/me/upvoted-pods",
 		middleware.Auth(h.jwtManager),
 		h.podHandler.GetUserUpvotedPods,
+	)
+
+	// User's downvoted pods (protected)
+	users.Get("/me/downvoted-pods",
+		middleware.Auth(h.jwtManager),
+		h.podHandler.GetUserDownvotedPods,
 	)
 
 	// User's upload requests (protected)

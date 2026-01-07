@@ -986,6 +986,123 @@ func (h *PodHandler) GetUserUpvotedPods(c *fiber.Ctx) error {
 	return c.JSON(response.List(requestID, result.Pods, result.Page, result.PerPage, result.Total))
 }
 
+// DownvotePod handles POST /api/v1/pods/:id/downvote
+// @Summary Downvote a Knowledge Pod
+// @Description Add a downvote to a pod as a negative trust indicator. Each user can only downvote a pod once.
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Pod downvoted"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found"
+// @Failure 409 {object} errors.ErrorResponse "Already downvoted"
+// @Router /pods/{id}/downvote [post]
+func (h *PodHandler) DownvotePod(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Pod ID is extracted and validated by middleware
+	podID, ok := GetPodID(c)
+	if !ok {
+		var err error
+		podID, err = uuid.Parse(c.Params("id"))
+		if err != nil {
+			return errors.BadRequest("invalid pod ID")
+		}
+	}
+
+	if err := h.podService.DownvotePod(c.Context(), podID, userID); err != nil {
+		return err
+	}
+
+	// Auto-track downvote interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionDownvote,
+	})
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(requestID, fiber.Map{"downvoted": true}))
+}
+
+// RemoveDownvote handles DELETE /api/v1/pods/:id/downvote
+// @Summary Remove downvote from a Knowledge Pod
+// @Description Remove your downvote from a pod
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Pod ID" format(uuid)
+// @Success 200 {object} response.Response[map[string]bool] "Downvote removed"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Failure 404 {object} errors.ErrorResponse "Pod not found or not downvoted"
+// @Router /pods/{id}/downvote [delete]
+func (h *PodHandler) RemoveDownvote(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Pod ID is extracted and validated by middleware
+	podID, ok := GetPodID(c)
+	if !ok {
+		var err error
+		podID, err = uuid.Parse(c.Params("id"))
+		if err != nil {
+			return errors.BadRequest("invalid pod ID")
+		}
+	}
+
+	if err := h.podService.RemoveDownvote(c.Context(), podID, userID); err != nil {
+		return err
+	}
+
+	// Auto-track remove downvote interaction
+	go h.recommendationService.TrackInteraction(c.Context(), application.TrackInteractionInput{
+		UserID:          userID,
+		PodID:           podID,
+		InteractionType: domain.InteractionRemoveDownvote,
+	})
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.OK(requestID, fiber.Map{"downvoted": false}))
+}
+
+// GetUserDownvotedPods handles GET /api/v1/users/me/downvoted-pods
+// @Summary Get current user's downvoted pods
+// @Description Get a paginated list of pods downvoted by the current user
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(20)
+// @Success 200 {object} response.PaginatedResponse[domain.Pod] "List of downvoted pods"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me/downvoted-pods [get]
+func (h *PodHandler) GetUserDownvotedPods(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	page := c.QueryInt("page", 1)
+	perPage := c.QueryInt("per_page", 20)
+
+	result, err := h.podService.GetDownvotedPods(c.Context(), userID, page, perPage)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.List(requestID, result.Pods, result.Page, result.PerPage, result.Total))
+}
+
 // CreateUploadRequestInput represents the input for creating an upload request.
 // @Description Create upload request input
 type CreateUploadRequestInput struct {

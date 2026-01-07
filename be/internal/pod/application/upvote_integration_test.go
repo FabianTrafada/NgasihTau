@@ -28,6 +28,7 @@ func newTestServiceForUpvote() (PodService, *mockPodRepo, *mockUpvoteRepo) {
 	collaboratorRepo := newMockCollaboratorRepo()
 	starRepo := newMockStarRepo()
 	upvoteRepo := newMockUpvoteRepo()
+	downvoteRepo := newMockDownvoteRepo()
 	uploadReqRepo := newMockUploadRequestRepo()
 	sharedPodRepo := newMockSharedPodRepo()
 	followRepo := newMockFollowRepo()
@@ -39,6 +40,7 @@ func newTestServiceForUpvote() (PodService, *mockPodRepo, *mockUpvoteRepo) {
 		collaboratorRepo,
 		starRepo,
 		upvoteRepo,
+		downvoteRepo,
 		uploadReqRepo,
 		sharedPodRepo,
 		followRepo,
