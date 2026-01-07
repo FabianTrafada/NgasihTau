@@ -38,6 +38,7 @@ const ConfiguratorPage: React.FC = () => {
         name: formData.name,
         description: formData.description,
         visibility: formData.visibility,
+        categories: formData.categories || [],
       };
 
       console.log("Creating pod with:", podInput);
@@ -157,7 +158,7 @@ const ConfiguratorPage: React.FC = () => {
                   : "bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1"
               }`}
             >
-              <div className={`p-2 rounded-md w-fit ${formData.visibility === 'private' ? 'bg-[#FF8811] text-white' : 'bg-gray-100 text-gray-600'}`}>
+              <div className={`p-2 rounded-md w-fit ${formData.visibility === "private" ? "bg-[#FF8811] text-white" : "bg-gray-100 text-gray-600"}`}>
                 <Lock size={20} />
               </div>
               <div>
@@ -173,7 +174,7 @@ const ConfiguratorPage: React.FC = () => {
                   : "bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1"
               }`}
             >
-              <div className={`p-2 rounded-md w-fit ${formData.visibility === 'public' ? 'bg-[#FF8811] text-white' : 'bg-gray-100 text-gray-600'}`}>
+              <div className={`p-2 rounded-md w-fit ${formData.visibility === "public" ? "bg-[#FF8811] text-white" : "bg-gray-100 text-gray-600"}`}>
                 <Globe size={20} />
               </div>
               <div>

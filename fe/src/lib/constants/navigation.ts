@@ -37,7 +37,7 @@ export const USER_SIDEBAR_GROUPS: NavGroup[] = [
         items: [
             {
                 label: "My Knowledge Pods",
-                href: "/dashboard/my-pods",
+                href: "/dashboard/pods",
                 icon: File,
             },
         ],

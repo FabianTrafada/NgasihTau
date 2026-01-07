@@ -81,7 +81,7 @@ export default function KnowledgePage() {
         <div className="bg-white border-2 border-r-4 border-black rounded-[12px] overflow-hidden shadow-[6px_6px_0px_0px_#FF8811]">
           <div className="flex flex-col">
             {userPods.length > 0 ? (
-              userPods.map((pod, index) => <KnowledgePodCard key={pod.id} userId={currentUser.id} pod={pod} onToggleLike={handleToggleLike} isLast={index === userPods.length - 1} isPersonal={true} />)
+              userPods.map((pod, index) => <KnowledgePodCard key={pod.id} userId={currentUser.id} userUsername={currentUser.username} pod={pod} onToggleLike={handleToggleLike} isLast={index === userPods.length - 1} isPersonal={true} />)
             ) : (
               <div className="p-8 text-center text-gray-500">
                 <p>No knowledge pods yet. Create one to get started!</p>

@@ -9,6 +9,8 @@ export interface Pod {
   view_count: number;
   star_count: number;
   fork_count: number;
+  upvote_count: number;
+  downvote_count: number;
   categories?: string[];
   tags?: string[];
   slug?: string;
@@ -25,6 +27,7 @@ export interface PodWithOwner extends Pod {
 export interface KnowledgePodCardProps {
   pod: Pod;
   userId: string;
+  userUsername: string;
   onToggleLike: (id: string, isStarred: boolean) => Promise<void>;
   isLast?: boolean;
   isPersonal?: boolean;

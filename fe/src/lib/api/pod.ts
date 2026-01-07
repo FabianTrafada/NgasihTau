@@ -17,6 +17,20 @@ export async function getPodDetail(podId: string): Promise<Pod> {
 }
 
 /**
+ * Fetch pod detail berdasarkan pod slug
+ * Endpoint: GET /api/v1/pods/slug/{slug}
+ */
+export async function getPodBySlug(slug: string): Promise<Pod> {
+  try {
+    const response = await apiClient.get<{ data: Pod }>(`/api/v1/pods/slug/${slug}`);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error("Error fetching pod by slug:", error);
+    throw error;
+  }
+}
+
+/**
  * Fetch materials dalam pod
  * Endpoint: GET /api/v1/pods/{id}/materials
  */
@@ -132,6 +146,70 @@ export async function unstarPod(podId: string): Promise<void> {
     });
   } catch (error) {
     console.error("Error unstarring pod:", error);
+    throw error;
+  }
+}
+
+export async function upvotePod(podId: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("access_token");
+    await apiClient.post(
+      `/api/v1/pods/${podId}/upvote`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error upvoting pod:", error);
+    throw error;
+  }
+}
+
+export async function removeUpvotePod(podId: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("access_token");
+    await apiClient.delete(`/api/v1/pods/${podId}/upvote`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error("Error removing upvote:", error);
+    throw error;
+  }
+}
+
+export async function downvotePod(podId: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("access_token");
+    await apiClient.post(
+      `/api/v1/pods/${podId}/downvote`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error downvoting pod:", error);
+    throw error;
+  }
+}
+
+export async function removeDownvotePod(podId: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("access_token");
+    await apiClient.delete(`/api/v1/pods/${podId}/downvote`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error("Error removing downvote:", error);
     throw error;
   }
 }
