@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ProtectedRoute } from "@/components/auth";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, Download, Loader, Plus, Search, Send, MessageCircle, X } from "lucide-react";
+import { Bell, ChevronLeft, Download, Loader, Plus, Search, Send, MessageCircle, X, Minimize2, Maximize2 } from "lucide-react";
 import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, getMaterialPreviewUrl, getMaterialDownloadUrl } from "@/lib/api/material";
 import { getUserDetail } from "@/lib/api/user";
 import { Material, ChatMessage } from "@/types/material";
@@ -31,7 +31,11 @@ export default function MaterialDetailPage({ params }: PageProps) {
   const [docUrl, setDocUrl] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Fetch material detail dan chat history
   useEffect(() => {
@@ -82,6 +86,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
               setDocUrl("http://localhost:9000/" + materialData.file_url);
             }
           }
+
         } catch (err) {
           console.warn("Failed to fetch preview URL, using fallback:", err);
           // Fallback URL construction
@@ -125,13 +130,36 @@ export default function MaterialDetailPage({ params }: PageProps) {
     if (textareaRef.current) {
       // Reset height dulu agar saat teks dihapus, box-nya bisa mengecil lagi
       textareaRef.current.style.height = 'auto';
-      
+
       // Set height sesuai dengan scrollHeight (tinggi konten asli)
       // Kita batasi maksimalnya (misal 150px)
       const nextHeight = Math.min(textareaRef.current.scrollHeight, 150);
       textareaRef.current.style.height = `${nextHeight}px`;
     }
   }, [messageInput]);
+
+  const toggleFullscreen = () => {
+    if (!previewRef.current) return;
+
+    if (!document.fullscreenElement) {
+      previewRef.current.requestFullscreen().catch(err => {
+        console.error("Error attempting to enable fullscreen mode:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
 
   // Handle send chat message
   const handleSendMessage = async () => {
@@ -223,7 +251,10 @@ export default function MaterialDetailPage({ params }: PageProps) {
         </div>
 
         {/* Material Information - Horizontal Columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 relative">
+
+
+
           {/* Status */}
           <div className="bg-white border-2 border-[#2B2D42] p-4 pb-2 pt-3 shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all">
             <p className="text-xs font-bold text-[#2B2D42]">Status</p>
@@ -231,6 +262,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
               {material.status}
             </span>
           </div>
+
 
           {/* File Type */}
           <div className="bg-white border-2 border-[#2B2D42] p-4 pb-2 pt-3 shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all">
@@ -253,6 +285,15 @@ export default function MaterialDetailPage({ params }: PageProps) {
 
         {/* Preview Area - Full Width */}
         <div className="flex-1 bg-white border-2 border-[#2B2D42] shadow-[2px_2px_0px_0px_#2B2D42] rounded-lg overflow-hidden relative">
+          <div ref={previewRef} className="w-full h-full relative p-1">
+            <button
+              onClick={toggleFullscreen}
+              className="px-3 py-1 bg-white border-2 rounded-lg border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+            >
+              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
+          </div>
+
           {material.file_type.toLowerCase() === "pdf" && <iframe src={docUrl} className="w-full h-full" title="PDF Preview" />}
           {material.file_type.toLowerCase() === "docx" && (
             <div className="flex items-center justify-center h-full bg-gray-50">

@@ -12,11 +12,8 @@ interface RecentPodCardProps {
 
 const RecentPodCard = ({ title, description, fileCount, date }: RecentPodCardProps) => {
     return (
-        <div className='bg-white border-2 border-[#2B2D42] p-3 shadow-[4px_4px_0px_0px_#2B2D42] hover:shadow-[2px_2px_0px_0px_#FF8811] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 flflex flex-col sm:flex-row
-  sm:items-center sm:justify-between
-  gap-2 sm:gap-0
-  mt-auto pt-3
-  border-t-2  '>
+        <div className='bg-white border-2 border-[#2B2D42] p-3 shadow-[4px_4px_0px_0px_#2B2D42] hover:shadow-[2px_2px_0px_0px_#FF8811] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 flflex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-auto pt-3
+  border-t-2 '>
             <div>
                 <h3 className='text-[#ff8811] font-bold text-base mb-1.5 line-clamp-1'>
                     {title}

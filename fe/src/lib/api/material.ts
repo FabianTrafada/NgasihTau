@@ -46,7 +46,14 @@ export async function getMaterialChatHistory(materialId: string, limit: number =
 export async function getMaterialPreviewUrl(materialId: string): Promise<string> {
   try {
     const response = await apiClient.get<{ data: { preview_url: string } }>(`/api/v1/materials/${materialId}/preview`);
-    return response.data.data.preview_url || "";
+    const url = response.data.data?.preview_url || "";
+
+    if (url) {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('response-content-disposition', 'inline');
+      return urlObj.toString();
+    }
+    return url;
   } catch (error) {
     console.error("Error fetching preview URL:", error);
     throw error;
@@ -56,7 +63,15 @@ export async function getMaterialPreviewUrl(materialId: string): Promise<string>
 export async function getMaterialDownloadUrl(materialId: string): Promise<string> {
   try {
     const response = await apiClient.get<{ data: { download_url: string } }>(`/api/v1/materials/${materialId}/download`);
-    return response.data.data.download_url || "";
+
+    const url = response.data.data?.download_url || "";
+    if (url) {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('response-content-disposition', 'attachment');
+      return urlObj.toString();
+    }
+    return url;
+
   } catch (error) {
     console.error("Error fetching download URL:", error);
     throw error;
@@ -108,6 +123,6 @@ export async function rateMaterial(materialId: string, score: number, review?: s
     await apiClient.post(`/api/v1/materials/${materialId}/ratings`, { score, review });
   } catch (error) {
     console.error("Error rating material:", error);
-    throw error;
+  throw error;
   }
 }

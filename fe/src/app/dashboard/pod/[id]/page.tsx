@@ -10,27 +10,6 @@ import { getPodDetail, getPodMaterials } from '@/lib/api/pod';
 import { useParams } from 'next/navigation';
 
 const KnowledgePodDetail = () => {
-  const files = [
-    {
-      title: "Limit Turunan",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      likes: "2,3 K",
-      date: "3 Jan 2025"
-    },
-    {
-      title: "Limit Turunan",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      likes: "2,3 K",
-      date: "3 Jan 2025"
-    },
-    {
-      title: "Limit Turunan",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      likes: "2,3 K",
-      date: "3 Jan 2025"
-    }
-  ];
-
   const params = useParams();
   const podsId = params.id as string;
 

@@ -1,6 +1,5 @@
 'use client';
 import { useAuth } from '@/lib/auth-context';
-import { useId } from 'react';
 
 import { LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
@@ -16,7 +15,6 @@ interface TopbarProps {
 const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
     const { user, logout } = useAuth();
     const router = useRouter();
-    const dropdownId = useId();
 
 
     const handleLogout = async () => {
@@ -31,7 +29,7 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
     }
 
     return (
-        <header className='h-12 lg:h-16 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-black'>
+        <header className='h-12 lg:h-16 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-black' suppressHydrationWarning>
             {/* Left Section */}
             <div className='flex items-center gap-4'>
 
@@ -125,7 +123,7 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
                     <DropdownMenuTrigger asChild>
                         <button
                             type="button"
-                            id={dropdownId}
+                            suppressHydrationWarning
                             className="flex items-center justify-center w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-[#FF8811] text-white font-bold  shadow-sm cursor-pointer select-none border-2 border-[#2B2D42] hover:opacity-90 transition-opacity text-sm lg:text-base"
                         >
                             {user?.name?.charAt(0).toUpperCase() || 'U'}

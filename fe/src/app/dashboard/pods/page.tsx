@@ -47,11 +47,11 @@ const MyKnowledgePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 md:p-8">
+    <div className="mx-auto space-y-8 p-4 md:p-8">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-black tracking-tight mb-2">
+          <h1 className="text-2xl font-black text-black tracking-tight mb-1">
             My Knowledge Pods
           </h1>
           <p className="text-zinc-500 font-medium">
