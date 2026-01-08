@@ -49,30 +49,42 @@ const MyKnowledgePage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen mx-auto space-y-8 p-4 md:p-8">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 max-w-6xl">
-        <div>
-          <h1 className="text-1xl md:text-2xl font-family-name:var(--font-plus-jakarta-sans) sm:text-2xl font-bold text-[#2B2D42] mb-1">
-            Knowledge Pods
-          </h1>
-          <p className="text-zinc-500 text-xs sm:text-base">
-            Manage and explore your personal collection of knowledge repositories.
-          </p>
-        </div>
-        <div className="flex gap-2 min-w-max">
-          <button className="px-4 py-2  border-2 text-base border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF8811] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:text-white cursor-pointer hover:translate-x-[2px] hover:translate-y-[2px] transition-all group leading-none">
-            Newest
-          </button>
-          <Link href="/dashboard/pod/create" className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
-            Create Pod
-          </Link>
-        </div>
-      </div>
+     <div className="min-h-screen p-6">
+      {/* 🔒 ONE GRID WRAPPER */}
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#2B2D42]">
+              Knowledge Pods
+            </h1>
+            <p className="text-zinc-500 text-xs sm:text-base">
+              Learn and collaborate with your personal knowledge repositories.
+            </p>
+          </div>
 
-      {/* Main Container - Industrial / Neo-brutalism Style */}
-      <div className="bg-white border-2 border-r-4 border-black rounded-[12px] overflow-hidden shadow-[6px_6px_0px_0px_#FF8811]">
-        <div className="flex flex-col">
+          <div className="flex gap-2">
+            <button className="px-4 py-2 border-2 border-black font-bold
+              shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+              hover:bg-[#FF8811] hover:text-white
+              hover:translate-x-[2px] hover:translate-y-[2px]
+              transition-all">
+              Newest
+            </button>
+
+            <Link href="/dashboard/pod/create">
+              <button className="px-4 py-2 border-2 border-black font-bold
+                shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                hover:bg-[#FF8811] hover:text-white
+                hover:translate-x-[2px] hover:translate-y-[2px]
+                transition-all">
+                Create Pod
+              </button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white border-2 border-black rounded-xl overflow-hidden
+          shadow-[6px_6px_0px_0px_#FF8811]">
           {pods.map((pod, index) => (
             <FileListItem
               key={pod.id}
@@ -84,26 +96,31 @@ const MyKnowledgePage: React.FC = () => {
               date={pod.date}
               onToggleLike={handleToggleLike}
               isLast={index === pods.length - 1}
-              isPersonal={true}
+              isPersonal
               isLiked={pod.isLiked}
             />
           ))}
         </div>
-      </div>
 
-      {/* Pagination / Industrial Footer */}
-      <div className="flex justify-center pt-4">
-        <nav className="flex items-center gap-1">
-          {[1, 2, 3, '...', 10].map((page, i) => (
-            <button
-              key={i}
-              className={`w-10 h-10 flex items-center justify-center border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${page === 1 ? 'bg-orange-500 text-white' : 'bg-white text-black hover:bg-zinc-100'
-                }`}
-            >
-              {page}
-            </button>
-          ))}
-        </nav>
+        <div className="flex justify-center pt-4">
+          <nav className="flex items-center gap-2">
+            {[1, 2, 3, '...', 10].map((page, i) => (
+              <button
+                key={i}
+                className={`w-10 h-10 border-2 border-black font-bold
+                  shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                  transition-all
+                  ${
+                    page === 1
+                      ? 'bg-[#FF8811] text-white'
+                      : 'bg-white hover:bg-zinc-100'
+                  }`}
+              >
+                {page}
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
     </div>
   );

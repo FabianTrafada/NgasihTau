@@ -46,7 +46,7 @@ function DashboardContent() {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-base sm:text-lg font-family-name:var(--font-plus-jakarta-sans)  font-bold text-[#2B2D42]">Recent Pods</h2>
 
-                        <Link href={'/dashboard/pods'}>
+                        <Link href={'/dashboard/pod'}>
                             <button className="text-xs text-gray-400 hover:text-[#FF8811] cursor-pointer font-bold">See all</button>
                         </Link>
                     </div>

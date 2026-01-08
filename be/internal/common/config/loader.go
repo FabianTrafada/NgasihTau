@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
 
@@ -30,9 +31,15 @@ func Load(configPath string) (*Config, error) {
 		}
 	}
 
-	// Unmarshal into config struct
+	// Unmarshal into config struct with custom decode hook for time.Duration
 	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
+	decoderConfig := func(dc *mapstructure.DecoderConfig) {
+		dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			dc.DecodeHook,
+		)
+	}
+	if err := v.Unmarshal(&cfg, decoderConfig); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
