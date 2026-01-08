@@ -48,17 +48,23 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="min-h-screen mx-auto space-y-8 md:p-8">
+     <div className="mx-auto space-y-8 p-4 md:p-8">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-black tracking-tight mb-2">My Knowledge Pods</h1>
-          <p className="text-zinc-500 font-medium text-sm">Explore the most shared and updated knowledge repositories.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 max-w-6xl">
+        <div className="space-y-1">
+          <h1 className="text-1xl md:text-2xl sm:text-2xl font-bold text-[#2B2D42]  tracking-tight font-family-name:var(--font-plus-jakarta-sans) mb-1">My Knowledge Pods</h1>
+          <p className="text-zinc-500  font-medium text-xs sm:text-base max-w-md">
+            Manage and explore your personal collection of knowledge repositories.
+          </p>
         </div>
-        <div className="flex gap-2 min-w-max">
-          <Link href="/dashboard/pod/create">
-            <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-px hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
-              Upload Pod
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Added Filter Button to match screenshot */}
+          <button className="px-5 py-2 border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white hover:bg-zinc-50 transition-all text-sm leading-none">
+            Newest
+          </button>
+          <Link href="/dashboard/pod/create" className="shrink-0">
+            <button className="px-5 py-2 border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-[#FF8811] text-white hover:shadow-[4px_4px_0px_0px_#2B2D42] hover:-translate-x-[2px] hover:-translate-y-[2px] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all text-sm leading-none cursor-pointer">
+              Create Pod
             </button>
           </Link>
         </div>
@@ -93,7 +99,7 @@ export default function KnowledgePage() {
                   title={pod.name}
                   description={pod.description || ""}
                   date={new Date(pod.created_at).toLocaleDateString()}
-                  onToggleLike={handleToggleLike}
+                  onToggleLike={() => handleToggleLike}
                   isLast={index === userPods.length - 1}
                   isPersonal={true}
                   visibility={pod.visibility}

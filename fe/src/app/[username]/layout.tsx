@@ -18,8 +18,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider defaultOpen={false}>
       <div className='flex min-h-screen w-full bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]'>
         {/* 2. Masukkan USER_SIDEBAR_GROUPS ke dalam prop groups */}
-        {/* <DashboardSidebar groups={USER_SIDEBAR_GROUPS} /> */}
-
+        <DashboardSidebar groups={USER_SIDEBAR_GROUPS} />
         <SidebarInset className="flex flex-col min-w-0 bg-[#FFFBF7]">
           <Topbar
             onRightMenuClick={() => setRightSidebarOpen(!rightSidebarOpen)}
