@@ -168,7 +168,7 @@ type RefreshToken struct {
 
 // IsExpired returns true if the refresh token has expired.
 func (r *RefreshToken) IsExpired() bool {
-	return time.Now().After(r.ExpiresAt)
+	return time.Now().UTC().After(r.ExpiresAt)
 }
 
 // Session represents an active user session for the sessions list endpoint.
