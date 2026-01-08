@@ -47,7 +47,7 @@ const MyKnowledgePage: React.FC = () => {
   };
 
   return (
-     <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6">
       {/* 🔒 ONE GRID WRAPPER */}
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-end justify-between">
@@ -61,28 +61,24 @@ const MyKnowledgePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <button className="px-4 py-2 border-2 border-black font-bold
-              shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-              hover:bg-[#FF8811] hover:text-white
-              hover:translate-x-[2px] hover:translate-y-[2px]
-              transition-all">
+            <button
+              className="px-5 py-2 border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white hover:bg-zinc-50 transition-all text-sm"
+            >
               Newest
             </button>
 
             <Link href="/dashboard/pod/create">
-              <button className="px-4 py-2 border-2 border-black font-bold
-                shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-                hover:bg-[#FF8811] hover:text-white
-                hover:translate-x-[2px] hover:translate-y-[2px]
-                transition-all">
+              <button
+                className="px-5 py-2 border-2 border-black font-bold bg-[#FF8811] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_#2B2D42] hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all text-sm"
+              >
                 Create Pod
               </button>
             </Link>
+
           </div>
         </div>
 
-        <div className="bg-white border-2 border-black rounded-xl overflow-hidden
-          shadow-[6px_6px_0px_0px_#FF8811]">
+        <div className="bg-white border-2 border-black rounded-xl overflow-hidden shadow-[6px_6px_0px_0px_#FF8811]">
           {pods.map((pod, index) => (
             <FileListItem
               key={pod.id}
@@ -108,10 +104,9 @@ const MyKnowledgePage: React.FC = () => {
                 className={`w-10 h-10 border-2 border-black font-bold
                   shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
                   transition-all
-                  ${
-                    page === 1
-                      ? 'bg-[#FF8811] text-white'
-                      : 'bg-white hover:bg-zinc-100'
+                  ${page === 1
+                    ? 'bg-[#FF8811] text-white'
+                    : 'bg-white hover:bg-zinc-100'
                   }`}
               >
                 {page}
