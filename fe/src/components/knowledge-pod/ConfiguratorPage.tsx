@@ -100,7 +100,7 @@ const ConfiguratorPage: React.FC = () => {
         <button
           onClick={() => {
             resetForm();
-            router.push("/dashboard/knowledge");
+            router.push("/dashboard/my-pods");
           }}
           className="bg-[#2B2D42] text-white font-medium text-sm px-8 py-3 rounded-md hover:bg-opacity-90 transition-all"
         >

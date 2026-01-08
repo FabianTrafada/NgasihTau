@@ -32,10 +32,10 @@ function DashboardContent() {
     return (
         <div className="flex min-h-screen">
             {/* Main Content Area */}
-            <div className="flex-1 p-6 sm:p-8 lg:p-8  max-w-4xl mx-auto flex flex-col gap-6 lg:gap-8 sm:max-w-6xl">
+            <div className="flex-1 p-4 sm:p-8 lg:p-8  max-w-4xl mx-auto flex flex-col gap-6 lg:gap-8 sm:max-w-6xl">
                 {/* Welcome Section - Now uses real user name */}
                 <div>
-                    <h1 className="text-1xl font-family-name:var(--font-plus-jakarta-sans) sm:text-2xl font-bold text-[#2B2D42] mb-1">
+                    <h1 className="text-1xl md:text-2xl font-family-name:var(--font-plus-jakarta-sans) sm:text-2xl font-bold text-[#2B2D42] mb-1">
                         Welcome Back {user?.name || "User"}
                     </h1>
                     <p className="text-xs sm:text-base text-gray-500 font-family-name:var(--font-inter)">Ready to learn something new today?</p>
@@ -46,7 +46,7 @@ function DashboardContent() {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-base sm:text-lg font-family-name:var(--font-plus-jakarta-sans)  font-bold text-[#2B2D42]">Recent Pods</h2>
 
-                        <Link href={'/dashboard/pods'}>
+                        <Link href={'/dashboard/pod'}>
                             <button className="text-xs text-gray-400 hover:text-[#FF8811] cursor-pointer font-bold">See all</button>
                         </Link>
                     </div>
