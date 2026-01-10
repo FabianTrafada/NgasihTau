@@ -92,7 +92,7 @@ export default function SignUpPage() {
                     <div className="text-center mb-4">
                         <h1 className="text-xl font-bold font-[(family-name:var(--font-plus-jakarta-sans))]">
                             <span className="text-[#FF8811] ">Ngasih</span>
-                            <span className="text-[#2B2D42]">Tau</span>
+                            <span className="text-[#474963]">Tau</span>
                         </h1>
                     </div>
 
