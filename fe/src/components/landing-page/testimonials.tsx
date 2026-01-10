@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Marquee } from "@/components/ui/marquee";
 import { cn } from "@/lib/utils";
 import { testimonials } from "@/lib/data/landing-page";
+import { useTranslations } from "next-intl";
 
 const ReviewCard = ({
     img,
@@ -16,6 +17,7 @@ const ReviewCard = ({
     username: string;
     body: string;
 }) => {
+    const t = useTranslations('landingPage.testimonials');
     return (
         <figure
             className={cn(
@@ -39,6 +41,7 @@ const ReviewCard = ({
 };
 
 export function Testimonials() {
+    const t = useTranslations('landingPage.testimonials');
     return (
         <section className="py-20 w-full relative z-10 overflow-hidden">
             <motion.h2
@@ -48,7 +51,7 @@ export function Testimonials() {
                 transition={{ duration: 0.6 }}
                 className="text-4xl font-bold text-center text-[#2B2D42] mb-16"
             >
-                Testimonials
+                {t('title')}
             </motion.h2>
             <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
                 <Marquee pauseOnHover className="[--duration:40s]">

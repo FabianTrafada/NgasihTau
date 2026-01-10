@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export function Footer() {
+    const t = useTranslations('landingPage.footer');
     return (
         <footer className="py-10 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 border-t-2 border-[#2B2D42]/10 mt-10">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -11,11 +13,11 @@ export function Footer() {
                     <span className="text-[#2B2D42]">Tau</span>
                 </div>
                 <div className="flex items-center gap-8 text-sm font-bold text-[#2B2D42]">
-                    <Link href="#" className="hover:text-[#FF8811]">Terms</Link>
-                    <Link href="#" className="hover:text-[#FF8811]">Privacy</Link>
-                    <Link href="#" className="hover:text-[#FF8811]">Contact</Link>
+                    <Link href="#" className="hover:text-[#FF8811]">{t('terms')}</Link>
+                    <Link href="#" className="hover:text-[#FF8811]">{t('privacy')}</Link>
+                    <Link href="#" className="hover:text-[#FF8811]">{t('contact')}</Link>
                 </div>
-                <p className="text-xs font-bold text-[#2B2D42]">© 2025 NgasihTau</p>
+                <p className="text-xs font-bold text-[#2B2D42]">{t('copyright')}</p>
             </div>
         </footer>
     );

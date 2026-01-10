@@ -1,37 +1,58 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
+import { routing } from '@/i18n/routing';
 
-export function proxy (request: NextRequest) {
+const intlMiddleware = createMiddleware(routing);
 
-    
-
+export default function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Guard 1 when user is having access token but trying to access auth routes
-    const accessToken = request.cookies.get("access_token")?.value;
-    if (accessToken) {
-        const authRoutes = ["/sign-in", "/sign-up", "/forgot-password"];    
-        if (authRoutes.includes(pathname)) {
-            const url = request.nextUrl.clone();
-            url.pathname = "/dashboard";
-            return Response.redirect(url);
-        }
-      return;   
+    // Run intl middleware first
+    const intlResponse = intlMiddleware(request);
+
+    // Get locale from pathname (e.g., /en/dashboard -> en)
+    const pathnameLocale = routing.locales.find(
+        (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    );
+    const locale = pathnameLocale || routing.defaultLocale;
+
+    // Auth guard - check paths without locale prefix
+    const pathnameWithoutLocale = pathnameLocale
+        ? pathname.replace(`/${pathnameLocale}`, '') || '/'
+        : pathname;
+
+    const accessToken = request.cookies.get('access_token')?.value;
+
+    const authRoutes = ['/sign-in', '/sign-up'];
+    const protectedRoutes = ['/dashboard', '/profile', '/onboarding', '/teacher'];
+
+    // Redirect authenticated users away from auth pages
+    if (accessToken && authRoutes.some((r) => pathnameWithoutLocale.startsWith(r))) {
+        const url = request.nextUrl.clone();
+        url.pathname = `/${locale}/dashboard`;
+        return NextResponse.redirect(url);
     }
 
-    // Guard 2 when user is not having access token but trying to access protected routes
-    const protectedRoutes = ["/dashboard", "/profile", "/settings"];
-    if (!accessToken || accessToken === "") {
-        if (protectedRoutes.includes(pathname)) {
-            const url = request.nextUrl.clone();
-            url.pathname = "/sign-in";
-            return Response.redirect(url);
-        }   
-    } return;
+    // Redirect unauthenticated users away from protected pages
+    if (!accessToken && protectedRoutes.some((r) => pathnameWithoutLocale.startsWith(r))) {
+        const url = request.nextUrl.clone();
+        url.pathname = `/${locale}/sign-in`;
+        return NextResponse.redirect(url);
+    }
 
-
-    // if not have any token and trying to access auth routes, allow
-
-    
-
-
+    return intlResponse;
 }
+
+export const config = {
+    // Match all pathnames except:
+    // - API routes
+    // - Static files (images, fonts, etc.)
+    // - Next.js internals
+    matcher: [
+        // Match all pathnames except static files
+        '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
+        // Match root
+        '/'
+    ]
+};
+

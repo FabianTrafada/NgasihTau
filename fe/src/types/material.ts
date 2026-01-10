@@ -53,3 +53,30 @@ export interface ChunkSource {
   text: string;
   score: number;
 }
+
+
+
+export interface EditingMaterial {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface UploadUrlRequest {
+  filenmae: string;
+  content_type: string;
+  size: number; 
+}
+
+export interface UploadUrlResponse {
+  upload_url: string;
+  object_key: string;
+  expires_at: string;
+}
+
+export interface UpdateMaterialInput {
+  object_key: string;
+  pod_id: string;
+  title: string;
+  description?: string;
+}

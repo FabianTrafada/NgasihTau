@@ -1,5 +1,5 @@
 import apiClient from "@/lib/api-client";
-import { Pod } from "@/types/pod";
+import { Pod, UpdatePodInput } from "@/types/pod";
 import { Material } from "@/types/material";
 
 /**
@@ -132,6 +132,24 @@ export async function unstarPod(podId: string): Promise<void> {
     });
   } catch (error) {
     console.error("Error unstarring pod:", error);
+    throw error;
+  }
+}
+
+export async function UpdatePod(podId: string, input:UpdatePodInput): Promise<Pod> {
+  try {
+    const token = localStorage.getItem("access_token");
+
+    const response = await apiClient.put<{data: Pod}>(`/api/v1/pods/${podId}`, input, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data.data || response.data;
+
+  } catch (error) {
+    console.error("Error updating pod:", error);
     throw error;
   }
 }
