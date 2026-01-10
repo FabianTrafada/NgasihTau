@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
 
@@ -31,15 +30,9 @@ func Load(configPath string) (*Config, error) {
 		}
 	}
 
-	// Unmarshal into config struct with custom decode hook for time.Duration
+	// Unmarshal into config struct
 	var cfg Config
-	decoderConfig := func(dc *mapstructure.DecoderConfig) {
-		dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(
-			mapstructure.StringToTimeDurationHookFunc(),
-			dc.DecodeHook,
-		)
-	}
-	if err := v.Unmarshal(&cfg, decoderConfig); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
@@ -142,16 +135,6 @@ func setDefaults(v *viper.Viper) {
 	// Gemini defaults
 	v.SetDefault("gemini.chat_model", "gemini-1.5-flash")
 	v.SetDefault("gemini.embedding_model", "text-embedding-004")
-
-	// Storage limit defaults (in GB)
-	v.SetDefault("storage.free_quota_gb", 1)
-	v.SetDefault("storage.premium_quota_gb", 5)
-	v.SetDefault("storage.pro_quota_gb", 20)
-
-	// AI limit defaults (daily message limits, -1 for unlimited)
-	v.SetDefault("ai_limit.free_daily_limit", 20)
-	v.SetDefault("ai_limit.premium_daily_limit", 100)
-	v.SetDefault("ai_limit.pro_daily_limit", -1)
 
 	// Rate limit defaults (requests per minute)
 	v.SetDefault("rate_limit.auth", 10)
@@ -290,16 +273,6 @@ func bindEnvVars(v *viper.Viper) {
 	_ = v.BindEnv("gemini.api_key", "GEMINI_API_KEY")
 	_ = v.BindEnv("gemini.chat_model", "GEMINI_CHAT_MODEL")
 	_ = v.BindEnv("gemini.embedding_model", "GEMINI_EMBEDDING_MODEL")
-
-	// Storage Limits
-	_ = v.BindEnv("storage.free_quota_gb", "STORAGE_FREE_QUOTA_GB")
-	_ = v.BindEnv("storage.premium_quota_gb", "STORAGE_PREMIUM_QUOTA_GB")
-	_ = v.BindEnv("storage.pro_quota_gb", "STORAGE_PRO_QUOTA_GB")
-
-	// AI Limits
-	_ = v.BindEnv("ai_limit.free_daily_limit", "AI_FREE_DAILY_LIMIT")
-	_ = v.BindEnv("ai_limit.premium_daily_limit", "AI_PREMIUM_DAILY_LIMIT")
-	_ = v.BindEnv("ai_limit.pro_daily_limit", "AI_PRO_DAILY_LIMIT")
 
 	// SMTP
 	_ = v.BindEnv("smtp.host", "SMTP_HOST")

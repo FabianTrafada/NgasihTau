@@ -34,8 +34,6 @@ type Config struct {
 	Gemini        GeminiConfig        `mapstructure:"gemini"`
 	SMTP          SMTPConfig          `mapstructure:"smtp"`
 	Email         EmailConfig         `mapstructure:"email"`
-	Storage       StorageConfig       `mapstructure:"storage"`
-	AILimit       AILimitConfig       `mapstructure:"ai_limit"`
 	RateLimit     RateLimitConfig     `mapstructure:"rate_limit"`
 	CORS          CORSConfig          `mapstructure:"cors"`
 	Observability ObservabilityConfig `mapstructure:"observability"`
@@ -215,18 +213,4 @@ type EmailConfig struct {
 	SESRegion    string `mapstructure:"ses_region"`
 	SESAccessKey string `mapstructure:"ses_access_key"`
 	SESSecretKey string `mapstructure:"ses_secret_key"`
-}
-
-// StorageConfig holds storage limit settings per tier.
-type StorageConfig struct {
-	FreeQuotaGB    int64 `mapstructure:"free_quota_gb" validate:"min=1"`
-	PremiumQuotaGB int64 `mapstructure:"premium_quota_gb" validate:"min=1"`
-	ProQuotaGB     int64 `mapstructure:"pro_quota_gb" validate:"min=1"`
-}
-
-// AILimitConfig holds AI usage limit settings per tier.
-type AILimitConfig struct {
-	FreeDailyLimit    int `mapstructure:"free_daily_limit" validate:"min=1"`
-	PremiumDailyLimit int `mapstructure:"premium_daily_limit" validate:"min=1"`
-	ProDailyLimit     int `mapstructure:"pro_daily_limit"` // 0 or -1 for unlimited
 }

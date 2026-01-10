@@ -2,10 +2,8 @@ package gemini
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"ngasihtau/internal/ai/domain"
 	"strings"
 	"time"
 
@@ -333,104 +331,4 @@ func (c *Client) GenerateEmbeddings(ctx context.Context, texts []string) ([][]fl
 	}
 
 	return embeddings, nil
-}
-
-// GenerateQuestions generates quiz questions from material content.
-// Implements requirements 12.2, 12.3, 12.4, 12.5.
-func (c *Client) GenerateQuestions(ctx context.Context, content string, count int, questionType string) ([]domain.GeneratedQuestion, error) {
-	var questions []domain.GeneratedQuestion
-
-	systemPrompt := buildQuestionGenerationPrompt(questionType)
-	userPrompt := fmt.Sprintf("Based on this learning material content, generate %d quiz questions:\n\n%s", count, content)
-
-	config := &genai.GenerateContentConfig{
-		Temperature:     genai.Ptr[float32](0.7),
-		MaxOutputTokens: 2000,
-		SystemInstruction: &genai.Content{
-			Parts: []*genai.Part{{Text: systemPrompt}},
-		},
-		ResponseMIMEType: "application/json",
-	}
-
-	err := c.retryWithBackoff(ctx, func() error {
-		result, err := c.client.Models.GenerateContent(
-			ctx,
-			c.chatModel,
-			[]*genai.Content{{Parts: []*genai.Part{{Text: userPrompt}}}},
-			config,
-		)
-		if err != nil {
-			return err
-		}
-
-		if result == nil || len(result.Candidates) == 0 {
-			return fmt.Errorf("no questions returned")
-		}
-
-		// Parse JSON response
-		responseText := result.Text()
-		var parsed struct {
-			Questions []domain.GeneratedQuestion `json:"questions"`
-		}
-		if err := json.Unmarshal([]byte(responseText), &parsed); err != nil {
-			return fmt.Errorf("failed to parse questions response: %w", err)
-		}
-
-		questions = parsed.Questions
-		return nil
-	})
-
-	if err != nil {
-		return nil, wrapGeminiError(err)
-	}
-
-	// Ensure we don't return more than requested
-	if len(questions) > count {
-		questions = questions[:count]
-	}
-
-	return questions, nil
-}
-
-// buildQuestionGenerationPrompt builds the system prompt for question generation.
-func buildQuestionGenerationPrompt(questionType string) string {
-	basePrompt := `You are an expert educator that generates high-quality quiz questions from learning materials.
-Generate questions that test understanding of the key concepts in the provided content.
-
-Each question must include:
-- A clear, well-formed question
-- The correct answer
-- A brief explanation of why the answer is correct
-
-Return your response as a JSON object with a "questions" array containing objects with these fields:
-- "question": the question text
-- "type": the question type (multiple_choice, true_false, or short_answer)
-- "options": array of options (only for multiple_choice, must have at least 2 options)
-- "answer": the correct answer
-- "explanation": explanation of the correct answer
-
-`
-
-	switch questionType {
-	case "multiple_choice":
-		return basePrompt + `Generate ONLY multiple choice questions. Each question must have 4 options (A, B, C, D) with exactly one correct answer.
-The "options" field should contain the 4 options as strings.
-The "answer" field should contain the correct option letter and text (e.g., "A. The correct answer").`
-
-	case "true_false":
-		return basePrompt + `Generate ONLY true/false questions.
-The "options" field should be ["True", "False"].
-The "answer" field should be either "True" or "False".`
-
-	case "short_answer":
-		return basePrompt + `Generate ONLY short answer questions that require a brief written response.
-Do not include an "options" field for short answer questions.
-The "answer" field should contain the expected answer.`
-
-	default: // mixed
-		return basePrompt + `Generate a mix of question types: multiple choice, true/false, and short answer.
-For multiple choice: include 4 options and specify the correct one.
-For true/false: include ["True", "False"] as options.
-For short answer: do not include options.`
-	}
 }
