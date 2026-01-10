@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, File, Users, Settings, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, BookOpen, File, Users, Settings, LucideIcon, BookOpenText, BotMessageSquare } from 'lucide-react';
 
 export interface NavItem {
     label: string;
@@ -26,19 +26,20 @@ export const USER_SIDEBAR_GROUPS: NavGroup[] = [
         title: "Knowledge",
         items: [
             {
-                label: "Knowledge Spot",
+                label: "Browse Knowledge",
                 href: "/dashboard/pod",
-                icon: BookOpen,
+                icon: BookOpenText 
+,
             },
         ],
     },
     {
-        title: "Your Pods",
+        title: "AI Tools",
         items: [
             {
-                label: "My Knowledge Pods",
-                href: "/dashboard/my-pods",
-                icon: File,
+                label: "Chatbot",
+                href: "/dashboard/chatbot",
+                icon: BotMessageSquare  
             },
         ],
     },

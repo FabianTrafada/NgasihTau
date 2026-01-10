@@ -30,3 +30,13 @@ export interface KnowledgePodCardProps {
   isPersonal?: boolean;
   isPublic?: "Public" | "Private";
 }
+
+
+export interface UpdatePodInput {
+  name?: string;
+  description?: string;
+  visibility?: "public" | "private";
+  categories?: string[];
+  tags?: string[];
+}
+
