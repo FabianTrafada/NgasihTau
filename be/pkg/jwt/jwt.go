@@ -61,7 +61,6 @@ func NewManager(config Config) *Manager {
 	return &Manager{config: config}
 }
 
-
 // GenerateAccessToken creates a new access token for the given user.
 // Access tokens are short-lived (default 15 minutes) and used for API authentication.
 func (m *Manager) GenerateAccessToken(userID uuid.UUID, role string) (string, error) {
@@ -191,10 +190,10 @@ func (m *Manager) GetRefreshTokenExpiry() time.Duration {
 
 // RefreshTokenExpiry returns the expiration time for a new refresh token.
 func (m *Manager) RefreshTokenExpiry() time.Time {
-	return time.Now().Add(m.config.RefreshTokenExpiry)
+	return time.Now().UTC().Add(m.config.RefreshTokenExpiry)
 }
 
 // AccessTokenExpiry returns the expiration time for a new access token.
 func (m *Manager) AccessTokenExpiry() time.Time {
-	return time.Now().Add(m.config.AccessTokenExpiry)
+	return time.Now().UTC().Add(m.config.AccessTokenExpiry)
 }
