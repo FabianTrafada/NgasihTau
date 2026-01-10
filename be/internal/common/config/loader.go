@@ -154,6 +154,16 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("observability.service_name", "ngasihtau")
 	v.SetDefault("observability.metrics_enabled", true)
 	v.SetDefault("observability.metrics_port", 9090)
+
+	// AI Limit defaults (daily message limits per tier)
+	v.SetDefault("ai_limit.free_daily_limit", 10)
+	v.SetDefault("ai_limit.premium_daily_limit", 100)
+	v.SetDefault("ai_limit.pro_daily_limit", -1) // -1 = unlimited
+
+	// Storage quota defaults (in GB)
+	v.SetDefault("storage.free_quota_gb", 1)    // 1 GB for free tier
+	v.SetDefault("storage.premium_quota_gb", 10) // 10 GB for premium tier
+	v.SetDefault("storage.pro_quota_gb", 100)    // 100 GB for pro tier
 }
 
 func setDatabaseDefaults(v *viper.Viper, prefix, dbName string, maxOpen, maxIdle int) {
@@ -309,6 +319,16 @@ func bindEnvVars(v *viper.Viper) {
 	_ = v.BindEnv("observability.service_name", "OTEL_SERVICE_NAME")
 	_ = v.BindEnv("observability.metrics_enabled", "METRICS_ENABLED")
 	_ = v.BindEnv("observability.metrics_port", "METRICS_PORT")
+
+	// AI Limits
+	_ = v.BindEnv("ai_limit.free_daily_limit", "AI_LIMIT_FREE_DAILY")
+	_ = v.BindEnv("ai_limit.premium_daily_limit", "AI_LIMIT_PREMIUM_DAILY")
+	_ = v.BindEnv("ai_limit.pro_daily_limit", "AI_LIMIT_PRO_DAILY")
+
+	// Storage Quotas
+	_ = v.BindEnv("storage.free_quota_gb", "STORAGE_FREE_QUOTA_GB")
+	_ = v.BindEnv("storage.premium_quota_gb", "STORAGE_PREMIUM_QUOTA_GB")
+	_ = v.BindEnv("storage.pro_quota_gb", "STORAGE_PRO_QUOTA_GB")
 }
 
 func bindDatabaseEnvVars(v *viper.Viper, prefix, envPrefix string) {

@@ -37,6 +37,8 @@ type Config struct {
 	RateLimit     RateLimitConfig     `mapstructure:"rate_limit"`
 	CORS          CORSConfig          `mapstructure:"cors"`
 	Observability ObservabilityConfig `mapstructure:"observability"`
+	AILimit       AILimitConfig       `mapstructure:"ai_limit"`
+	Storage       StorageConfig       `mapstructure:"storage"`
 }
 
 // AppConfig holds general application settings.
@@ -213,4 +215,18 @@ type EmailConfig struct {
 	SESRegion    string `mapstructure:"ses_region"`
 	SESAccessKey string `mapstructure:"ses_access_key"`
 	SESSecretKey string `mapstructure:"ses_secret_key"`
+}
+
+// AILimitConfig holds AI usage limit settings per tier.
+type AILimitConfig struct {
+	FreeDailyLimit    int `mapstructure:"free_daily_limit" validate:"min=0"`
+	PremiumDailyLimit int `mapstructure:"premium_daily_limit" validate:"min=0"`
+	ProDailyLimit     int `mapstructure:"pro_daily_limit"` // 0 or -1 means unlimited
+}
+
+// StorageConfig holds storage quota settings per tier (in GB).
+type StorageConfig struct {
+	FreeQuotaGB    int64 `mapstructure:"free_quota_gb" validate:"min=0"`
+	PremiumQuotaGB int64 `mapstructure:"premium_quota_gb" validate:"min=0"`
+	ProQuotaGB     int64 `mapstructure:"pro_quota_gb" validate:"min=0"`
 }

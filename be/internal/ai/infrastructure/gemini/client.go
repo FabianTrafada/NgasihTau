@@ -2,8 +2,10 @@ package gemini
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"ngasihtau/internal/ai/domain"
 	"strings"
 	"time"
 
@@ -251,6 +253,98 @@ Return only the questions, one per line, without numbering or bullet points.`
 
 		if len(questions) > 5 {
 			questions = questions[:5]
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, wrapGeminiError(err)
+	}
+
+	return questions, nil
+}
+
+// GenerateQuestions generates quiz questions from material content.
+// Implements requirements 12.2, 12.4, 12.5.
+func (c *Client) GenerateQuestions(ctx context.Context, content string, count int, questionType string) ([]domain.GeneratedQuestion, error) {
+	var questions []domain.GeneratedQuestion
+
+	typeInstruction := ""
+	switch questionType {
+	case "multiple_choice":
+		typeInstruction = "Generate only multiple choice questions with 4 options each."
+	case "true_false":
+		typeInstruction = "Generate only true/false questions."
+	case "short_answer":
+		typeInstruction = "Generate only short answer questions."
+	case "mixed":
+		typeInstruction = "Generate a mix of multiple choice, true/false, and short answer questions."
+	default:
+		typeInstruction = "Generate a mix of multiple choice, true/false, and short answer questions."
+	}
+
+	systemPrompt := fmt.Sprintf(`You are a helpful assistant that generates quiz questions based on learning material content.
+Generate exactly %d questions based on the provided content.
+%s
+
+For each question, provide:
+- The question text
+- The question type (multiple_choice, true_false, or short_answer)
+- For multiple choice: exactly 4 options labeled A, B, C, D
+- The correct answer
+- A brief explanation of why the answer is correct
+
+Return the response as a valid JSON array with this structure:
+[
+  {
+    "question": "Question text here",
+    "type": "multiple_choice",
+    "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"],
+    "answer": "A. Option 1",
+    "explanation": "Explanation here"
+  }
+]
+
+For true_false questions, options should be ["True", "False"].
+For short_answer questions, options should be empty or omitted.
+
+Return ONLY the JSON array, no additional text.`, count, typeInstruction)
+
+	userPrompt := fmt.Sprintf("Generate quiz questions based on this learning material:\n\n%s", content)
+
+	config := &genai.GenerateContentConfig{
+		Temperature:     genai.Ptr[float32](0.7),
+		MaxOutputTokens: 2000,
+		SystemInstruction: &genai.Content{
+			Parts: []*genai.Part{{Text: systemPrompt}},
+		},
+	}
+
+	err := c.retryWithBackoff(ctx, func() error {
+		result, err := c.client.Models.GenerateContent(
+			ctx,
+			c.chatModel,
+			[]*genai.Content{{Parts: []*genai.Part{{Text: userPrompt}}}},
+			config,
+		)
+		if err != nil {
+			return err
+		}
+
+		if result == nil || len(result.Candidates) == 0 {
+			return fmt.Errorf("no questions returned")
+		}
+
+		responseText := result.Text()
+		// Clean up the response - remove markdown code blocks if present
+		responseText = strings.TrimPrefix(responseText, "```json")
+		responseText = strings.TrimPrefix(responseText, "```")
+		responseText = strings.TrimSuffix(responseText, "```")
+		responseText = strings.TrimSpace(responseText)
+
+		if err := json.Unmarshal([]byte(responseText), &questions); err != nil {
+			return fmt.Errorf("failed to parse questions JSON: %w", err)
 		}
 
 		return nil
