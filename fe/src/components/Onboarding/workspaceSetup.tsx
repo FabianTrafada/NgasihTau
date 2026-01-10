@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { completeOnboarding, getAllInterests, Interest, setUserInterests } from "@/lib/api/interests";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTranslations } from "next-intl";
 
 interface WorkspaceSetupProps {
     onComplete?: () => void;
@@ -14,6 +15,7 @@ interface WorkspaceSetupProps {
 
 export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
     const router = useRouter();
+    const t = useTranslations('onboarding.workspaceSetup');
 
     const [interests, setInterests] = useState<Record<string, Interest[]>>({});
     const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
@@ -43,7 +45,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                 }
             } catch (err) {
                 console.error("Error fetching interests:", err);
-                setError("Failed to load interests. Please try again.");
+                setError(t('failedToLoad'));
             } finally {
                 setIsLoading(false);
             }
@@ -116,7 +118,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
 
     const handleSubmit = async () => {
         if (selectedInterestIds.length === 0) {
-            setError("Please select at least one interest");
+            setError(t('selectAtLeastOne'));
             return;
         }
 
@@ -156,7 +158,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                 router.push("/dashboard");
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || "Failed to save interests. Please try again.");
+            setError(err.response?.data?.message || t('failedToSave'));
             console.error("Error saving interests:", err);
         } finally {
             setIsSaving(false);
@@ -183,7 +185,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                 className="w-full max-w-3xl"
             >
                 <h1 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] mb-12 text-center">
-                    Initialize Workspace
+                    {t('title')}
                 </h1>
 
                 <div className="relative">
@@ -191,10 +193,10 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                     <div className="relative z-10 bg-white rounded-lg border-2 border-black p-8">
                         <div className="mb-6">
                             <h2 className="text-xl font-bold text-black mb-2">
-                                1. Tell us What you're interested in
+                                {t('stepTitle')}
                             </h2>
                             <p className="text-sm text-gray-500 leading-relaxed">
-                                Initialize your workspace by identifying your interested material
+                                {t('subtitle')}
                             </p>
                         </div>
 
@@ -205,7 +207,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                                         type="text"
                                         value={newInterest}
                                         onChange={(e) => setNewInterest(e.target.value)}
-                                        placeholder="Add interest..."
+                                        placeholder={t('addInterest')}
                                         className="px-2 py-1 text-sm border-2 border-black rounded-md focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] w-32 font-medium"
                                         autoFocus
                                     />
@@ -232,7 +234,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                                         onClick={() => setIsAdding(true)}
                                         className="p-1 hover:bg-gray-100 cursor-pointer rounded-full transition-colors group flex items-center gap-2"
                                     >
-                                        <span className="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 ml-2">Add New</span>
+                                        <span className="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 ml-2">{t('addNew')}</span>
                                         <Plus className="w-6 h-6 text-black group-hover:scale-110 transition-transform" strokeWidth={3} />
                                     </button>
 
@@ -246,7 +248,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                                                     : "bg-white text-black hover:bg-gray-100"
                                             )}
                                         >
-                                            Category
+                                            {t('category')}
                                         </button>
                                         <div className="w-[2px] bg-black self-stretch"></div>
                                         <button
@@ -258,7 +260,7 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                                                     : "bg-white text-black hover:bg-gray-100"
                                             )}
                                         >
-                                            Predefined
+                                            {t('predefined')}
                                         </button>
                                     </div>
                                 </div>
@@ -350,10 +352,10 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                             {isSaving ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>Saving...</span>
+                                    <span>{t('saving')}</span>
                                 </>
                             ) : (
-                                "Save and Continue"
+                                t('saveAndContinue')
                             )}
 
                         </button>

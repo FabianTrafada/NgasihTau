@@ -25,6 +25,7 @@
     "lucide-react": "^0.562.0",
     "motion": "^12.23.26",
     "next": "16.0.5",
+    "next-intl": "^4.7.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-dropzone": "^14.3.8",

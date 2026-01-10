@@ -13,3 +13,9 @@ export enum Step {
   Material = 2,
   Configurator = 3
 }
+
+
+export interface UploadMaterialInput {
+  title: string;
+  description?: string;
+}
