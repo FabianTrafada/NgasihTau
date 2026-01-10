@@ -16,11 +16,9 @@ export default function AuthLayout({
             />
 
             {/* svg content */}
-            <div className="relative z-10 flex flex-1 w-full max-w-full mx-auto items-center justify-center">
-                <main className="flex items-center justify-center px-4 py-12">
-                    <div className="w-full max-w-lg">
-                        {children}
-                    </div>
+            <div className="relative z-10 flex flex-1 w-full items-center justify-center">
+                <main className="w-full max-w-md mx-auto px-4 py-12">
+                    {children}  {/* LANGSUNG TANPA WRAPPER */}
                 </main>
             </div>
 
