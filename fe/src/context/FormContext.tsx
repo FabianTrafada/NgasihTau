@@ -1,45 +1,42 @@
-'use client';
+"use client";
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-interface FormData {
-  title?: string;
-  description?: string;
-  name?: string; // Tambahin ini kalau belum
-  [key: string]: any;
-}
+import { KnowledgePodData, Step } from '../types';
 
 interface FormContextType {
-  formData: FormData;
-  updateFormData: (data: Partial<FormData>) => void;
+  formData: KnowledgePodData;
+  currentStep: Step;
+  updateFormData: (updates: Partial<KnowledgePodData>) => void;
+  setStep: (step: Step) => void;
   resetForm: () => void;
-  currentStep: number;
-  setCurrentStep: (step: number) => void; // ✅ Pastikan ada ini
 }
+
+const initialData: KnowledgePodData = {
+  name: '',
+  description: '',
+  materialFiles: [],
+  visibility: 'private',
+};
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
-export const FormProvider = ({ children }: { children: ReactNode }) => {
-  const [formData, setFormData] = useState<FormData>({});
-  const [currentStep, setCurrentStep] = useState(1); // ✅ State untuk step
+export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [formData, setFormData] = useState<KnowledgePodData>(initialData);
+  const [currentStep, setCurrentStep] = useState<Step>(Step.Material);
 
-  const updateFormData = (data: Partial<FormData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
+  const updateFormData = (updates: Partial<KnowledgePodData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
+  const setStep = (step: Step) => setCurrentStep(step);
+
   const resetForm = () => {
-    setFormData({});
-    setCurrentStep(1);
+    setFormData(initialData);
+    setCurrentStep(Step.General);
   };
 
   return (
-    <FormContext.Provider value={{ 
-      formData, 
-      updateFormData, 
-      resetForm,
-      currentStep,
-      setCurrentStep // ✅ Export ini
-    }}>
+    <FormContext.Provider value={{ formData, currentStep, updateFormData, setStep, resetForm }}>
       {children}
     </FormContext.Provider>
   );
@@ -48,7 +45,7 @@ export const FormProvider = ({ children }: { children: ReactNode }) => {
 export const useFormContext = () => {
   const context = useContext(FormContext);
   if (!context) {
-    throw new Error('useFormContext must be used within FormProvider');
+    throw new Error('useFormContext must be used within a FormProvider');
   }
   return context;
 };
