@@ -17,17 +17,16 @@ const StepIndicator = () => {
 
   return (
     <div className="flex flex-col gap-10 relative mt-4 z-0 pointer-events-auto">
-     
       {steps.map((step, index) => {
         const isCompleted = currentStep > step.id;
         const isActive = currentStep === step.id;
         const isLast = index === steps.length - 1;
-        
+
         return (
           <div key={index} className="relative flex items-center gap-6 group">
             {/* Vertical Line Connector */}
             {!isLast && (
-              <div 
+              <div
                 className={`absolute left-[15px] top-[32px] w-[2px] h-[40px] z-0 transition-colors duration-500 ${
                   isCompleted ? 'bg-[#FF8A00]' : 'bg-gray-100'
                 }`}
@@ -37,10 +36,10 @@ const StepIndicator = () => {
             {/* Step Circle/Indicator */}
             <div
               className={`relative z-10 w-8 h-8 rounded-full border-2 transition-all duration-500 flex items-center justify-center font-black text-[10px] shrink-0 ${
-                isCompleted 
-                  ? 'bg-[#FF8A00] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
-                  : isActive 
-                    ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(255,138,0,0.4)] scale-110' 
+                isCompleted
+                  ? 'bg-[#FF8A00] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  : isActive
+                    ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(255,138,0,0.4)] scale-110'
                     : 'bg-white text-gray-300 border-gray-100'
               }`}
             >
@@ -49,7 +48,9 @@ const StepIndicator = () => {
 
             {/* Step Label Content */}
             <div className="flex flex-col">
-              <span className={`font-black uppercase tracking-widest text-[11px] transition-colors duration-300 ${isActive ? 'text-black' : 'text-gray-300'}`}>
+              <span
+                className={`font-black uppercase tracking-widest text-[11px] transition-colors duration-300 ${isActive ? 'text-black' : 'text-gray-300'}`}
+              >
                 {step.title}
               </span>
               {isActive && (
@@ -59,7 +60,6 @@ const StepIndicator = () => {
               )}
             </div>
           </div>
-          
         );
       })}
 

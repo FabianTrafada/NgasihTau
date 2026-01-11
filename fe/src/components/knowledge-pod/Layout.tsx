@@ -2,12 +2,15 @@
 
 import React from 'react';
 import StepIndicator from './StepIndicator';
+import { useTranslations } from 'next-intl';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const t = useTranslations('createPod');
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#FFF8F0]">
       {/* SIDEBAR CONTAINER */}
@@ -32,23 +35,38 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <nav className="pl-2">
             <StepIndicator />
           </nav>
-        </div>
-        
-        {/* Sidebar Footer Accent */}
-        <div className="mt-auto pt-10 opacity-10 font-mono text-[8px] tracking-[0.3em] uppercase">
-          Build_v2.5_Stable
+
+          {/* Button Back */}
+          <button
+            onClick={() => window.history.back()}
+            className="mt-4 py-2 px-4 bg-white border-2 border-black text-black text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors self-start"
+          >
+            ← Back to Knowledge Spot
+          </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA - NO CARD CONTAINER */}
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 p-6 md:p-16 lg:p-24 flex justify-center items-start overflow-y-auto industrial-grid relative">
         <div className="w-full max-w-3xl relative z-10">
-          {/* Konten langsung di sini tanpa pembungkus kartu putih */}
-          <div className="relative">
-            {children}
+          {/* Header Section */}
+          <header className="mb-10 text-center w-full">
+            <h1 className="text-4xl md:text-5xl font-black text-black tracking-tighter mb-3 font-[family-name:var(--font-plus-jakarta-sans)]">
+              {t('title')}
+            </h1>
+          </header>
+
+          {/* Main Content Area */}
+          <div className="w-full bg-white border-4 border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] min-h-[500px] flex flex-col relative overflow-hidden">
+            {/* Decorative Corner Element */}
+            <div className="absolute top-0 right-0 w-16 h-16 bg-[#FF8A00] border-l-4 border-b-4 border-black flex items-center justify-center rotate-45 translate-x-8 -translate-y-8"></div>
+
+            <main className="flex-1 z-10">
+              {children}
+            </main>
           </div>
 
-          {/* Secondary Footer Info - Tetap ada di bawah */}
+          {/* Footer Info */}
           <div className="mt-20 flex flex-col md:flex-row justify-between items-center opacity-40 font-mono text-[9px] uppercase tracking-tighter px-2 gap-4">
             <div className="flex gap-6">
               <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div> SYSTEM_ID: POD-ARCH-01</span>
