@@ -12,8 +12,17 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ProtectedRoute } from '@/components/auth';
 
-const KnowledgePodDetail = () => {
+export default function KnowledgePodDetail() {
+    return (
+        <ProtectedRoute>
+            <KnowledgePodDetailContent />
+        </ProtectedRoute>
+    );
+}
+
+function KnowledgePodDetailContent() {
     const [isPublic, setIsPublic] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const collaborators = [
@@ -177,6 +186,4 @@ const KnowledgePodDetail = () => {
 
         </div>
     );
-};
-
-export default KnowledgePodDetail;
+}

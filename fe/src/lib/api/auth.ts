@@ -150,12 +150,12 @@ export function isTwoFactorRequired(
  *
  * Flow:
  * 1. Send registration data to backend
- * 2. Backend creates user and returns tokens
- * 3. Store tokens in localStorage
- * 4. Return auth data for context update
+ * 2. Backend creates user and sends verification email
+ * 3. DO NOT store tokens - user must verify email first
+ * 4. Return auth data (but don't use it for login)
  *
  * @param data - User registration data (email, password, name)
- * @returns AuthResponse with user data and tokens
+ * @returns AuthResponse with user data and tokens (but don't use for login yet)
  * @throws Error if registration fails (e.g., email already exists)
  */
 export async function register(data: RegisterData): Promise<AuthResponse> {
@@ -166,9 +166,10 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
 
     const authData = response.data.data;
 
-    // Store tokens and user in localStorage
-    TokenStorage.setTokens(authData.access_token, authData.refresh_token);
-    localStorage.setItem("user", JSON.stringify(authData.user));
+    // DO NOT store tokens or user
+    // User must verify email before they can login
+    // TokenStorage.setTokens(authData.access_token, authData.refresh_token);
+    // localStorage.setItem("user", JSON.stringify(authData.user));
 
     return authData;
 }

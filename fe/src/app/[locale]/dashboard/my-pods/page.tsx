@@ -8,8 +8,17 @@ import { getUserPods } from "@/lib/api/pod";
 import { Pod } from "@/types/pod";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { ProtectedRoute } from "@/components/auth";
 
 export default function KnowledgePage() {
+  return (
+    <ProtectedRoute>
+      <KnowledgePageContent />
+    </ProtectedRoute>
+  );
+}
+
+function KnowledgePageContent() {
   const t = useTranslations('pod');
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; username: string; email?: string } | null>(null);
   const [userPods, setUserPods] = useState<Pod[]>([]);
@@ -71,7 +80,7 @@ export default function KnowledgePage() {
               {t('newest')}
             </button>
 
-            <Link href="/dashboard/pod/create">
+            <Link href="/dashboard/create">
               <button
                 className="px-5 py-2 border-2 border-black font-bold bg-[#FF8811] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_#2B2D42] hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all text-sm"
               >

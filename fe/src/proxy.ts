@@ -21,24 +21,12 @@ export default function middleware(request: NextRequest) {
         ? pathname.replace(`/${pathnameLocale}`, '') || '/'
         : pathname;
 
-    const accessToken = request.cookies.get('access_token')?.value;
-
-    const authRoutes = ['/sign-in', '/sign-up'];
-    const protectedRoutes = ['/dashboard', '/profile', '/onboarding', '/teacher'];
-
-    // Redirect authenticated users away from auth pages
-    if (accessToken && authRoutes.some((r) => pathnameWithoutLocale.startsWith(r))) {
-        const url = request.nextUrl.clone();
-        url.pathname = `/${locale}/dashboard`;
-        return NextResponse.redirect(url);
-    }
-
-    // Redirect unauthenticated users away from protected pages
-    if (!accessToken && protectedRoutes.some((r) => pathnameWithoutLocale.startsWith(r))) {
-        const url = request.nextUrl.clone();
-        url.pathname = `/${locale}/sign-in`;
-        return NextResponse.redirect(url);
-    }
+    // Let individual pages handle authentication checks via ProtectedRoute component
+    // This provides more flexibility for:
+    // - Email verification redirects
+    // - Onboarding flow
+    // - Role-based access
+    // Protected pages MUST wrap content with <ProtectedRoute> component
 
     return intlResponse;
 }

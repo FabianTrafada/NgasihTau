@@ -1,20 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import RecentPodCard from "@/components/dashboard/RecentPodCard";
 import ChatbotLogCard from "@/components/dashboard/ChatbotLogCard";
 import { ProtectedRoute } from "@/components/auth";
 import { useAuth } from "@/lib/auth-context";
+import { getOnboardingStatus } from "@/lib/api/interests";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 /**
  * Dashboard Page
  * 
- * This is a PROTECTED page - requires authentication.
+ * This is a PROTECTED page - requires authentication and email verification.
  * The ProtectedRoute component handles:
  * 1. Showing loading state while checking auth
  * 2. Redirecting to /sign-in if not authenticated
- * 3. Rendering content if authenticated
+ * 3. Redirecting to /verify-waiting if email not verified
+ * 4. Rendering content if authenticated and verified
+ * 
+ * This component also checks onboarding status:
+ * - If onboarding not complete, redirect to /onboarding
  */
 export default function DashboardPage() {
     return (
@@ -25,12 +32,50 @@ export default function DashboardPage() {
 }
 
 /**
- * Dashboard Content - only rendered when authenticated
+ * Dashboard Content - only rendered when authenticated and email verified
  */
 function DashboardContent() {
-    // Access user data from auth context
+    const router = useRouter();
+    const locale = useLocale();
     const { user } = useAuth();
     const t = useTranslations('dashboard');
+    const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+    // Check onboarding status on mount
+    useEffect(() => {
+        const checkOnboarding = async () => {
+            try {
+                const result = await getOnboardingStatus();
+
+                // If onboarding not completed, redirect
+                if (result?.completed !== true) {
+                    console.log('[Dashboard] Onboarding not completed - redirecting');
+                    router.replace(`/${locale}/onboarding`);
+                    return;
+                }
+
+                console.log('[Dashboard] Onboarding completed - showing dashboard');
+                setCheckingOnboarding(false);
+            } catch (error) {
+                console.error('[Dashboard] Error checking onboarding:', error);
+                // On error, assume onboarding needed or let user proceed
+                // In production, you might want different error handling
+                setCheckingOnboarding(false);
+            }
+        };
+
+        checkOnboarding();
+    }, [router, locale]);
+
+    // Show loading while checking onboarding
+    if (checkingOnboarding) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-4 border-[#FF8811] border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <div className="flex w-full ">
             {/* Main Content Area */}

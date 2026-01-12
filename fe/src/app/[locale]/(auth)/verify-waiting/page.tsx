@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 /**
  * Email Verification Waiting Page
@@ -22,6 +22,7 @@ type WaitingState = "waiting" | "checking" | "verified" | "redirecting";
 function VerifyWaitingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const locale = useLocale();
     const { user, refreshUser, isAuthenticated, loading: authLoading } = useAuth();
 
     const [state, setState] = useState<WaitingState>("waiting");
@@ -60,16 +61,27 @@ function VerifyWaitingContent() {
             setResendState("sending");
             setResendMessage("");
 
-            const response = await fetch("/api/auth/resend-verification", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email: email || user?.email }),
-            });
+            // Check if user is authenticated - if so, use the API endpoint that requires auth
+            if (isAuthenticated && user) {
+                // User is logged in (has token), call backend directly
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/send-verification`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem('access_token')}`,
+                    },
+                });
 
-            if (!response.ok) {
-                throw new Error("Failed to resend verification email");
+                if (!response.ok) {
+                    throw new Error("Failed to resend verification email");
+                }
+            } else {
+                // User is NOT logged in (just registered)
+                // Backend doesn't have a public endpoint for this
+                // User should sign in again to get a token, then try resend
+                setResendState("error");
+                setResendMessage("Please sign in first to resend verification email");
+                return;
             }
 
             setResendState("success");
@@ -100,21 +112,29 @@ function VerifyWaitingContent() {
         if (user?.email_verified) {
             setState("verified");
 
-            // Short delay then redirect to onboarding
+            // Short delay then redirect to sign-in
+            // User needs to login once to access onboarding
             setTimeout(() => {
                 setState("redirecting");
-                router.push("/onboarding");
+                router.push(`/sign-in?verified=true`);
             }, 1500);
         } else if (state === "checking") {
             setState("waiting");
         }
-    }, [user?.email_verified, router, state, authLoading]);
+    }, [user?.email_verified, router, state, authLoading, locale]);
 
     // Check on mount and on focus
     useEffect(() => {
         if (authLoading) return;
 
-        // Check immediately on mount
+        // Only check verification if user is authenticated
+        if (!isAuthenticated) {
+            // User not logged in (just registered) - don't auto-check, just show waiting UI
+            console.log('[VerifyWaiting] User not authenticated - showing waiting UI without auto-check');
+            return;
+        }
+
+        // Check immediately on mount if authenticated
         checkVerificationStatus();
 
         // Check when page regains focus (user returns from email)
@@ -122,7 +142,7 @@ function VerifyWaitingContent() {
             checkVerificationStatus();
         };
 
-        // Check periodically (every 5 seconds)
+        // Check periodically (every 5 seconds) if authenticated
         const intervalId = setInterval(() => {
             checkVerificationStatus();
         }, 5000);
@@ -133,14 +153,10 @@ function VerifyWaitingContent() {
             window.removeEventListener("focus", handleFocus);
             clearInterval(intervalId);
         };
-    }, [checkVerificationStatus, authLoading]);
+    }, [checkVerificationStatus, authLoading, isAuthenticated]);
 
-    // Redirect if not authenticated (and auth is done loading)
-    useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            router.push("/sign-in");
-        }
-    }, [isAuthenticated, authLoading, router]);
+    // DO NOT redirect if not authenticated - this page should be accessible after sign-up
+    // User can be here without being logged in (they just registered and have no token yet)
 
     // Show loading while auth is loading
     if (authLoading) {

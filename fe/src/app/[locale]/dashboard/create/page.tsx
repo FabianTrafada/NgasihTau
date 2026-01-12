@@ -1,14 +1,22 @@
 "use client";
 
-import { FormProvider, useFormContext } from '@/context/FormContext';
+import { useFormContext } from '@/context/FormContext';
 import { Step } from '@/types';
-import Layout from '@/components/knowledge-pod/Layout';
 import GeneralStep from '@/components/knowledge-pod/GeneralPage';
 import MaterialStep from '@/components/knowledge-pod/MateriPage';
 import ConfiguratorStep from '@/components/knowledge-pod/ConfiguratorPage';
+import { ProtectedRoute } from '@/components/auth';
 
-// Komponen internal untuk menangani logika perubahan tampilan antar langkah (steps)
-const UploadFlow = () => {
+// Halaman utama Upload yang menampilkan step sesuai currentStep dari FormContext
+export default function UploadPage() {
+  return (
+    <ProtectedRoute>
+      <UploadPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function UploadPageContent() {
   const { currentStep } = useFormContext();
 
   return (
@@ -18,17 +26,4 @@ const UploadFlow = () => {
       {currentStep === Step.Configurator && <ConfiguratorStep />}
     </>
   );
-};
-
-// Halaman utama Upload yang menyediakan Context bagi semua komponen di dalamnya
-const UploadPage = () => {
-  return (
-    <FormProvider>
-      <Layout>
-        <UploadFlow />
-      </Layout>
-    </FormProvider>
-  );
-};
-
-export default UploadPage;
+}

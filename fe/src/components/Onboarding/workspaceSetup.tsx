@@ -178,29 +178,31 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
 
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-[#FFFBF5] p-4">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-3xl"
+                className="w-full max-w-4xl"
             >
-                <h1 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] mb-12 text-center">
+                <h1 className="text-4xl md:text-5xl font-black text-[#1A1A1A] mb-4 text-center uppercase tracking-tighter">
                     {t('title')}
                 </h1>
+                <p className="text-center text-gray-400 font-bold uppercase tracking-widest mb-16 text-xs">Profile Synchronization Step</p>
 
                 <div className="relative">
-                    {/* Main Card */}
-                    <div className="relative z-10 bg-white rounded-lg border-2 border-black p-8">
-                        <div className="mb-6">
-                            <h2 className="text-xl font-bold text-black mb-2">
+                    {/* Main Content */}
+                    <div className="relative z-10 p-0">
+                        <div className="mb-10 flex flex-col items-center text-center">
+                            <h2 className="text-2xl font-black text-black mb-2 uppercase tracking-tight">
                                 {t('stepTitle')}
                             </h2>
-                            <p className="text-sm text-gray-500 leading-relaxed">
+                            <div className="h-1 w-20 bg-[#FF8811] border-2 border-black mb-4"></div>
+                            <p className="text-sm text-gray-500 leading-relaxed font-medium max-w-lg">
                                 {t('subtitle')}
                             </p>
                         </div>
 
-                        <div className="flex justify-end h-8 items-center mb-4">
+                        <div className="flex justify-between h-12 items-center mb-8 bg-gray-50/50 p-2 border-2 border-black/5 rounded-lg">
                             {isAdding ? (
                                 <form onSubmit={handleAddInterest} className="flex items-center gap-2">
                                     <input
@@ -364,8 +366,6 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
 
                     </div>
 
-                    {/* Card Shadow Effect */}
-                    <div className="absolute top-2 -right-2 w-full h-full bg-[#FF8811] rounded-lg border-2 border-black z-0" />
                 </div>
             </motion.div>
         </div>

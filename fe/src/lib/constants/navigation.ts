@@ -27,7 +27,7 @@ export const USER_SIDEBAR_GROUPS: NavGroup[] = [
         items: [
             {
                 label: "Browse Knowledge",
-                href: "/dashboard/pod",
+                href: "/dashboard/pods",
                 icon: BookOpenText 
 ,
             },

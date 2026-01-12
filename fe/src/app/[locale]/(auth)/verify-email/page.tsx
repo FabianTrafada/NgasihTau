@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 function VerifyEmailContent() {
   const t = useTranslations('auth.verifyEmail');
   const searchParams = useSearchParams();
   const router = useRouter();
+  const locale = useLocale();
   const [isLoading, setIsLoading] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,10 +39,10 @@ function VerifyEmailContent() {
           setIsSuccess(true);
           setError(null);
 
-          // Redirect to verify-waiting page after 2 seconds
-          // The waiting page will detect the verification and redirect to onboarding
+          // Redirect to sign-in page after 2 seconds
+          // User needs to login once to get tokens, then auto-redirect to onboarding
           setTimeout(() => {
-            router.push("/verify-waiting");
+            router.push(`/sign-in?verified=true`);
           }, 2000);
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -97,9 +98,11 @@ function VerifyEmailContent() {
               <>
                 <h2 className="text-3xl font-bold font-[family-name:var(--font-plus-jakarta-sans)] mb-4">
                   <span className="text-[#2B2D42]">{t('email')} </span>
-                  <span className="text-[#2B2D42]">{t('verified')}</span>
+                  <span className="text-[#FF8811]">{t('verified')}!</span>
                 </h2>
-                <p className="text-gray-500 text-sm font-[family-name:var(--font-inter)] mb-6">{t('success')}</p>
+                <p className="text-gray-500 text-sm font-[family-name:var(--font-inter)] mb-6">
+                  {t('success')} Redirecting to sign in...
+                </p>
                 <div className="flex justify-center">
                   <svg className="w-16 h-16 text-[#FF8811]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

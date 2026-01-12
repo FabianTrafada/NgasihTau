@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { PublicOnlyRoute } from "@/components/auth";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 /**
  * Sign In Page Component
@@ -14,13 +14,28 @@ import { useTranslations } from "next-intl";
  * 1. User enters email + password OR clicks Google sign-in
  * 2. Form submits to useAuth().login() OR initiateGoogleLogin()
  * 3. If 2FA enabled → Show 2FA input
- * 4. If no 2FA → Redirect to dashboard
+ * 4. If no 2FA → Redirect to dashboard (or onboarding if just verified email)
  * 5. Errors are displayed from auth context
  */
-export default function SignInPage() {
+
+function SignInContent() {
     const t = useTranslations('auth');
+    const locale = useLocale();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { login, verify2FA, initiateGoogleLogin, loading, error, clearError } = useAuth();
+
+    // Check if coming from email verification
+    const [showVerifiedMessage, setShowVerifiedMessage] = useState(false);
+
+    useEffect(() => {
+        const verified = searchParams.get('verified');
+        if (verified === 'true') {
+            setShowVerifiedMessage(true);
+            // Clear the message after 5 seconds
+            setTimeout(() => setShowVerifiedMessage(false), 5000);
+        }
+    }, [searchParams]);
 
     // Form state
     const [showPassword, setShowPassword] = useState(false);
@@ -60,14 +75,20 @@ export default function SignInPage() {
                 setRequires2FA(true);
                 setTempToken(result.tempToken);
             } else {
-                // Login successful - redirect to dashboard
-                console.log('[SignIn] ✅ Login successful! Redirecting to dashboard...');
+                // Login successful - redirect to onboarding if from verification, else dashboard
+                console.log('[SignIn] ✅ Login successful!');
 
                 // Small delay to ensure auth context state is updated
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-                console.log('[SignIn] Executing router.push("/dashboard")');
-                router.push("/dashboard");
+                // Check if user came from email verification
+                const searchParams = new URLSearchParams(window.location.search);
+                const isVerified = searchParams.get('verified') === 'true';
+
+                // If just verified email, go to onboarding
+                // Otherwise, dashboard will check onboarding status and redirect if needed
+                // Use relative paths - router handles locale prefix automatically
+                router.push(isVerified ? '/onboarding' : '/dashboard');
             }
         } catch (error) {
             console.error('[SignIn] ❌ Login failed:', error);
@@ -96,13 +117,18 @@ export default function SignInPage() {
         try {
             console.log('[SignIn] Verifying 2FA...');
             await verify2FA(tempToken, totpCode);
-            console.log('[SignIn] ✅ 2FA verified! Redirecting to dashboard...');
+            console.log('[SignIn] ✅ 2FA verified! Redirecting...');
 
             // Small delay to ensure auth context state is updated
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            console.log('[SignIn] Executing router.push("/dashboard")');
-            router.push("/dashboard");
+            // Check if user came from email verification
+            const searchParams = new URLSearchParams(window.location.search);
+            const isVerified = searchParams.get('verified') === 'true';
+
+            console.log('[SignIn] Executing router.push');
+            // Use relative paths - router handles locale prefix automatically
+            router.push(isVerified ? '/onboarding' : '/dashboard');
         } catch (error) {
             console.error('[SignIn] ❌ 2FA verification failed:', error);
             // Error is already set in auth context
@@ -232,6 +258,20 @@ export default function SignInPage() {
                             </p>
                         </div>
 
+                        {/* Verification Success Message */}
+                        {showVerifiedMessage && (
+                            <div className="mb-3 p-3 bg-green-50 border border-green-300 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p className="text-green-800 text-sm font-medium">
+                                        Email verified successfully! Please sign in to continue.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Error Display */}
                         {displayError && (
                             <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs">
@@ -353,5 +393,18 @@ export default function SignInPage() {
                 </div>
             </div>
         </PublicOnlyRoute>
+    );
+}
+
+// Wrapper with Suspense for useSearchParams
+export default function SignInPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[#FFFBF7]">
+                <div className="w-8 h-8 border-4 border-[#FF8811] border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <SignInContent />
+        </Suspense>
     );
 }

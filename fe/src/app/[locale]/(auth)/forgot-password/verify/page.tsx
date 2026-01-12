@@ -68,35 +68,34 @@ export default function VerifyPage() {
     };
 
     return (
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-sm">
             {/* Card Container with Brutalist shadow */}
             <div className="relative">
                 {/* Brutalist offset shadow */}
-                <div className="absolute top-2 left-2 w-full h-full bg-[#FF8811] rounded-2xl" />
+                <div className="absolute top-3 left-3 w-full h-full bg-[#FF8811] rounded-2xl" />
 
                 {/* Main Card */}
-                <div className="bg-white rounded-2xl p-8 relative border-2 border-[#2B2D42]/10 min-h-[500px] flex flex-col">
+                <div className="bg-white rounded-2xl p-6 relative border-2 border-[#2B2D42] min-h-[400px] flex flex-col">
 
                     {/* Back Button */}
                     <Link
                         href="/forgot-password"
-                        className="inline-flex items-center text-[#FF8811] mb-8 hover:text-[#FF8811]/80 transition-colors"
+                        className="inline-flex items-center text-[#FF8811] mb-6 hover:text-[#FF8811]/80 transition-colors"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                         </svg>
                     </Link>
 
                     <div className="flex-1 flex flex-col justify-center">
                         {/* Verification Text */}
-                        <div className="text-center mb-10">
-                            <h2 className="text-3xl font-bold font-[family-name:var(--font-plus-jakarta-sans)]">
+                        <div className="text-center mb-8">
+                            <h2 className="text-2xl font-bold font-[family-name:var(--font-plus-jakarta-sans)]">
                                 <span className="text-[#2B2D42] ">Verifi</span>
                                 <span className="text-[#FF8811]">cation</span>
                             </h2>
-                            <p className="text-gray-500 text-sm mt-4 font-[family-name:var(--font-inter)]">
-                                We will email you a verification<br />
-                                code to your email address
+                            <p className="text-gray-400 text-xs mt-2 font-[family-name:var(--font-inter)]">
+                                We will email you a verification code to your email address
                             </p>
                         </div>
 

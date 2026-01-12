@@ -21,20 +21,23 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
    */
 
   const hideRightSidebarPatterns = [
-    /^\/dashboard\/my-pods\/[^/]+$/,
-    /^\/dashboard\/pods\/[^/]+$/,
-    /^\/dashboard\/pod\/create$/,
-    /^\/dashboard\/my-pods$/,
+    /^\/[^/]+\/dashboard\/my-pods\/[^/]+$/,
+    /^\/[^/]+\/dashboard\/pods$/,
+    /^\/[^/]+\/dashboard\/create$/,
+    /^\/[^/]+\/dashboard\/create$/,
+    /^\/[^/]+\/dashboard\/my-pods$/,
   ]
 
   const hideSidebarPatterns = [
-    /^\/dashboard\/pod\/create$/,
-    /^\/dashboard\/pods\/[^/]+$/,
+    /^\/[^/]+\/dashboard\/create$/,
+    /^\/[^/]+\/dashboard\/create$/,
+    /^\/[^/]+\/dashboard\/pods\$/,
   ]
 
   const hideTopbarPatterns = [
-    /^\/dashboard\/pod\/create$/,
-    /^\/dashboard\/pods\/[^/]+$/,
+    /^\/[^/]+\/dashboard\/create$/,
+    /^\/[^/]+\/dashboard\/create$/,
+    /^\/[^/]+\/dashboard\/pods\/[^/]+$/,
   ]
 
   /**
@@ -67,7 +70,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             <DashboardSidebar groups={USER_SIDEBAR_GROUPS} />
 
             <SidebarInset className="flex flex-col min-w-0 bg-[#FFFBF7] ml-var(--sidebar-width)">
-              
+
               {!shouldHideTopbar && (
                 <Topbar
                   onRightMenuClick={() =>

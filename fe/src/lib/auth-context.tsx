@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (isTwoFactorRequired(result)) {
                 console.log('[AuthContext] 2FA is required');
 
-                
+
 
                 setLoading(false);
                 return {
@@ -243,14 +243,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     /**
      * Register new user
+     * Note: Does NOT auto-login. User must verify email first.
      */
     const register = useCallback(async (email: string, password: string, name: string): Promise<void> => {
         setError(null);
         setLoading(true);
 
         try {
-            const result = await registerApi({ email, password, name });
-            setUser(result.user);
+            // Call register API but DON'T set user state
+            // User needs to verify email before they can login
+            await registerApi({ email, password, name });
+            // Do NOT call: setUser(result.user)
         } catch (err) {
             setError({ message: getErrorMessage(err) });
             throw err;

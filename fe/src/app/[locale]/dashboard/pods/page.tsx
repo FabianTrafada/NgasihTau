@@ -3,8 +3,18 @@
 import FileListItem from '@/components/knowledge-pod/FileListItem';
 import { KnowledgePod } from '@/types/knowledgePods';
 import React, { useState } from 'react';
+import { ProtectedRoute } from '@/components/auth';
+import Link from 'next/link';
 
-const MyKnowledgePage: React.FC = () => {
+export default function MyKnowledgePage() {
+  return (
+    <ProtectedRoute>
+      <MyKnowledgePageContent />
+    </ProtectedRoute>
+  );
+}
+
+const MyKnowledgePageContent: React.FC = () => {
   const [pods, setPods] = useState<KnowledgePod[]>([
     {
       id: '1',
@@ -62,9 +72,11 @@ const MyKnowledgePage: React.FC = () => {
           <button className="px-4 py-2  border-2 text-base border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF8811] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:text-white cursor-pointer hover:translate-x-[2px] hover:translate-y-[2px] transition-all group leading-none">
             Newest
           </button>
-          <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
-            Upload Pod
-          </button>
+          <Link href={'/dashboard/create'}>
+            <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
+              Create Pods
+            </button>
+          </Link>
         </div>
       </div>
 
@@ -106,5 +118,3 @@ const MyKnowledgePage: React.FC = () => {
     </div>
   );
 };
-
-export default MyKnowledgePage;

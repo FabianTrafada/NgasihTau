@@ -5,7 +5,11 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 interface FormData {
   title?: string;
   description?: string;
-  name?: string; // Tambahin ini kalau belum
+  name?: string;
+  visibility?: 'public' | 'private';
+  categories?: string[];
+  tags?: string[];
+  materialFiles?: File[];
   [key: string]: any;
 }
 
@@ -33,9 +37,9 @@ export const FormProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <FormContext.Provider value={{ 
-      formData, 
-      updateFormData, 
+    <FormContext.Provider value={{
+      formData,
+      updateFormData,
       resetForm,
       currentStep,
       setCurrentStep // ✅ Export ini

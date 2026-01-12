@@ -7,8 +7,17 @@ import { Material } from '@/types/material';
 import { getPodDetail, getPodMaterials } from '@/lib/api/pod';
 import { useParams } from 'next/navigation';
 import FileListItem from '@/components/knowledge-pod/FileListItem';
+import { ProtectedRoute } from '@/components/auth';
 
-const KnowledgePodDetail = () => {
+export default function KnowledgePodDetail() {
+  return (
+    <ProtectedRoute>
+      <KnowledgePodDetailContent />
+    </ProtectedRoute>
+  );
+}
+
+function KnowledgePodDetailContent() {
   const files = [
     {
       title: "Limit Turunan",
@@ -124,6 +133,4 @@ const KnowledgePodDetail = () => {
 
     </div>
   );
-};
-
-export default KnowledgePodDetail;
+}
