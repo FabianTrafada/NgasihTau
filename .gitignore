@@ -19,15 +19,13 @@ Thumbs.db
 # Vendor
 be/vendor/
 
-# Binary files
-# be/search-service
-be/*-service
-be/file-processor
-# be/notification-service
-# be/search-service
-# be/pod-service
-# be/ai-service
-# be/user-service
+# Binary files (Go compiled binaries - no extension)
+be/user-service
+be/pod-service
+be/material-service
+be/search-service
+be/ai-service
+be/notification-service
 be/main
 be/app
 
