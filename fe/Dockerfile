@@ -1,21 +1,20 @@
 # ===========================================
-# NgasihTau Frontend - Next.js Dockerfile
+# NgasihTau Frontend - Next.js Dockerfile (Bun)
 # ===========================================
 # Dependencies stage
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+FROM oven/bun:1 AS deps
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json bun.lock ./
 
 # Install dependencies
-RUN npm ci
+RUN bun install --frozen-lockfile
 
 # ===========================================
 # Builder stage
-FROM node:20-alpine AS builder
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
@@ -32,7 +31,7 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
-RUN npm run build
+RUN bun run build
 
 # ===========================================
 # Runner stage
