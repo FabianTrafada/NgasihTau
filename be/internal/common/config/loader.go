@@ -36,6 +36,16 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// Post-process: Handle CORS_ALLOWED_ORIGINS as comma-separated string
+	if corsStr := v.GetString("cors.allowed_origins"); corsStr != "" {
+		// If it's a string (from env var), split it
+		origins := strings.Split(corsStr, ",")
+		for i, origin := range origins {
+			origins[i] = strings.TrimSpace(origin)
+		}
+		cfg.CORS.AllowedOrigins = origins
+	}
+
 	// Validate configuration
 	if err := Validate(&cfg); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
@@ -161,7 +171,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("ai_limit.pro_daily_limit", -1) // -1 = unlimited
 
 	// Storage quota defaults (in GB)
-	v.SetDefault("storage.free_quota_gb", 1)    // 1 GB for free tier
+	v.SetDefault("storage.free_quota_gb", 1)     // 1 GB for free tier
 	v.SetDefault("storage.premium_quota_gb", 10) // 10 GB for premium tier
 	v.SetDefault("storage.pro_quota_gb", 100)    // 100 GB for pro tier
 }
