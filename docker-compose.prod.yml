@@ -239,6 +239,13 @@ services:
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # User DB for cross-service queries
+      USER_DB_HOST: postgres
+      USER_DB_PORT: 5432
+      USER_DB_NAME: ngasihtau_users
+      USER_DB_USER: ${POSTGRES_USER:-postgres}
+      USER_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      USER_DB_SSL_MODE: disable
     depends_on:
       postgres:
         condition: service_healthy
