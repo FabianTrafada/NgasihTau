@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { getCurrentUser } from "@/lib/api/auth";
 import { getUserPods, PaginatedPodResponse } from "@/lib/api/pod";
 import { Pod } from "@/types/pod";
 import Link from "next/link";
@@ -27,7 +28,6 @@ export default function UserPublicProfilePage() {
 
         // userId is actually a UUID from the route parameter
         const response = await getUserPods(userId, pagination.page, pagination.per_page);
-
         setPods(response.data);
         setPagination(response.pagination);
       } catch (err) {

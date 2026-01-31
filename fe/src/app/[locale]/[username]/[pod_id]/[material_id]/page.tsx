@@ -25,7 +25,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
   const [material, setMaterial] = useState<Material | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [error, setError] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -33,13 +33,12 @@ export default function MaterialDetailPage({ params }: PageProps) {
 
   const [isNotFound, setIsNotFound] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  
+
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
-  
-    const chatEndRef = useRef<HTMLDivElement>(null);
-    const previewRef = useRef<HTMLDivElement>(null);
-    
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
   // Fetch material detail dan chat history
   useEffect(() => {
     const fetchData = async () => {
@@ -66,37 +65,38 @@ export default function MaterialDetailPage({ params }: PageProps) {
         const userData = await getUserDetail(materialData.uploader_id);
         console.log("User Detail:", userData);
 
-    
-
         setMaterial(materialData);
-
 
         // Fetch preview URL
         try {
           const previewUrl = await getMaterialPreviewUrl(material_id);
-          console.log("Preview URL:", previewUrl);
+          console.log("Preview URL from API:", previewUrl);
           if (previewUrl) {
             setDocUrl(previewUrl);
+            console.log("Set DocURL to preview URL:", previewUrl);
           } else {
             // Fallback: construct URL if preview API doesn't return anything
+            let fallbackUrl = "";
             if (materialData.file_url.startsWith("http")) {
-              setDocUrl(materialData.file_url);
+              fallbackUrl = materialData.file_url;
             } else {
-              setDocUrl("http://localhost:9000/" + materialData.file_url);
-              console.log("Fallback DocURL:", "http://localhost:9000/" + materialData.file_url);
+              fallbackUrl = "http://localhost:9000/" + materialData.file_url;
             }
+            setDocUrl(fallbackUrl);
+            console.log("Set DocURL to fallback:", fallbackUrl);
           }
-
         } catch (err) {
           console.warn("Failed to fetch preview URL, using fallback:", err);
           // Fallback URL construction
+          let fallbackUrl = "";
           if (materialData.file_url.startsWith("http")) {
-            setDocUrl(materialData.file_url);
+            fallbackUrl = materialData.file_url;
           } else {
-            setDocUrl("http://localhost:9000/" + materialData.file_url);
+            fallbackUrl = "http://localhost:9000/" + materialData.file_url;
           }
+          setDocUrl(fallbackUrl);
+          console.log("Set DocURL to error fallback:", fallbackUrl);
         }
-        console.log("Constructed DocURL:", docUrl);
 
         // Fetch chat history - optional, don't break if fails
         try {
@@ -129,7 +129,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
   useEffect(() => {
     if (textareaRef.current) {
       // Reset height dulu agar saat teks dihapus, box-nya bisa mengecil lagi
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
 
       // Set height sesuai dengan scrollHeight (tinggi konten asli)
       // Kita batasi maksimalnya (misal 150px)
@@ -142,24 +142,23 @@ export default function MaterialDetailPage({ params }: PageProps) {
     if (!previewRef.current) return;
 
     if (!document.fullscreenElement) {
-      previewRef.current.requestFullscreen().catch(err => {
+      previewRef.current.requestFullscreen().catch((err) => {
         console.error("Error attempting to enable fullscreen mode:", err);
       });
     } else {
       document.exitFullscreen();
     }
-  }
+  };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
-    }
+    };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
-
 
   // Handle send chat message
   const handleSendMessage = async () => {
@@ -169,7 +168,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
       setSendingMessage(true);
       const newMessage = await sendMaterialChatMessage(material_id, messageInput);
       setChatMessages([...chatMessages, newMessage]);
-      setMessageInput("");``
+      setMessageInput("");
     } catch (err) {
       console.error("Error sending message:", err);
       setError("Failed to send message");
@@ -252,9 +251,6 @@ export default function MaterialDetailPage({ params }: PageProps) {
 
         {/* Material Information - Horizontal Columns */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 relative">
-
-
-
           {/* Status */}
           <div className="bg-white border-2 border-[#2B2D42] p-4 pb-2 pt-3 shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all">
             <p className="text-xs font-bold text-[#2B2D42]">Status</p>
@@ -262,7 +258,6 @@ export default function MaterialDetailPage({ params }: PageProps) {
               {material.status}
             </span>
           </div>
-
 
           {/* File Type */}
           <div className="bg-white border-2 border-[#2B2D42] p-4 pb-2 pt-3 shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all">
@@ -285,7 +280,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
 
         {/* Preview Area - Full Width */}
         <div className="flex-1 bg-white border-2 border-[#2B2D42] shadow-[2px_2px_0px_0px_#2B2D42] rounded-lg overflow-hidden relative">
-          <div ref={previewRef} className="w-full h-full relative p-1">
+          <div ref={previewRef} className="absolute p-1">
             <button
               onClick={toggleFullscreen}
               className="px-3 py-1 bg-white border-2 rounded-lg border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
@@ -294,7 +289,17 @@ export default function MaterialDetailPage({ params }: PageProps) {
             </button>
           </div>
 
-          {material.file_type.toLowerCase() === "pdf" && <iframe src={docUrl} className="w-full h-full" title="PDF Preview" />}
+          {material.file_type.toLowerCase() === "pdf" &&
+            (docUrl ? (
+              <iframe key={docUrl} src={docUrl} className="w-full bg-yellow-500 h-full" title="PDF Preview" />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gray-50">
+                <div className="text-center">
+                  <Loader className="animate-spin text-[#FF8811] mx-auto mb-4" size={40} />
+                  <p className="text-gray-600 font-semibold">Loading PDF preview...</p>
+                </div>
+              </div>
+            ))}
           {material.file_type.toLowerCase() === "docx" && (
             <div className="flex items-center justify-center h-full bg-gray-50">
               <div className="text-center">
@@ -322,7 +327,6 @@ export default function MaterialDetailPage({ params }: PageProps) {
               </div>
             </div>
           )}
-
         </div>
         {/* Floating Chat Widget Button */}
         {!isChatOpen && (
@@ -375,7 +379,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
                   ref={textareaRef}
                   data-lenis-prevent
                   className="flex-1 min-h-10 overflow-y-auto resize-none text-xs p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8811]"
-                  style={{ height: '20px' }}
+                  style={{ height: "20px" }}
                   placeholder="Type your question..."
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}

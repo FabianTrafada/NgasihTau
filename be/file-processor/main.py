@@ -19,6 +19,17 @@ from pydantic import BaseModel, Field, HttpUrl
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     print("File Processor Service starting...")
+    
+    # Initialize Learning Pulse module
+    try:
+        from learning_pulse.router import initialize_components as init_learning_pulse
+        if init_learning_pulse():
+            print("Learning Pulse module initialized successfully")
+        else:
+            print("Warning: Learning Pulse module failed to initialize (model may not be trained)")
+    except Exception as e:
+        print(f"Warning: Could not initialize Learning Pulse module: {e}")
+    
     yield
     print("File Processor Service shutting down...")
 
@@ -29,6 +40,13 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Include Learning Pulse router
+try:
+    from learning_pulse.router import router as learning_pulse_router
+    app.include_router(learning_pulse_router)
+except ImportError as e:
+    print(f"Warning: Could not import Learning Pulse router: {e}")
 
 
 # Request/Response Models

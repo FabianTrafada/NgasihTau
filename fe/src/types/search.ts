@@ -1,4 +1,4 @@
-/**
+  /**
  * Search Result Types
  * Based on backend search service domain entities
  */

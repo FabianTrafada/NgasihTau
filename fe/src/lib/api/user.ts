@@ -1,4 +1,5 @@
 import apiClient from "@/lib/api-client";
+import { UserBehavior } from "@/types/userBehavior";
 
 /**
  * Fetch user detail berdasarkan user ID
@@ -21,6 +22,16 @@ export async function getCurrentUser(): Promise<{ id: string; name: string; user
     return response.data.data || response.data;
   } catch (error) {
     console.error("Error fetching current user detail:", error);
+    throw error;
+  }
+}
+
+export async function getUserLearningStatus(data: UserBehavior): Promise<UserBehavior> {
+  try {
+    const response = await apiClient.post<{ data: UserBehavior }>(`/api/v1/learning-pulse/predict-persona`, data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error("Error fetching user learning status:", error);
     throw error;
   }
 }

@@ -2,7 +2,7 @@
 # Traefik Dynamic Configuration - Routers
 # ===========================================
 # Routing rules with priority-based routing:
-# 
+#
 # IMPORTANT: Some /api/v1/users/* routes go to Pod Service!
 # - /api/v1/users/:id/pods -> Pod Service (pod data)
 # - /api/v1/users/:id/starred -> Pod Service (starred pods)
@@ -76,7 +76,7 @@ http:
       entryPoints:
         - web
       middlewares:
-        - cors-headers  
+        - cors-headers
         - security-headers
         - api-version
         - rate-limit-general
@@ -356,6 +356,20 @@ http:
         - api-version
         - rate-limit-general
       service: notification-service
+      priority: 90
+
+    # ===========================================
+    # File Processor Routes (Learning Pulse)
+    # ===========================================
+    learning-pulse:
+      rule: "PathPrefix(`/api/v1/learning-pulse`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - rate-limit-general
+      service: file-processor
       priority: 90
 
     # ===========================================

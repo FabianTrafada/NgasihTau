@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 interface FormData {
   title?: string;
   description?: string;
-  name?: string; // Tambahin ini kalau belum
+  name?: string;
   [key: string]: any;
 }
 
@@ -14,14 +14,14 @@ interface FormContextType {
   updateFormData: (data: Partial<FormData>) => void;
   resetForm: () => void;
   currentStep: number;
-  setCurrentStep: (step: number) => void; // ✅ Pastikan ada ini
+  setCurrentStep: (step: number) => void;
 }
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
 export const FormProvider = ({ children }: { children: ReactNode }) => {
   const [formData, setFormData] = useState<FormData>({});
-  const [currentStep, setCurrentStep] = useState(1); // ✅ State untuk step
+  const [currentStep, setCurrentStep] = useState(1);
 
   const updateFormData = (data: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -38,7 +38,7 @@ export const FormProvider = ({ children }: { children: ReactNode }) => {
       updateFormData, 
       resetForm,
       currentStep,
-      setCurrentStep // ✅ Export ini
+      setCurrentStep
     }}>
       {children}
     </FormContext.Provider>

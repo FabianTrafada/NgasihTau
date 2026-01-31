@@ -18,6 +18,7 @@ import (
 
 	"ngasihtau/internal/ai/application"
 	"ngasihtau/internal/ai/infrastructure/gemini"
+	"ngasihtau/internal/ai/infrastructure/learningpulse"
 	"ngasihtau/internal/ai/infrastructure/openai"
 	"ngasihtau/internal/ai/infrastructure/postgres"
 	"ngasihtau/internal/ai/infrastructure/qdrant"
@@ -239,6 +240,20 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Create AIService for limit checking
 	aiLimitChecker := userapplication.NewAIService(userRepo, aiUsageRepo, cfg.AILimit)
 
+	// Initialize Learning Pulse client for personalized AI responses
+	var learningPulseClient *learningpulse.Client
+	if cfg.FileProcSvc.URL != "" {
+		learningPulseClient = learningpulse.NewClient(learningpulse.Config{
+			BaseURL:    cfg.FileProcSvc.URL,
+			Timeout:    5 * time.Second,
+			MaxRetries: 2,
+		})
+		log.Info().Str("url", cfg.FileProcSvc.URL).Msg("Learning Pulse client initialized")
+	}
+
+	// Initialize behavior data provider
+	behaviorDataProvider := postgres.NewBehaviorDataRepository(db, nil, userDB)
+
 	aiService := application.NewService(
 		chatSessionRepo,
 		chatMessageRepo,
@@ -247,6 +262,8 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		chatClient,
 		cfg.FileProcSvc.URL,
 		aiLimitChecker,
+		learningPulseClient,
+		behaviorDataProvider,
 	)
 
 	worker := application.NewWorker(aiService, natsClient, cfg.FileProcSvc.URL)

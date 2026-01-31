@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"ngasihtau/internal/ai/domain"
+	"ngasihtau/internal/ai/infrastructure/learningpulse"
 )
 
 // Feature constants define the premium and pro features for AI service.
@@ -66,14 +67,29 @@ type AILimitChecker interface {
 	CanAccessFeature(ctx context.Context, userID uuid.UUID, feature string) error
 }
 
+// LearningPulseClient defines the interface for fetching user learning personas.
+type LearningPulseClient interface {
+	// GetPersona fetches the user's learning persona based on their behavior data.
+	GetPersona(ctx context.Context, userID string, behaviorData *learningpulse.BehaviorData) (learningpulse.Persona, error)
+}
+
+// BehaviorDataProvider defines the interface for fetching user behavior data.
+// This is typically implemented by a repository that aggregates user interactions.
+type BehaviorDataProvider interface {
+	// GetBehaviorData retrieves aggregated behavior data for a user.
+	GetBehaviorData(ctx context.Context, userID uuid.UUID) (*learningpulse.BehaviorData, error)
+}
+
 type Service struct {
-	chatSessionRepo  ChatSessionRepository
-	chatMessageRepo  ChatMessageRepository
-	vectorRepo       VectorRepository
-	embeddingClient  EmbeddingClient
-	chatClient       ChatClient
-	fileProcessorURL string
-	aiLimitChecker   AILimitChecker
+	chatSessionRepo      ChatSessionRepository
+	chatMessageRepo      ChatMessageRepository
+	vectorRepo           VectorRepository
+	embeddingClient      EmbeddingClient
+	chatClient           ChatClient
+	fileProcessorURL     string
+	aiLimitChecker       AILimitChecker
+	learningPulseClient  LearningPulseClient
+	behaviorDataProvider BehaviorDataProvider
 }
 
 type ChatSessionRepository interface {
@@ -150,15 +166,19 @@ func NewService(
 	chatClient ChatClient,
 	fileProcessorURL string,
 	aiLimitChecker AILimitChecker,
+	learningPulseClient LearningPulseClient,
+	behaviorDataProvider BehaviorDataProvider,
 ) *Service {
 	return &Service{
-		chatSessionRepo:  chatSessionRepo,
-		chatMessageRepo:  chatMessageRepo,
-		vectorRepo:       vectorRepo,
-		embeddingClient:  embeddingClient,
-		chatClient:       chatClient,
-		fileProcessorURL: fileProcessorURL,
-		aiLimitChecker:   aiLimitChecker,
+		chatSessionRepo:      chatSessionRepo,
+		chatMessageRepo:      chatMessageRepo,
+		vectorRepo:           vectorRepo,
+		embeddingClient:      embeddingClient,
+		chatClient:           chatClient,
+		fileProcessorURL:     fileProcessorURL,
+		aiLimitChecker:       aiLimitChecker,
+		learningPulseClient:  learningPulseClient,
+		behaviorDataProvider: behaviorDataProvider,
 	}
 }
 
@@ -188,6 +208,9 @@ func (s *Service) Chat(ctx context.Context, input ChatInput) (*ChatOutput, error
 	if input.PodID != nil && input.MaterialID == nil {
 		mode = domain.ChatModePod
 	}
+
+	// Fetch user's learning persona for personalized responses
+	persona := s.fetchUserPersona(ctx, input.UserID)
 
 	// Find or create session
 	var session *domain.ChatSession
@@ -237,8 +260,8 @@ func (s *Service) Chat(ctx context.Context, input ChatInput) (*ChatOutput, error
 		})
 	}
 
-	// Generate response
-	systemPrompt := buildSystemPrompt(mode)
+	// Generate response with personalized system prompt
+	systemPrompt := buildPersonalizedSystemPrompt(mode, persona)
 	response, err := s.chatClient.GenerateResponse(ctx, systemPrompt, input.Message, contextTexts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate response: %w", err)
@@ -269,6 +292,35 @@ func (s *Service) Chat(ctx context.Context, input ChatInput) (*ChatOutput, error
 		Message: assistantMessage,
 		Session: session,
 	}, nil
+}
+
+// fetchUserPersona retrieves the user's learning persona from Learning Pulse.
+// Returns PersonaUnknown if the service is unavailable or data is missing.
+func (s *Service) fetchUserPersona(ctx context.Context, userID uuid.UUID) learningpulse.Persona {
+	if s.learningPulseClient == nil || s.behaviorDataProvider == nil {
+		return learningpulse.PersonaUnknown
+	}
+
+	// Fetch behavior data
+	behaviorData, err := s.behaviorDataProvider.GetBehaviorData(ctx, userID)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("failed to fetch behavior data for persona")
+		return learningpulse.PersonaUnknown
+	}
+
+	// Get persona from Learning Pulse
+	persona, err := s.learningPulseClient.GetPersona(ctx, userID.String(), behaviorData)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("failed to fetch persona from learning pulse")
+		return learningpulse.PersonaUnknown
+	}
+
+	log.Debug().
+		Str("user_id", userID.String()).
+		Str("persona", string(persona)).
+		Msg("fetched user persona for personalized chat")
+
+	return persona
 }
 
 func (s *Service) GetChatHistory(ctx context.Context, userID uuid.UUID, materialID *uuid.UUID, podID *uuid.UUID, limit, offset int) ([]domain.ChatMessage, int, error) {
@@ -446,19 +498,6 @@ func isValidQuestionType(questionType string) bool {
 	default:
 		return false
 	}
-}
-
-func buildSystemPrompt(mode domain.ChatMode) string {
-	if mode == domain.ChatModePod {
-		return `You are a helpful AI assistant for a learning platform. You help students understand learning materials in a Knowledge Pod.
-Answer questions based ONLY on the provided context from multiple materials. If the answer is not in the context, say so.
-When citing information, mention which material it comes from.
-Be concise, accurate, and helpful.`
-	}
-
-	return `You are a helpful AI assistant for a learning platform. You help students understand a specific learning material.
-Answer questions based ONLY on the provided context. If the answer is not in the context, say so.
-Be concise, accurate, and helpful.`
 }
 
 func truncateText(text string, maxLen int) string {
