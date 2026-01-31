@@ -193,6 +193,10 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-sendgrid}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -229,6 +233,10 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NATS_URL: nats://nats:4222
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-sendgrid}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -270,6 +278,10 @@ services:
       MINIO_USE_SSL: "false"
       MINIO_BUCKET_MATERIALS: materials
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-sendgrid}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -314,6 +326,10 @@ services:
       QDRANT_PORT: 6334
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-sendgrid}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -363,6 +379,10 @@ services:
       GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
       FILE_PROCESSOR_URL: http://file-processor:8086
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-sendgrid}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -405,6 +425,7 @@ services:
       EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
