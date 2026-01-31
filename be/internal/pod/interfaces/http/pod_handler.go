@@ -807,7 +807,7 @@ func (h *PodHandler) GetUserCollaborativePods(c *fiber.Ctx) error {
 	}
 
 	requestID := middleware.GetRequestID(c)
-	return c.JSON(response.Paginated(requestID, result.Pods, result.Total, result.Page, result.PerPage))
+	return c.JSON(response.List(requestID, result.Pods, result.Page, result.PerPage, result.Total))
 }
 
 // GetPodActivity handles GET /api/v1/pods/:id/activity
