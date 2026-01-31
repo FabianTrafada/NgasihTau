@@ -576,3 +576,61 @@ type AIUsageInfo struct {
 	Tier        Tier      `json:"tier"`
 	IsUnlimited bool      `json:"is_unlimited"`
 }
+
+// ChatBehavior represents user's chat interaction behavior.
+type ChatBehavior struct {
+	TotalMessages               int     `json:"total_messages"`
+	UserMessages                int     `json:"user_messages"`
+	AssistantMessages           int     `json:"assistant_messages"`
+	QuestionCount               int     `json:"question_count"`
+	AvgMessageLength            float64 `json:"avg_message_length"`
+	ThumbsUpCount               int     `json:"thumbs_up_count"`
+	ThumbsDownCount             int     `json:"thumbs_down_count"`
+	UniqueSessions              int     `json:"unique_sessions"`
+	TotalSessionDurationMinutes float64 `json:"total_session_duration_minutes"`
+}
+
+// MaterialBehavior represents user's material interaction behavior.
+type MaterialBehavior struct {
+	TotalTimeSpentSeconds int     `json:"total_time_spent_seconds"`
+	TotalViews            int     `json:"total_views"`
+	UniqueMaterialsViewed int     `json:"unique_materials_viewed"`
+	BookmarkCount         int     `json:"bookmark_count"`
+	AvgScrollDepth        float64 `json:"avg_scroll_depth"`
+}
+
+// ActivityBehavior represents user's activity behavior.
+type ActivityBehavior struct {
+	ActiveDays            int     `json:"active_days"`
+	TotalSessions         int     `json:"total_sessions"`
+	PeakHour              int     `json:"peak_hour"`
+	LateNightSessions     int     `json:"late_night_sessions"`
+	WeekendSessions       int     `json:"weekend_sessions"`
+	TotalWeekdaySessions  int     `json:"total_weekday_sessions"`
+	DailyActivityVariance float64 `json:"daily_activity_variance"`
+}
+
+// QuizBehavior represents user's quiz behavior.
+type QuizBehavior struct {
+	QuizAttempts   int     `json:"quiz_attempts"`
+	AvgScore       float64 `json:"avg_score"`
+	CompletionRate float64 `json:"completion_rate"`
+}
+
+// BehaviorData contains all user behavior metrics.
+type BehaviorData struct {
+	UserID             string           `json:"user_id"`
+	AnalysisPeriodDays int              `json:"analysis_period_days"`
+	Chat               ChatBehavior     `json:"chat"`
+	Material           MaterialBehavior `json:"material"`
+	Activity           ActivityBehavior `json:"activity"`
+	Quiz               QuizBehavior     `json:"quiz"`
+}
+
+// UserBehavior represents the full user behavior response.
+type UserBehavior struct {
+	UserID          string       `json:"user_id"`
+	BehaviorData    BehaviorData `json:"behavior_data"`
+	QuizScore       float64      `json:"quiz_score"`
+	PreviousPersona string       `json:"previous_persona"`
+}

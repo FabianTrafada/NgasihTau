@@ -98,6 +98,8 @@ func main() {
 type App struct {
 	httpServer    *fiber.App
 	db            *pgxpool.Pool
+	aiDB          *pgxpool.Pool
+	podDB         *pgxpool.Pool
 	natsClient    *natspkg.Client
 	healthChecker *health.Checker
 }
@@ -124,7 +126,51 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	if err := db.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	log.Info().Msg("connected to database")
+	log.Info().Msg("connected to user database")
+
+	// Initialize optional database connections for behavior tracking
+	var aiDB *pgxpool.Pool
+	var podDB *pgxpool.Pool
+
+	// Try to connect to AI database (optional - for chat behavior data)
+	if cfg.AIDB.Host != "" {
+		aiDBConfig, err := pgxpool.ParseConfig(cfg.AIDB.DSN())
+		if err == nil {
+			aiDBConfig.MaxConns = 5
+			aiDBConfig.MinConns = 1
+			aiDB, err = pgxpool.NewWithConfig(ctx, aiDBConfig)
+			if err != nil {
+				log.Warn().Err(err).Msg("failed to connect to AI database - chat behavior data will be unavailable")
+			} else {
+				if err := aiDB.Ping(ctx); err != nil {
+					log.Warn().Err(err).Msg("failed to ping AI database - chat behavior data will be unavailable")
+					aiDB = nil
+				} else {
+					log.Info().Msg("connected to AI database for behavior tracking")
+				}
+			}
+		}
+	}
+
+	// Try to connect to Pod database (optional - for material behavior data)
+	if cfg.PodDB.Host != "" {
+		podDBConfig, err := pgxpool.ParseConfig(cfg.PodDB.DSN())
+		if err == nil {
+			podDBConfig.MaxConns = 5
+			podDBConfig.MinConns = 1
+			podDB, err = pgxpool.NewWithConfig(ctx, podDBConfig)
+			if err != nil {
+				log.Warn().Err(err).Msg("failed to connect to Pod database - material behavior data will be unavailable")
+			} else {
+				if err := podDB.Ping(ctx); err != nil {
+					log.Warn().Err(err).Msg("failed to ping Pod database - material behavior data will be unavailable")
+					podDB = nil
+				} else {
+					log.Info().Msg("connected to Pod database for behavior tracking")
+				}
+			}
+		}
+	}
 
 	// Initialize JWT manager
 	jwtManager := jwt.NewManager(jwt.Config{
@@ -219,8 +265,12 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		cfg.Storage,
 	)
 
+	// Initialize behavior repository and service
+	behaviorRepo := postgres.NewBehaviorRepository(db, aiDB, podDB)
+	behaviorService := application.NewBehaviorService(behaviorRepo)
+
 	// Initialize HTTP handlers
-	handler := userhttp.NewHandlerWithStorage(userService, interestService, storageService, jwtManager)
+	handler := userhttp.NewHandlerWithBehavior(userService, interestService, storageService, behaviorService, jwtManager)
 
 	// Initialize Fiber app
 	fiberApp := fiber.New(fiber.Config{
@@ -275,6 +325,8 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	return &App{
 		httpServer:    fiberApp,
 		db:            db,
+		aiDB:          aiDB,
+		podDB:         podDB,
 		natsClient:    natsClient,
 		healthChecker: healthChecker,
 	}, nil
@@ -304,7 +356,19 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Close database pool
 	if a.db != nil {
 		a.db.Close()
-		log.Info().Msg("database connection closed")
+		log.Info().Msg("user database connection closed")
+	}
+
+	// Close AI database pool
+	if a.aiDB != nil {
+		a.aiDB.Close()
+		log.Info().Msg("AI database connection closed")
+	}
+
+	// Close Pod database pool
+	if a.podDB != nil {
+		a.podDB.Close()
+		log.Info().Msg("Pod database connection closed")
 	}
 
 	return nil

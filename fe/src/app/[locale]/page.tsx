@@ -8,66 +8,32 @@ import { KnowledgePods } from "@/components/landing-page/knowledge-pods";
 import { Testimonials } from "@/components/landing-page/testimonials";
 import { Footer } from "@/components/landing-page/footer";
 import { getUserLearningStatus } from "@/lib/api/user";
-import { useEffect } from "react";
+import { getUserBehavior } from "@/lib/api/behavior";
+import { useEffect, useState } from "react";
 import { UserBehavior } from "@/types/userBehavior";
-import { getCurrentUser } from "@/lib/api/auth";
 
 export default function Home() {
-  const behaviorData: UserBehavior = {
-    user_id: "user-123",
-    behavior_data: {
-      user_id: "user-123",
-      analysis_period_days: 30,
-      chat: {
-        total_messages: 150,
-        user_messages: 80,
-        assistant_messages: 70,
-        question_count: 45,
-        avg_message_length: 120.5,
-        thumbs_up_count: 25,
-        thumbs_down_count: 5,
-        unique_sessions: 20,
-        total_session_duration_minutes: 180.0,
-      },
-      material: {
-        total_time_spent_seconds: 200,
-        total_views: 5,
-        unique_materials_viewed: 12,
-        bookmark_count: 8,
-        avg_scroll_depth: 0.15,
-      },
-      activity: {
-        active_days: 18,
-        total_sessions: 35,
-        peak_hour: 14,
-        late_night_sessions: 3,
-        weekend_sessions: 8,
-        total_weekday_sessions: 27,
-        daily_activity_variance: 2.5,
-      },
-      quiz: {
-        quiz_attempts: 100,
-        avg_score: 18.5,
-        completion_rate: 0.85,
-      },
-    },
-    quiz_score: 18.5,
-    previous_persona: 'false',
-  };
+  const [behaviorData, setBehaviorData] = useState<UserBehavior | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    const fetchUserLearningStatus = async () => {
-      const response = await getUserLearningStatus(behaviorData);
-      console.log(response);
-      return response;
+    const fetchBehaviorData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getUserBehavior();
+        setBehaviorData(data);
+        
+        // Get learning status based on behavior data
+        const learningStatus = await getUserLearningStatus(data);
+        console.log("Learning Status:", learningStatus);
+      } catch (error) {
+        console.error("Error fetching behavior data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    // const fetchCurrentUser = async () => {
-    //     const response = await getCurrentUser();
-    //     console.log("Current User:", response);
-    //     return response;
-    // }
-    fetchUserLearningStatus();
-    // fetchCurrentUser();
+    fetchBehaviorData();
   }, []);
 
   return (

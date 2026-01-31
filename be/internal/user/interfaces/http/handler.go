@@ -77,6 +77,23 @@ func NewHandlerWithAllServices(
 	}
 }
 
+// NewHandlerWithBehavior creates a new Handler with all services including behavior service.
+func NewHandlerWithBehavior(
+	userService application.UserService,
+	interestService application.LearningInterestService,
+	storageService application.StorageService,
+	behaviorService application.BehaviorService,
+	jwtManager *jwt.Manager,
+) *Handler {
+	return &Handler{
+		authHandler:         NewAuthHandler(userService),
+		userHandler:         NewUserHandlerWithBehavior(userService, storageService, behaviorService),
+		interestHandler:     NewInterestHandler(interestService),
+		verificationHandler: NewVerificationHandler(userService),
+		jwtManager:          jwtManager,
+	}
+}
+
 // RegisterRoutes registers all User Service routes on the given Fiber app.
 // Routes are organized by functionality:
 //
@@ -105,6 +122,7 @@ func NewHandlerWithAllServices(
 //   - GET  /api/v1/users/me/storage (get storage usage info)
 //   - PUT  /api/v1/users/me/tier (update user tier)
 //   - GET  /api/v1/users/me/ai-usage (get AI usage info)
+//   - GET  /api/v1/users/me/behavior (get user behavior data)
 //
 // User Public Profile (public with optional auth):
 //   - GET  /api/v1/users/:id
@@ -178,6 +196,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected.Get("/me/storage", h.userHandler.GetStorageInfo)
 	protected.Put("/me/tier", h.userHandler.UpdateTier)
 	protected.Get("/me/ai-usage", h.userHandler.GetAIUsageInfo)
+	protected.Get("/me/behavior", h.userHandler.GetUserBehavior)
 
 	// Public user profile with optional auth (to check if following)
 	users.Get("/:id", middleware.OptionalAuth(h.jwtManager), h.userHandler.GetUser)
