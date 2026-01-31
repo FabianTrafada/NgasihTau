@@ -28,12 +28,19 @@ declare -A SERVICE_CONFIGS=(
 )
 
 # Migration folder mappings (database -> migration folder name)
+# Note: Multiple folders can target the same database (e.g., material + offline)
 declare -A MIGRATION_FOLDERS=(
     ["ngasihtau_users"]="user"
     ["ngasihtau_pods"]="pod"
     ["ngasihtau_materials"]="material"
     ["ngasihtau_ai"]="ai"
     ["ngasihtau_notifications"]="notification"
+)
+
+# Additional migration folders for the same database
+# Format: database -> space-separated list of additional folders
+declare -A ADDITIONAL_MIGRATIONS=(
+    ["ngasihtau_materials"]="offline"
 )
 
 # Base path for migrations (relative to where script runs or absolute)
@@ -230,6 +237,14 @@ log_info "Running database migrations..."
 for database in "${!MIGRATION_FOLDERS[@]}"; do
     migration_folder="${MIGRATION_FOLDERS[$database]}"
     run_migrations "$database" "$migration_folder"
+done
+
+# Run additional migrations (e.g., offline module on materials database)
+log_info "Running additional migrations..."
+for database in "${!ADDITIONAL_MIGRATIONS[@]}"; do
+    for migration_folder in ${ADDITIONAL_MIGRATIONS[$database]}; do
+        run_migrations "$database" "$migration_folder"
+    done
 done
 
 log_info "Database initialization completed successfully!"
