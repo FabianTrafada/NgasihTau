@@ -256,7 +256,40 @@
         "type": "Tipe Materi",
         "file": "File",
         "link": "Tautan",
-        "video": "Video"
+        "video": "Video",
+        "exportChat": {
+            "title": "Ekspor Riwayat Chat",
+            "description": "Pilih format untuk mengekspor percakapan Anda dengan asisten AI.",
+            "formatLabel": "Format Ekspor:",
+            "pdfFormat": "Dokumen PDF",
+            "markdownFormat": "Markdown (.md)",
+            "recommended": "Direkomendasikan",
+            "plainText": "Teks biasa",
+            "exporting": "Mengekspor...",
+            "export": "Ekspor",
+            "noHistory": "Tidak ada riwayat chat untuk diekspor"
+        },
+        "premiumFeature": {
+            "title": "Fitur Premium",
+            "subtitle": "Upgrade untuk membuka",
+            "chatExportPremium": "Ekspor chat adalah fitur premium!",
+            "upgradeDescription": "Upgrade ke Premium atau Pro untuk mengekspor percakapan chat Anda dan menyimpannya untuk referensi di masa mendatang.",
+            "benefitsTitle": "Keuntungan Premium:",
+            "benefit1": "Ekspor riwayat chat (PDF & Markdown)",
+            "benefit2": "100 pesan AI per hari",
+            "benefit3": "Ruang penyimpanan 10 GB",
+            "maybeLater": "Mungkin Nanti",
+            "upgradeNow": "Upgrade Sekarang"
+        },
+        "chatWidget": {
+            "title": "Chat dengan AI",
+            "openChat": "Buka Chat",
+            "exportChat": "Ekspor Chat",
+            "startConversation": "Mulai percakapan!",
+            "askQuestion": "Tanyakan pertanyaan tentang materi ini",
+            "suggestedQuestions": "Pertanyaan yang Disarankan",
+            "placeholder": "Ketik pertanyaan Anda..."
+        }
     },
     "onboarding": {
         "welcome": "Selamat Datang di NgasihTau",
@@ -347,6 +380,12 @@
         "retry": "Coba Lagi",
         "remove": "Hapus"
     },
+    "pods": {
+        "title": "Pod Pengetahuan",
+        "description": "Cari dan kelola pod pengetahuan yang dibuat untuk membantu proses pembelajaran Anda.",
+        "newest": "Terbaru",
+        "create": "Buat Pod Baru"
+    },
     "createPod": {
         "title": "Pod Pengetahuan",
         "general": "Umum",
@@ -356,8 +395,20 @@
         "stepAssets": "ASET",
         "stepDeploy": "DEPLOY"
     },
-    "DetailPod":{
-       "title": "Detail Pod"
-
+    "DetailPod": {
+        "title": "Detail Pod"
+    },
+    "exportChat": {
+        "exportChat": "Ekspor riwayat Obrolan",
+        "exportChatDescription": "Pilih format untuk mengekspor percakapan obrolan Anda dengan asisten AI.",
+        "header": "Tingkatkan ke Premium atau Pro untuk mengekspor percakapan obrolan Anda dan menyimpannya untuk referensi di masa mendatang.",
+        "benefits": "Manfaat Ekspor Obrolan:",
+        "benefit1": "Simpan percakapan penting untuk referensi di masa mendatang.",
+        "benefit2": "100 GB AI pesan perhari ",
+        "benefit3": "Akses offline ke riwayat obrolan Anda.",
+        "exporting": "Mengekspor...",
+        "exportSuccess": "Ekspor Berhasil!",
+        "download": "Unduh Obrolan",
+        "exportError": "Gagal mengekspor obrolan. Silakan coba lagi."
     }
 }

@@ -2,11 +2,12 @@
 import { useAuth } from '@/lib/auth-context';
 import { useTranslations } from 'next-intl';
 
-import { BookText, LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
+import { Bell, BookText, LogOut, Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
-import { shouldShowSidebar } from '@/lib/constants/isShowed';
+import { useEffect, useState } from 'react';
+import { getNotifications } from '@/lib/api/notification';
 
 interface TopbarProps {
     onRightMenuClick?: () => void; // New prop for right sidebar
@@ -14,6 +15,11 @@ interface TopbarProps {
 }
 
 const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
+
+    const [fetchNotifications, setFetchNotifications] = useState<Notification[]>([]);
+
+
+
     const { user, logout } = useAuth();
     const router = useRouter();
     const t = useTranslations('dashboard');
@@ -29,8 +35,22 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
         } catch (error) {
             console.error('Logout failed:', error);
             router.push('/');
-        }
+        } ``
     }
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const data = await getNotifications(20, 0);
+                setFetchNotifications(data);
+            } catch (error) {
+                console.error("Failed to fetch notifications:", error);
+            }
+        };
+
+        fetchNotifications();
+    }, []);
+
 
     return (
         <header className='h-12 lg:h-16 px-4 lg:px-8 flex  items-center justify-between bg-[#fffbf7] sticky top-0 z-10 border-b border-black' suppressHydrationWarning>
@@ -55,18 +75,16 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
                     onClick={onRightMenuClick}
                     className='p-2 text-gray-600 hover:text-[#FF8811] xl:hidden'
                 >
-                    <Users className="w-6 h-6 lg:w-8 md:h-8 font-bold text-black" />
+                    <Users className="w-5 h-5 lg:w-6 lg:h-6 font-bold text-black" />
                 </button>
 
 
-
-
                 {/* TODO Hackaton 50% */}
-                {/* <DropdownMenu>
+                <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors hidden sm:block">
+                        <button className="relative p-2 text-black hover:text-[#FF8811] transition-colors hidden sm:block">
                             <Bell className="w-5 h-5 lg:w-6 lg:h-6" />
-                            <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FFFBF7]"></span>
+                            <span className="absolute top-1.5 right-2 w-2 h-2 bg-[#ff8811] rounded-full border-2 border-[#FFFBF7]"></span>
                         </button>
                     </DropdownMenuTrigger>
 
@@ -77,19 +95,18 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
                                 <span className="text-xs text-[#FF8811] font-medium cursor-pointer hover:underline">Mark all as read</span>
                             </div>
                         </div>
-                        
+
                         <div className="max-h-[300px] overflow-y-auto">
-                    
-                            <DropdownMenuItem className="p-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 border-b border-gray-100 last:border-0 outline-none">
-                                <div className="flex gap-3">
-                                    <div className="mt-1 shrink-0 w-2 h-2 rounded-full bg-[#FF8811]"></div>
-                                    <div className="flex-1 space-y-1">
-                                        <p className="text-sm font-medium text-[#2B2D42] leading-none">New Team Member</p>
-                                        <p className="text-xs text-gray-500">Alex joined the design team.</p>
-                                        <p className="text-[10px] text-gray-400">2 min ago</p>
+                                <DropdownMenuItem className="p-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 border-b border-gray-100 last:border-0 outline-none">
+                                    <div className="flex gap-3">
+                                        <div className="mt-1 shrink-0 w-2 h-2 rounded-full bg-[#FF8811]">Admin request collaboration</div>
+                                        <div className="flex-1 space-y-1">
+                                            <p className="text-sm font-medium text-[#2B2D42] leading-none">You can accept or deny</p>
+                                            <p className="text-xs text-gray-500">Keren</p>
+                                            <p className="text-[10px] text-gray-400"></p>
+                                        </div>
                                     </div>
-                                </div>
-                            </DropdownMenuItem>
+                                </DropdownMenuItem>
 
                             <DropdownMenuItem className="p-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 border-b border-gray-100 last:border-0 outline-none">
                                 <div className="flex gap-3">
@@ -120,9 +137,8 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
                             </Link>
                         </div>
                     </DropdownMenuContent>
-                </DropdownMenu> */}
-
-
+                </DropdownMenu>
+                
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
@@ -158,14 +174,14 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <button disabled={true} className='flex cursor-not-allowed'>
-                                        <User className='size-5 mr-2 text-gray-300' />
-                                        <span className='text-md text-gray-300'>{tCommon('profile')}</span>
+                                    <User className='size-5 mr-2 text-gray-300' />
+                                    <span className='text-md text-gray-300'>{tCommon('profile')}</span>
                                 </button>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <button disabled={true} className='flex cursor-not-allowed'>
-                                        <Settings className='size-5 mr-2 text-gray-300' />
-                                        <span className='text-md text-gray-300'>{tSidebar('settings')}</span>
+                                    <Settings className='size-5 mr-2 text-gray-300' />
+                                    <span className='text-md text-gray-300'>{tSidebar('settings')}</span>
                                 </button>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -182,5 +198,4 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
         </header>
     )
 }
-
 export default Topbar

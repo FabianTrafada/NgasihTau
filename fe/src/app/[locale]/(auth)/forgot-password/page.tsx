@@ -93,8 +93,8 @@ export default function ForgotPasswordPage() {
                             </Link>
                         </p>
                     </div>
-                </
-        </PublicOnlyRoute>div >
-        </div >
+                </div>
+            </div>
+        </PublicOnlyRoute>
     );
 }

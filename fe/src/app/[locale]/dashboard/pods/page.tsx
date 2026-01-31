@@ -2,9 +2,10 @@
 
 import FileListItem from '@/components/knowledge-pod/FileListItem';
 import { KnowledgePod } from '@/types/knowledgePods';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/auth';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function MyKnowledgePage() {
   return (
@@ -50,6 +51,12 @@ const MyKnowledgePageContent: React.FC = () => {
     }
   ]);
 
+  useEffect(() => {
+    
+  })
+
+  const T = useTranslations("pods");
+
   const handleToggleLike = (id: string) => {
     setPods(prev => prev.map(pod =>
       pod.id === id ? { ...pod, isLiked: !pod.isLiked } : pod
@@ -62,19 +69,19 @@ const MyKnowledgePageContent: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-black tracking-tight mb-1">
-            My Knowledge Pods
+            {T('title')}
           </h1>
           <p className="text-zinc-500 font-medium">
-            Manage and explore your personal collection of knowledge repositories.
+            {T('description')}
           </p>
         </div>
         <div className="flex gap-2 min-w-max">
           <button className="px-4 py-2  border-2 text-base border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF8811] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:text-white cursor-pointer hover:translate-x-[2px] hover:translate-y-[2px] transition-all group leading-none">
-            Newest
+            {T('newest')}
           </button>
           <Link href={'/dashboard/create'}>
             <button className="px-4 py-2  border-2 border-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] hover:shadow-[2px_2px_0px_0px_#2B2D42] hover:translate-x-[2px] cursor-pointer hover:bg-[#FF8811] hover:text-white hover:translate-y-[2px] transition-all group leading-none">
-              Create Pods
+              {T('create')}
             </button>
           </Link>
         </div>

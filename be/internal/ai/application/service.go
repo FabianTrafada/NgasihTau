@@ -303,7 +303,16 @@ func (s *Service) SubmitFeedback(ctx context.Context, messageID uuid.UUID, feedb
 }
 
 func (s *Service) GetSuggestions(ctx context.Context, input GetSuggestionsInput) ([]domain.SuggestedQuestion, error) {
-	chunks, err := s.vectorRepo.Search(ctx, nil, &input.MaterialID, nil, 3)
+	// Generate a dummy embedding for "overview" to get relevant chunks
+	// This is better than passing nil which causes dimension mismatch errors
+	dummyQuery := "What is this material about? Give me an overview of the main topics."
+	queryEmbedding, err := s.embeddingClient.GenerateEmbedding(ctx, dummyQuery)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to generate embedding for suggestions")
+		return defaultSuggestions(), nil
+	}
+
+	chunks, err := s.vectorRepo.Search(ctx, queryEmbedding, &input.MaterialID, nil, 3)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to get chunks for suggestions")
 		return defaultSuggestions(), nil
@@ -410,7 +419,14 @@ func (s *Service) GenerateQuestions(ctx context.Context, input GenerateQuestions
 
 	// Get material content from vector store
 	// We retrieve more chunks to have enough context for question generation
-	chunks, err := s.vectorRepo.Search(ctx, nil, &input.MaterialID, nil, 10)
+	// Generate a dummy embedding to retrieve chunks
+	dummyQuery := "Provide a comprehensive overview of all topics covered in this material."
+	queryEmbedding, err := s.embeddingClient.GenerateEmbedding(ctx, dummyQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate embedding: %w", err)
+	}
+
+	chunks, err := s.vectorRepo.Search(ctx, queryEmbedding, &input.MaterialID, nil, 10)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get material content: %w", err)
 	}

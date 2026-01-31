@@ -317,3 +317,35 @@ export async function deleteMaterial(materialId: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Export chat history for material
+ * Endpoint: POST /api/v1/materials/{id}/chat/export
+ * Premium feature only
+ */
+export async function exportMaterialChat(
+  materialId: string,
+  format: "pdf" | "markdown" = "pdf"
+): Promise<Blob> {
+  try {
+    const token = localStorage.getItem("access_token");
+    const response = await apiClient.post(
+      `/api/v1/materials/${materialId}/chat/export`,
+      { format },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "blob",
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    // Check if it's a premium feature error
+    if (error.response?.status === 403) {
+      throw new Error("PREMIUM_REQUIRED");
+    }
+    console.error("Error exporting chat:", error);
+    throw error;
+  }
+}

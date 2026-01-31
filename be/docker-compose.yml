@@ -129,7 +129,7 @@ services:
     restart: unless-stopped
     environment:
       MEILI_ENV: development
-      MEILI_MASTER_KEY: f27ca81ae97cfa6471afc118fbb812dd3bb24c9c
+      MEILI_MASTER_KEY: 1d268fb902493ed635d445eeeabd3a2e06f503bdbc9b3f8ea08395a5ae83b348
       MEILI_NO_ANALYTICS: true
     volumes:
       - meilisearch_data:/meili_data

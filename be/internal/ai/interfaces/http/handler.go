@@ -295,7 +295,15 @@ func (h *Handler) GetSuggestions(c *fiber.Ctx) error {
 		return h.errorResponse(c, fiber.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 	}
 
-	return h.successResponse(c, fiber.StatusOK, suggestions)
+	// Transform to string array for response
+	questions := make([]string, len(suggestions))
+	for i, s := range suggestions {
+		questions[i] = s.Question
+	}
+
+	return h.successResponse(c, fiber.StatusOK, fiber.Map{
+		"questions": questions,
+	})
 }
 
 type FeedbackRequest struct {

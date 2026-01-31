@@ -268,7 +268,40 @@
         "type": "Material Type",
         "file": "File",
         "link": "Link",
-        "video": "Video"
+        "video": "Video",
+        "exportChat": {
+            "title": "Export Chat History",
+            "description": "Choose a format to export your chat conversation with the AI assistant.",
+            "formatLabel": "Export Format:",
+            "pdfFormat": "PDF Document",
+            "markdownFormat": "Markdown (.md)",
+            "recommended": "Recommended",
+            "plainText": "Plain text",
+            "exporting": "Exporting...",
+            "export": "Export",
+            "noHistory": "No chat history to export"
+        },
+        "premiumFeature": {
+            "title": "Premium Feature",
+            "subtitle": "Upgrade to unlock",
+            "chatExportPremium": "Chat export is a premium feature!",
+            "upgradeDescription": "Upgrade to Premium or Pro to export your chat conversations and keep them for future reference.",
+            "benefitsTitle": "Premium Benefits:",
+            "benefit1": "Export chat history (PDF & Markdown)",
+            "benefit2": "100 AI messages per day",
+            "benefit3": "10 GB storage space",
+            "maybeLater": "Maybe Later",
+            "upgradeNow": "Upgrade Now"
+        },
+        "chatWidget": {
+            "title": "Chat with AI",
+            "openChat": "Open Chat",
+            "exportChat": "Export Chat",
+            "startConversation": "Start a conversation!",
+            "askQuestion": "Ask a question about this material",
+            "suggestedQuestions": "Suggested Questions",
+            "placeholder": "Type your question..."
+        }
     },
     "onboarding": {
         "welcome": "Welcome to NgasihTau",
@@ -359,6 +392,12 @@
         "retry": "Retry",
         "remove": "Remove"
     },
+    "pods": {
+        "title": "Knowledge Pods",
+        "description": "Search and manage knowledge pods created to assist your learning process.",
+        "newest": "Newest",
+        "create": "Create New Pod"
+    },
     "createPod": {
         "title": "Knowledge Pods",
         "general": "General",
@@ -367,5 +406,18 @@
         "stepCore": "CORE",
         "stepAssets": "ASSETS",
         "stepDeploy": "DEPLOY"
+    },
+    "exportChat": {
+        "exportChat": "Export Chat History",
+        "exportChatDescription": "Choose a format to export your chat conversation with the AI assistant.",
+        "header": "Tingkatkan ke Premium atau Pro untuk mengekspor percakapan obrolan Anda dan menyimpannya untuk referensi di masa mendatang.",
+        "benefits": "Manfaat Ekspor Obrolan:",
+        "benefit1": "Simpan percakapan penting untuk referensi di masa mendatang.",
+        "benefit2": "100 GB AI pesan perhari ",
+        "benefit3": "Akses offline ke riwayat obrolan Anda.",
+        "exporting": "Mengekspor...",
+        "exportSuccess": "Ekspor Berhasil!",
+        "download": "Unduh Obrolan",
+        "exportError": "Gagal mengekspor obrolan. Silakan coba lagi."
     }
 }

@@ -40,7 +40,6 @@ function DashboardContent() {
     const { user } = useAuth();
     const t = useTranslations('dashboard');
     const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-
     // Check onboarding status on mount
     useEffect(() => {
         const checkOnboarding = async () => {
