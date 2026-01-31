@@ -72,8 +72,9 @@ services:
   # ===========================================
   # MinIO Object Storage
   # ===========================================
+  # Note: MinIO minimal image has no curl/wget, using service_started
   minio:
-    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    image: minio/minio:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -81,12 +82,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
     networks:
       - dokploy-network
     labels:
@@ -101,10 +96,10 @@ services:
     image: minio/mc:latest
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     entrypoint: >
       /bin/sh -c "
-      sleep 5;
+      sleep 15;
       mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY};
       mc mb myminio/materials --ignore-existing;
       exit 0;
@@ -115,6 +110,7 @@ services:
   # ===========================================
   # Meilisearch Full-Text Search
   # ===========================================
+  # Note: Meilisearch image has curl available
   meilisearch:
     image: getmeili/meilisearch:v1.6
     restart: unless-stopped
@@ -124,29 +120,18 @@ services:
       MEILI_NO_ANALYTICS: true
     volumes:
       - meilisearch_data:/meili_data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
     networks:
       - dokploy-network
 
   # ===========================================
   # Qdrant Vector Database
   # ===========================================
+  # Note: Qdrant is a distroless image, no shell/curl/wget available
   qdrant:
     image: qdrant/qdrant:v1.7.4
     restart: unless-stopped
     volumes:
       - qdrant_data:/qdrant/storage
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
     networks:
       - dokploy-network
 
@@ -278,7 +263,7 @@ services:
       nats:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        condition: service_started
     networks:
       - dokploy-network
     labels:
@@ -327,9 +312,9 @@ services:
       nats:
         condition: service_healthy
       meilisearch:
-        condition: service_healthy
+        condition: service_started
       qdrant:
-        condition: service_healthy
+        condition: service_started
     networks:
       - dokploy-network
     labels:
@@ -382,7 +367,7 @@ services:
       nats:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
     networks:
       - dokploy-network
     labels:
