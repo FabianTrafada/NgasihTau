@@ -2,11 +2,11 @@
 import { useAuth } from '@/lib/auth-context';
 import { useTranslations } from 'next-intl';
 
-import { Bell, BookText, LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
+import { Bell, BookText, LogOut, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
-import { shouldShowSidebar } from '@/lib/constants/isShowed';
+import DashboardSearchBar from './DashboardSearchBar';
 
 interface TopbarProps {
     onRightMenuClick?: () => void; // New prop for right sidebar
@@ -37,15 +37,8 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
             {/* Left Section */}
             <div className='flex items-center gap-4'>
 
-                {/* Searchbar */}
-                <div className='relative w-48 sm:w-64 lg:w-96'>
-                    <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400' />
-                    <input
-                        type="text"
-                        placeholder={t('searchPlaceholder')}
-                        className='w-full h-8 pl-10 pr-4 py-2 lg:py-2.5 border-[#2B2D42] border-2 rounded-none focus:outline-none   focus:shadow-[2px_2px_0px_0px_#FF8811] transition-all text-sm lg:text-base shadow-[4px_4px_0px_0px_#2B2D42]'
-                    />
-                </div>
+                {/* Searchbar - Now with integrated search API */}
+                <DashboardSearchBar className='w-48 sm:w-64 lg:w-96' />
             </div>
 
             {/* Right Actions */}

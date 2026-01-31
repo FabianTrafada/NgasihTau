@@ -304,8 +304,9 @@ export function useOfflineMaterials() {
         // First, get or request license
         let license = state.licenses.find((l) => l.material_id === materialId);
         if (!license || license.status !== "active") {
-          license = await requestLicense(materialId);
-          if (!license) return null;
+          const newLicense = await requestLicense(materialId);
+          if (!newLicense) return null;
+          license = newLicense;
         }
 
         // Download material
