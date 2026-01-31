@@ -50,8 +50,8 @@ func (r *DeviceRepository) Create(ctx context.Context, device *domain.Device) er
 	return nil
 }
 
-// FindByID finds a device by ID.
-func (r *DeviceRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Device, error) {
+// FindById finds a device by ID.
+func (r *DeviceRepository) FindById(ctx context.Context, id uuid.UUID) (*domain.Device, error) {
 	query := `
 		SELECT id, user_id, fingerprint, name, platform, last_used_at, created_at, revoked_at
 		FROM offline_devices

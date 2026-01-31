@@ -1464,6 +1464,526 @@ definitions:
       success:
         type: boolean
     type: object
+  # Offline Module Definitions
+  offline.RegisterDeviceRequest:
+    properties:
+      fingerprint:
+        description: Device fingerprint (32-512 characters)
+        example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        maxLength: 512
+        minLength: 32
+        type: string
+      name:
+        description: Device name
+        example: "My iPhone"
+        maxLength: 255
+        minLength: 1
+        type: string
+      platform:
+        description: Device platform
+        enum:
+        - ios
+        - android
+        - desktop
+        example: "ios"
+        type: string
+    required:
+    - fingerprint
+    - name
+    - platform
+    type: object
+  offline.DeviceResponse:
+    properties:
+      id:
+        description: Device ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        format: uuid
+        type: string
+      user_id:
+        description: User ID
+        example: "550e8400-e29b-41d4-a716-446655440001"
+        format: uuid
+        type: string
+      fingerprint:
+        description: Device fingerprint
+        example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        type: string
+      name:
+        description: Device name
+        example: "My iPhone"
+        type: string
+      platform:
+        description: Device platform
+        example: "ios"
+        type: string
+      status:
+        description: Device status
+        enum:
+        - active
+        - revoked
+        example: "active"
+        type: string
+      last_used_at:
+        description: Last used timestamp
+        example: "2025-01-15T10:30:00Z"
+        format: date-time
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2025-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  offline.IssueLicenseRequest:
+    properties:
+      device_id:
+        description: Device ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        format: uuid
+        type: string
+      fingerprint:
+        description: Device fingerprint (32-512 characters)
+        example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        maxLength: 512
+        minLength: 32
+        type: string
+    required:
+    - device_id
+    - fingerprint
+    type: object
+  offline.ValidateLicenseRequest:
+    properties:
+      fingerprint:
+        description: Device fingerprint (32-512 characters)
+        example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        maxLength: 512
+        minLength: 32
+        type: string
+      nonce:
+        description: License nonce (16-64 characters)
+        example: "abc123def456ghi789"
+        maxLength: 64
+        minLength: 16
+        type: string
+    required:
+    - fingerprint
+    - nonce
+    type: object
+  offline.RenewLicenseRequest:
+    properties:
+      fingerprint:
+        description: Device fingerprint (32-512 characters)
+        example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        maxLength: 512
+        minLength: 32
+        type: string
+    required:
+    - fingerprint
+    type: object
+  offline.LicenseResponse:
+    properties:
+      id:
+        description: License ID
+        example: "550e8400-e29b-41d4-a716-446655440002"
+        format: uuid
+        type: string
+      user_id:
+        description: User ID
+        example: "550e8400-e29b-41d4-a716-446655440001"
+        format: uuid
+        type: string
+      material_id:
+        description: Material ID
+        example: "550e8400-e29b-41d4-a716-446655440003"
+        format: uuid
+        type: string
+      device_id:
+        description: Device ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        format: uuid
+        type: string
+      status:
+        description: License status
+        enum:
+        - active
+        - expired
+        - revoked
+        example: "active"
+        type: string
+      expires_at:
+        description: Expiration timestamp
+        example: "2025-02-15T10:30:00Z"
+        format: date-time
+        type: string
+      offline_grace_period:
+        description: Offline grace period duration
+        example: "72h0m0s"
+        type: string
+      last_validated_at:
+        description: Last validation timestamp
+        example: "2025-01-15T10:30:00Z"
+        format: date-time
+        type: string
+      nonce:
+        description: License nonce for anti-cloning
+        example: "abc123def456ghi789"
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2025-01-15T10:30:00Z"
+        format: date-time
+        type: string
+    type: object
+  offline.ChunkResponse:
+    properties:
+      index:
+        description: Chunk index
+        example: 0
+        type: integer
+      offset:
+        description: Byte offset in file
+        example: 0
+        format: int64
+        type: integer
+      size:
+        description: Chunk size in bytes
+        example: 1048576
+        format: int64
+        type: integer
+    type: object
+  offline.ManifestResponse:
+    properties:
+      material_id:
+        description: Material ID
+        example: "550e8400-e29b-41d4-a716-446655440003"
+        format: uuid
+        type: string
+      license_id:
+        description: License ID
+        example: "550e8400-e29b-41d4-a716-446655440002"
+        format: uuid
+        type: string
+      total_chunks:
+        description: Total number of chunks
+        example: 10
+        type: integer
+      total_size:
+        description: Total file size in bytes
+        example: 10485760
+        format: int64
+        type: integer
+      original_hash:
+        description: SHA256 hash of original file
+        example: "abc123..."
+        type: string
+      encrypted_hash:
+        description: SHA256 hash of encrypted file
+        example: "def456..."
+        type: string
+      chunk_size:
+        description: Size of each chunk in bytes
+        example: 1048576
+        format: int64
+        type: integer
+      chunks:
+        description: List of chunk metadata
+        items:
+          $ref: '#/definitions/offline.ChunkResponse'
+        type: array
+      file_type:
+        description: File type
+        example: "pdf"
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2025-01-15T10:30:00Z"
+        format: date-time
+        type: string
+    type: object
+  offline.DownloadResponse:
+    properties:
+      manifest:
+        $ref: '#/definitions/offline.ManifestResponse'
+      download_url:
+        description: Presigned URL for downloading encrypted file
+        example: "https://minio.example.com/bucket/file?signature=..."
+        type: string
+      expires_at:
+        description: URL expiration timestamp
+        example: "2025-01-15T11:30:00Z"
+        format: date-time
+        type: string
+    type: object
+  offline.JobResponse:
+    properties:
+      id:
+        description: Job ID
+        example: "550e8400-e29b-41d4-a716-446655440004"
+        format: uuid
+        type: string
+      material_id:
+        description: Material ID
+        example: "550e8400-e29b-41d4-a716-446655440003"
+        format: uuid
+        type: string
+      user_id:
+        description: User ID
+        example: "550e8400-e29b-41d4-a716-446655440001"
+        format: uuid
+        type: string
+      device_id:
+        description: Device ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        format: uuid
+        type: string
+      license_id:
+        description: License ID
+        example: "550e8400-e29b-41d4-a716-446655440002"
+        format: uuid
+        type: string
+      priority:
+        description: Job priority (higher = more urgent)
+        example: 5
+        type: integer
+      status:
+        description: Job status
+        enum:
+        - pending
+        - processing
+        - completed
+        - failed
+        example: "completed"
+        type: string
+      error:
+        description: Error message if failed
+        example: "encryption failed"
+        type: string
+      retry_count:
+        description: Number of retry attempts
+        example: 0
+        type: integer
+      created_at:
+        description: Creation timestamp
+        example: "2025-01-15T10:30:00Z"
+        format: date-time
+        type: string
+      started_at:
+        description: Processing start timestamp
+        example: "2025-01-15T10:30:05Z"
+        format: date-time
+        type: string
+      completed_at:
+        description: Completion timestamp
+        example: "2025-01-15T10:31:00Z"
+        format: date-time
+        type: string
+    type: object
+  offline.SyncRequest:
+    properties:
+      device_id:
+        description: Device ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        format: uuid
+        type: string
+      fingerprint:
+        description: Device fingerprint (32-512 characters)
+        example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        maxLength: 512
+        minLength: 32
+        type: string
+      last_sync_at:
+        description: Last sync timestamp
+        example: "2025-01-15T10:00:00Z"
+        type: string
+      pending_changes:
+        description: Pending changes from device (base64 encoded)
+        format: byte
+        type: string
+    required:
+    - device_id
+    - fingerprint
+    type: object
+  offline.LicenseSyncInfo:
+    properties:
+      license_id:
+        description: License ID
+        example: "550e8400-e29b-41d4-a716-446655440002"
+        format: uuid
+        type: string
+      material_id:
+        description: Material ID
+        example: "550e8400-e29b-41d4-a716-446655440003"
+        format: uuid
+        type: string
+      status:
+        description: License status
+        example: "active"
+        type: string
+      expires_at:
+        description: Expiration timestamp
+        example: "2025-02-15T10:30:00Z"
+        format: date-time
+        type: string
+    type: object
+  offline.SyncResponse:
+    properties:
+      device_id:
+        description: Device ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        format: uuid
+        type: string
+      last_sync_at:
+        description: Last sync timestamp
+        example: "2025-01-15T10:30:00Z"
+        format: date-time
+        type: string
+      sync_version:
+        description: Sync version number
+        example: 1
+        type: integer
+      pending_changes:
+        description: Pending changes from server (base64 encoded)
+        format: byte
+        type: string
+      licenses:
+        description: License sync information
+        items:
+          $ref: '#/definitions/offline.LicenseSyncInfo'
+        type: array
+    type: object
+  health.LiveResponse:
+    properties:
+      status:
+        description: Service status
+        example: "ok"
+        type: string
+      service:
+        description: Service name
+        example: "offline-material-service"
+        type: string
+      version:
+        description: Service version
+        example: "1.0.0"
+        type: string
+    type: object
+  health.ReadyResponse:
+    properties:
+      status:
+        description: Overall status
+        enum:
+        - healthy
+        - unhealthy
+        example: "healthy"
+        type: string
+      service:
+        description: Service name
+        example: "offline-material-service"
+        type: string
+    type: object
+  health.DependencyStatus:
+    properties:
+      name:
+        description: Dependency name
+        example: "postgres"
+        type: string
+      status:
+        description: Dependency status
+        enum:
+        - healthy
+        - unhealthy
+        example: "healthy"
+        type: string
+      latency:
+        description: Check latency
+        example: "5ms"
+        type: string
+      error:
+        description: Error message if unhealthy
+        type: string
+    type: object
+  health.HealthResponse:
+    properties:
+      status:
+        description: Overall status
+        enum:
+        - healthy
+        - unhealthy
+        example: "healthy"
+        type: string
+      service:
+        description: Service name
+        example: "offline-material-service"
+        type: string
+      version:
+        description: Service version
+        example: "1.0.0"
+        type: string
+      uptime:
+        description: Service uptime
+        example: "24h30m15s"
+        type: string
+      dependencies:
+        description: Dependency health status
+        items:
+          $ref: '#/definitions/health.DependencyStatus'
+        type: array
+    type: object
+  response.Response-offline_DeviceResponse:
+    properties:
+      data:
+        $ref: '#/definitions/offline.DeviceResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-array_offline_DeviceResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/offline.DeviceResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-offline_LicenseResponse:
+    properties:
+      data:
+        $ref: '#/definitions/offline.LicenseResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-offline_DownloadResponse:
+    properties:
+      data:
+        $ref: '#/definitions/offline.DownloadResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-offline_JobResponse:
+    properties:
+      data:
+        $ref: '#/definitions/offline.JobResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
+  response.Response-offline_SyncResponse:
+    properties:
+      data:
+        $ref: '#/definitions/offline.SyncResponse'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
+    type: object
 host: localhost:8001
 info:
   contact:
@@ -1478,6 +1998,466 @@ info:
   title: NgasihTau API
   version: "1.0"
 paths:
+  # Offline Module - Device Endpoints
+  /offline/devices:
+    post:
+      consumes:
+      - application/json
+      description: Register a new device for offline material access. Maximum 5 devices per user.
+      parameters:
+      - description: Device registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/offline.RegisterDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Device registered successfully
+          schema:
+            $ref: '#/definitions/response.Response-offline_DeviceResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Device limit exceeded (max 5)
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Register a new device
+      tags:
+      - Offline
+    get:
+      consumes:
+      - application/json
+      description: Get all registered devices for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of devices
+          schema:
+            $ref: '#/definitions/response.Response-array_offline_DeviceResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List user's devices
+      tags:
+      - Offline
+  /offline/devices/{device_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a device and revoke all associated licenses
+      parameters:
+      - description: Device ID
+        format: uuid
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device deregistered successfully
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Device not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deregister a device
+      tags:
+      - Offline
+  # Offline Module - License Endpoints
+  /offline/materials/{material_id}/license:
+    post:
+      consumes:
+      - application/json
+      description: Issue a new license for offline access to a material on a specific device
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: material_id
+        required: true
+        type: string
+      - description: License issuance data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/offline.IssueLicenseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: License issued successfully
+          schema:
+            $ref: '#/definitions/response.Response-offline_LicenseResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied to material
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Material or device not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Issue a license for offline access
+      tags:
+      - Offline
+  /offline/licenses/{license_id}/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate a license for offline access, updating last validated timestamp
+      parameters:
+      - description: License ID
+        format: uuid
+        in: path
+        name: license_id
+        required: true
+        type: string
+      - description: License validation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/offline.ValidateLicenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: License validated successfully
+          schema:
+            $ref: '#/definitions/response.Response-offline_LicenseResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: License expired or invalid
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: License not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate a license
+      tags:
+      - Offline
+  /offline/licenses/{license_id}/renew:
+    post:
+      consumes:
+      - application/json
+      description: Renew a license before it expires, extending the expiration date
+      parameters:
+      - description: License ID
+        format: uuid
+        in: path
+        name: license_id
+        required: true
+        type: string
+      - description: License renewal data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/offline.RenewLicenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: License renewed successfully
+          schema:
+            $ref: '#/definitions/response.Response-offline_LicenseResponse'
+        "400":
+          description: Invalid license ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: License already expired or revoked
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: License not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Renew a license
+      tags:
+      - Offline
+  # Offline Module - Download Endpoints
+  /offline/materials/{material_id}/download:
+    get:
+      consumes:
+      - application/json
+      description: Download encrypted material with manifest for offline access
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: material_id
+        required: true
+        type: string
+      - description: Device ID
+        format: uuid
+        in: query
+        name: device_id
+        required: true
+        type: string
+      - description: Device fingerprint
+        in: query
+        name: fingerprint
+        required: true
+        type: string
+      - description: License ID
+        format: uuid
+        in: query
+        name: license_id
+        required: true
+        type: string
+      - description: Range header for partial content
+        in: header
+        name: Range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Download manifest and URL
+          schema:
+            $ref: '#/definitions/response.Response-offline_DownloadResponse'
+        "206":
+          description: Partial content (range request)
+          schema:
+            $ref: '#/definitions/response.Response-offline_DownloadResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied or license invalid
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Material or license not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Download encrypted material
+      tags:
+      - Offline
+  # Offline Module - Job Endpoints
+  /offline/jobs/{job_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get the status of an encryption job by ID
+      parameters:
+      - description: Job ID
+        format: uuid
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job details
+          schema:
+            $ref: '#/definitions/response.Response-offline_JobResponse'
+        "400":
+          description: Invalid job ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Job not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get job status
+      tags:
+      - Offline
+  /offline/materials/{material_id}/job:
+    get:
+      consumes:
+      - application/json
+      description: Get the latest encryption job for a material
+      parameters:
+      - description: Material ID
+        format: uuid
+        in: path
+        name: material_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job details
+          schema:
+            $ref: '#/definitions/response.Response-offline_JobResponse'
+        "400":
+          description: Invalid material ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: No job found for material
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get job for material
+      tags:
+      - Offline
+  # Offline Module - Sync Endpoint
+  /offline/sync:
+    post:
+      consumes:
+      - application/json
+      description: Sync offline state between device and server
+      parameters:
+      - description: Sync data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/offline.SyncRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sync result
+          schema:
+            $ref: '#/definitions/response.Response-offline_SyncResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Device validation failed
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Sync offline state
+      tags:
+      - Offline
+  # Offline Module - Health Endpoints
+  /health/live:
+    get:
+      description: Check if the service is alive
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is alive
+          schema:
+            $ref: '#/definitions/health.LiveResponse'
+      summary: Liveness probe
+      tags:
+      - Health
+  /health/ready:
+    get:
+      description: Check if the service is ready to accept traffic
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is ready
+          schema:
+            $ref: '#/definitions/health.ReadyResponse'
+        "503":
+          description: Service is not ready
+          schema:
+            $ref: '#/definitions/health.ReadyResponse'
+      summary: Readiness probe
+      tags:
+      - Health
+  /health/full:
+    get:
+      description: Get detailed health status with all dependencies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Full health status
+          schema:
+            $ref: '#/definitions/health.HealthResponse'
+        "503":
+          description: Service is unhealthy
+          schema:
+            $ref: '#/definitions/health.HealthResponse'
+      summary: Full health check
+      tags:
+      - Health
   /admin/verifications:
     get:
       consumes:

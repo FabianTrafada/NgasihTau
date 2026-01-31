@@ -42,6 +42,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	ai := api.Group("/ai")
 	ai.Post("/materials/:id/generate-questions", h.authMiddleware, h.GenerateQuestions)
+	ai.Get("/behavior", h.authMiddleware, h.GetBehaviorData)
 
 	pods := api.Group("/pods/:id")
 	pods.Post("/chat", h.authMiddleware, h.PodChat)
@@ -333,6 +334,28 @@ func (h *Handler) SubmitFeedback(c *fiber.Ctx) error {
 	}
 
 	return h.successResponse(c, fiber.StatusOK, fiber.Map{"message": "Feedback submitted"})
+}
+
+// GetBehaviorData retrieves user behavior data for persona prediction.
+// @Summary Get user behavior data
+// @Description Get aggregated behavior data for the authenticated user
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} docs.SuccessResponse "User behavior data"
+// @Failure 401 {object} docs.ErrorResponse "Authentication required"
+// @Failure 500 {object} docs.ErrorResponse "Internal error"
+// @Router /ai/behavior [get]
+func (h *Handler) GetBehaviorData(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uuid.UUID)
+
+	behaviorData, err := h.service.GetBehaviorData(c.Context(), userID)
+	if err != nil {
+		return h.errorResponse(c, fiber.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+	}
+
+	return h.successResponse(c, fiber.StatusOK, behaviorData)
 }
 
 func (h *Handler) authMiddleware(c *fiber.Ctx) error {

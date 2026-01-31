@@ -343,6 +343,19 @@ http:
       service: ai-service
       priority: 95
 
+    # AI behavior data endpoint
+    ai-service-behavior:
+      rule: "Path(`/api/v1/ai/behavior`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: ai-service
+      priority: 100
+
     # ===========================================
     # Notification Service Routes (Requirement 10)
     # ===========================================
@@ -371,6 +384,74 @@ http:
         - rate-limit-general
       service: file-processor
       priority: 90
+
+    # ===========================================
+    # Offline Material Service Routes
+    # ===========================================
+    # Offline device management
+    offline-service-devices:
+      rule: "PathPrefix(`/api/v1/offline/devices`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 100
+
+    # Offline license management
+    offline-service-licenses:
+      rule: "PathPrefix(`/api/v1/offline/licenses`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 100
+
+    # Offline material operations (license issuance, download)
+    offline-service-materials:
+      rule: "PathRegexp(`/api/v1/offline/materials/[^/]+/(license|download|job)`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 110
+
+    # Offline job status
+    offline-service-jobs:
+      rule: "PathPrefix(`/api/v1/offline/jobs`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 100
+
+    # Offline sync endpoint
+    offline-service-sync:
+      rule: "Path(`/api/v1/offline/sync`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 100
 
     # ===========================================
     # API Documentation Routes
