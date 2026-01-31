@@ -68,3 +68,26 @@ type DeviceRateLimitRepository interface {
 	ClearBlock(ctx context.Context, deviceID uuid.UUID) error
 	Delete(ctx context.Context, deviceID uuid.UUID) error
 }
+
+type EncryptionJobRepository interface {
+	Create(ctx context.Context, job *EncryptionJob) error
+	FindByID(ctx context.Context, id uuid.UUID) (*EncryptionJob, error)
+	FindByMaterialID(ctx context.Context, materialID uuid.UUID) ([]*EncryptionJob, error)
+	FindByLicenseID(ctx context.Context, licenseID uuid.UUID) (*EncryptionJob, error)
+	FindPending(ctx context.Context, limit int) ([]*EncryptionJob, error)
+	UpdateStatus(ctx context.Context, id uuid.UUID, status JobStatus) error
+	UpdateStarted(ctx context.Context, id uuid.UUID) error
+	UpdateCompleted(ctx context.Context, id uuid.UUID) error
+	UpdateFailed(ctx context.Context, id uuid.UUID, errorMsg string) error
+	IncrementRetryCount(ctx context.Context, id uuid.UUID) error
+	DeleteOldCompleted(ctx context.Context, olderThan time.Time) error
+}
+
+type SyncStateRepository interface {
+	FindByDeviceID(ctx context.Context, deviceID uuid.UUID) (*SyncState, error)
+	Upsert(ctx context.Context, state *SyncState) error
+	UpdateLastSync(ctx context.Context, deviceID uuid.UUID) error
+	UpdatePendingChanges(ctx context.Context, deviceID uuid.UUID, changes []byte) error
+	ClearPendingChanges(ctx context.Context, deviceID uuid.UUID) error
+	Delete(ctx context.Context, deviceID uuid.UUID) error
+}
