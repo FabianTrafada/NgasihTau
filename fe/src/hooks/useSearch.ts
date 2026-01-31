@@ -31,7 +31,7 @@ export function useSearch(debounceMs: number = 300) {
   const [sortBy, setSortBy] = useState<SortBy>("relevance");
   const [verified, setVerified] = useState<boolean | undefined>();
 
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   /**
    * Perform a search with current filters
