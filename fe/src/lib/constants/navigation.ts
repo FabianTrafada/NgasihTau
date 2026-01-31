@@ -28,8 +28,12 @@ export const USER_SIDEBAR_GROUPS: NavGroup[] = [
             {
                 label: "Browse Knowledge",
                 href: "/dashboard/pod",
-                icon: BookOpenText 
-,
+                icon: BookOpenText,
+            },
+            {
+                label: "Downloaded Materials",
+                href: "/dashboard/downloads",
+                icon: File,
             },
         ],
     },
@@ -39,7 +43,7 @@ export const USER_SIDEBAR_GROUPS: NavGroup[] = [
             {
                 label: "Chatbot",
                 href: "/dashboard/chatbot",
-                icon: BotMessageSquare  
+                icon: BotMessageSquare
             },
         ],
     },
@@ -59,7 +63,7 @@ export const TEACHER_SIDEBAR_GROUPS: NavGroup[] = [
                 href: "/teacher/pods",
                 icon: Users,
             },
-          
+
         ],
     },
     {

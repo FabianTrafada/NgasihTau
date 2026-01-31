@@ -19,7 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {t('title')}
           </h1>
         </header>
-
+        
         {/* Step Indicator - Sekarang otomatis sinkron dengan context */}
         <StepIndicator />
 

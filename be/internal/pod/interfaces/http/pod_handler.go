@@ -16,6 +16,31 @@ import (
 	_ "ngasihtau/docs" // Swagger docs
 )
 
+// CollaboratorInviteResponse is the response body for POST /api/v1/pods/:id/collaborators.
+type CollaboratorInviteResponse struct {
+	CreatedAt string `json:"created_at"`
+	ID        string `json:"id"`
+	InvitedBy string `json:"invited_by"`
+	PodID     string `json:"pod_id"`
+	Role      string `json:"role"`
+	Status    string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+	UserID    string `json:"user_id"`
+}
+
+func toCollaboratorInviteResponse(c *domain.Collaborator) CollaboratorInviteResponse {
+	return CollaboratorInviteResponse{
+		CreatedAt: c.CreatedAt.UTC().Format("2006-01-02T15:04:05Z07:00"),
+		ID:        c.ID.String(),
+		InvitedBy: c.InvitedBy.String(),
+		PodID:     c.PodID.String(),
+		Role:      string(c.Role),
+		Status:    string(c.Status),
+		UpdatedAt: c.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z07:00"),
+		UserID:    c.UserID.String(),
+	}
+}
+
 // PodHandler handles HTTP requests for pod operations.
 type PodHandler struct {
 	podService            application.PodService
@@ -520,8 +545,8 @@ func (h *PodHandler) UnfollowPod(c *fiber.Ctx) error {
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "Pod ID" format(uuid)
-// @Param request body application.InviteCollaboratorInput true "Collaborator invitation"
-// @Success 201 {object} response.Response[domain.Collaborator] "Collaborator invited"
+// @Param request body application.InviteCollaboratorInput true "Collaborator invitation (role, user_id)"
+// @Success 201 {object} response.Response[CollaboratorInviteResponse] "Collaborator invited"
 // @Failure 400 {object} errors.ErrorResponse "Invalid request body"
 // @Failure 401 {object} errors.ErrorResponse "Authentication required"
 // @Failure 403 {object} errors.ErrorResponse "Collaborator management access required"
@@ -561,7 +586,7 @@ func (h *PodHandler) InviteCollaborator(c *fiber.Ctx) error {
 	}
 
 	requestID := middleware.GetRequestID(c)
-	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, collaborator))
+	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, toCollaboratorInviteResponse(collaborator)))
 }
 
 // UpdateCollaborator handles PUT /api/v1/pods/:id/collaborators/:userId

@@ -8,6 +8,8 @@ import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, get
 import { getUserDetail } from "@/lib/api/user";
 import { Material, ChatMessage } from "@/types/material";
 import { FormattedMessage } from "@/components/FormattedMessage";
+import VersionHistoryDialog from "@/components/knowledge-pod/VersionHistoryDialog";
+import { useDownloads } from "@/hooks/useDownloads";
 
 interface PageProps {
   params: Promise<{
@@ -20,6 +22,7 @@ interface PageProps {
 export default function MaterialDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { username, pod_id, material_id } = React.use(params);
+  const { addMaterial, isDownloaded } = useDownloads();
 
   // State untuk material data
   const [material, setMaterial] = useState<Material | null>(null);
@@ -35,6 +38,7 @@ export default function MaterialDetailPage({ params }: PageProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -178,15 +182,9 @@ export default function MaterialDetailPage({ params }: PageProps) {
   };
 
   const handleDownload = async () => {
-    try {
-      const downloadUrl = await getMaterialDownloadUrl(material_id);
-      // console.log("Download URL:", downloadUrl);
-      window.open(downloadUrl, "_blank");
-      return;
-    } catch (err) {
-      console.error("Error downloading material:", err);
-      setError("Failed to download material");
-    }
+    if (!material) return;
+    addMaterial(material);
+    alert("Material has been saved to Downloaded Materials");
   };
 
   // Show loading state
@@ -243,10 +241,21 @@ export default function MaterialDetailPage({ params }: PageProps) {
           </div>
           <button
             onClick={handleDownload}
-            className="px-6 py-2 ml-2 max-sm:px-4 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+            disabled={material && isDownloaded(material.id)}
+            className={`px-6 py-2 ml-2 max-sm:px-4 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] transition-all shadow-[2px_2px_0px_0px_#2B2D42] ${material && isDownloaded(material.id)
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-[#FF8811] hover:text-white hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+              }`}
           >
-            Download
+            {material && isDownloaded(material.id) ? "Saved" : "Download"}
           </button>
+          <VersionHistoryDialog
+            materialId={material.id}
+            currentVersion={material.current_version}
+            onRestore={() => {
+              getMaterialDetail(material_id).then(setMaterial);
+            }}
+          />
         </div>
 
         {/* Material Information - Horizontal Columns */}
