@@ -81,8 +81,6 @@ export default function KnowledgePodDetail({ params }: PageProps) {
     }
   };
 
-  
-
   // Handle Edit Material
   const handleEditMaterial = (material: Material) => {
     setEditingMaterial({
@@ -281,9 +279,6 @@ export default function KnowledgePodDetail({ params }: PageProps) {
               </button>
             </Link>
 
-            <button className="w-full md:w-auto rounded-lg border-2 border-black bg-[#FF8811] px-6 py-2 text-sm font-bold text-white shadow-[3px_3px_0_0_black] hover:bg-[#FF8811]  hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
-              Use
-            </button>
           </div>
 
           {/* BOTTOM ROW — COLLAB + SWITCH + SAVE */}

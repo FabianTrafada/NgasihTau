@@ -239,23 +239,25 @@ export default function MaterialDetailPage({ params }: PageProps) {
             </button>
             <h1 className="text-lg sm:text-xl font-bold text-[#2B2D42] truncate">{material.title}</h1>
           </div>
-          <button
-            onClick={handleDownload}
-            disabled={material && isDownloaded(material.id)}
-            className={`px-6 py-2 ml-2 max-sm:px-4 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] transition-all shadow-[2px_2px_0px_0px_#2B2D42] ${material && isDownloaded(material.id)
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              disabled={material && isDownloaded(material.id)}
+              className={`px-6 py-2 max-sm:px-4 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] transition-all shadow-[2px_2px_0px_0px_#2B2D42] ${material && isDownloaded(material.id)
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:bg-[#FF8811] hover:text-white hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
-              }`}
-          >
-            {material && isDownloaded(material.id) ? "Saved" : "Download"}
-          </button>
-          <VersionHistoryDialog
-            materialId={material.id}
-            currentVersion={material.current_version}
-            onRestore={() => {
-              getMaterialDetail(material_id).then(setMaterial);
-            }}
-          />
+                }`}
+            >
+              {material && isDownloaded(material.id) ? "Saved" : "Download"}
+            </button>
+            <VersionHistoryDialog
+              materialId={material.id}
+              currentVersion={material.current_version}
+              onRestore={() => {
+                getMaterialDetail(material_id).then(setMaterial);
+              }}
+            />
+          </div>
         </div>
 
         {/* Material Information - Horizontal Columns */}

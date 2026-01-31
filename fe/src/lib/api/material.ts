@@ -98,7 +98,8 @@ export async function getMaterialChatHistory(materialId: string, limit: number =
 export async function getMaterialPreviewUrl(materialId: string): Promise<string> {
   // MOCK DATA
   if (materialId.startsWith('mat-')) {
-    return ""; // Return empty string for mock to trigger fallback handling in UI
+    // Return local sample PDF for stable preview
+    return "/dummy.pdf";
   }
 
   try {

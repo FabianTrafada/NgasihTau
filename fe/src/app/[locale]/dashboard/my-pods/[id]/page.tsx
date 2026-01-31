@@ -45,7 +45,7 @@ const KnowledgePodDetail = () => {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 p-4 md:p-8">
-            {/* saving button */}
+            {/* Header Section */}
 
             {isSaving && (
                 <div className='items-center'>

@@ -120,7 +120,6 @@ const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({ materialId,
       <SheetContent className="w-[400px] sm:w-[540px] border-l-4 border-black bg-[#FFFBF7] p-0 overflow-hidden flex flex-col z-[100]">
         <SheetHeader className="p-6 border-b-2 border-black bg-white flex flex-row items-center justify-between">
           <SheetTitle className="text-2xl font-black flex items-center gap-2">
-            <History />
             Version History
           </SheetTitle>
           {!isUploading && (
