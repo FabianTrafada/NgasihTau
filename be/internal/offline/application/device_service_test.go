@@ -23,7 +23,7 @@ func (m *MockDeviceRepository) Create(ctx context.Context, device *domain.Device
 	return args.Error(0)
 }
 
-func (m *MockDeviceRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Device, error) {
+func (m *MockDeviceRepository) FindById(ctx context.Context, id uuid.UUID) (*domain.Device, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -298,7 +298,7 @@ func TestDeregisterDevice_Success(t *testing.T) {
 	userID := uuid.New()
 	device := createTestDevice(userID)
 
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 	mockLicenseRepo.On("RevokeByDeviceID", ctx, device.ID).Return(nil)
 	mockCEKRepo.On("DeleteByDeviceID", ctx, device.ID).Return(nil)
 	mockDeviceRepo.On("Revoke", ctx, device.ID).Return(nil)
@@ -321,7 +321,7 @@ func TestDeregisterDevice_NotOwner(t *testing.T) {
 	otherUserID := uuid.New()
 	device := createTestDevice(ownerID)
 
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 
 	err := service.DeregisterDevice(ctx, otherUserID, device.ID)
 
@@ -343,7 +343,7 @@ func TestDeregisterDevice_AlreadyRevoked(t *testing.T) {
 	revokedAt := time.Now()
 	device.RevokedAt = &revokedAt
 
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 
 	err := service.DeregisterDevice(ctx, userID, device.ID)
 

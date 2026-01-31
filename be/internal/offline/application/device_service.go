@@ -127,7 +127,7 @@ func (s *deviceService) ListDevices(ctx context.Context, userID uuid.UUID) ([]*d
 // Implements Property 22: Device Deregistration Effect.
 func (s *deviceService) DeregisterDevice(ctx context.Context, userID, deviceID uuid.UUID) error {
 	// Find the device
-	device, err := s.deviceRepo.FindByID(ctx, deviceID)
+	device, err := s.deviceRepo.FindById(ctx, deviceID)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,128 @@
+{
+  "model_version": "1.0.0",
+  "training_date": "2026-01-31T06:54:21.965852",
+  "accuracy": 0.958,
+  "n_estimators": 100,
+  "n_features": 25,
+  "feature_names": [
+    "chat_message_ratio",
+    "question_frequency",
+    "avg_message_length_norm",
+    "feedback_ratio",
+    "feedback_engagement",
+    "session_count_norm",
+    "messages_per_session",
+    "session_duration_norm",
+    "time_spent_norm",
+    "view_count_norm",
+    "material_diversity",
+    "avg_time_per_view_norm",
+    "bookmark_ratio",
+    "scroll_depth",
+    "material_engagement_score",
+    "active_days_ratio",
+    "session_frequency",
+    "consistency_score",
+    "late_night_ratio",
+    "weekend_ratio",
+    "peak_hour_norm",
+    "engagement_trend_encoded",
+    "quiz_score_norm",
+    "quiz_completion_norm",
+    "quiz_attempt_frequency"
+  ],
+  "persona_names": [
+    "skimmer",
+    "struggler",
+    "anxious",
+    "burnout",
+    "master",
+    "procrastinator",
+    "deep_diver",
+    "social_learner",
+    "perfectionist",
+    "lost"
+  ],
+  "training_samples": 8000,
+  "testing_samples": 2000,
+  "samples_per_persona": 1000,
+  "test_size": 0.2,
+  "seed": 42,
+  "model_path": "C:\\Users\\corne\\Downloads\\Dinacom 2025\\NgasihTau\\be\\file-processor\\learning_pulse\\models\\persona_classifier.joblib",
+  "scaler_path": "C:\\Users\\corne\\Downloads\\Dinacom 2025\\NgasihTau\\be\\file-processor\\learning_pulse\\models\\feature_scaler.joblib",
+  "classification_report": {
+    "skimmer": {
+      "precision": 0.995,
+      "recall": 0.995,
+      "f1-score": 0.995,
+      "support": 200.0
+    },
+    "struggler": {
+      "precision": 0.9384615384615385,
+      "recall": 0.915,
+      "f1-score": 0.9265822784810127,
+      "support": 200.0
+    },
+    "anxious": {
+      "precision": 0.935,
+      "recall": 0.935,
+      "f1-score": 0.935,
+      "support": 200.0
+    },
+    "burnout": {
+      "precision": 0.9463414634146341,
+      "recall": 0.97,
+      "f1-score": 0.9580246913580247,
+      "support": 200.0
+    },
+    "master": {
+      "precision": 0.9507389162561576,
+      "recall": 0.965,
+      "f1-score": 0.9578163771712159,
+      "support": 200.0
+    },
+    "procrastinator": {
+      "precision": 0.9556650246305419,
+      "recall": 0.97,
+      "f1-score": 0.9627791563275434,
+      "support": 200.0
+    },
+    "deep_diver": {
+      "precision": 0.9747474747474747,
+      "recall": 0.965,
+      "f1-score": 0.9698492462311558,
+      "support": 200.0
+    },
+    "social_learner": {
+      "precision": 0.9547738693467337,
+      "recall": 0.95,
+      "f1-score": 0.9523809523809523,
+      "support": 200.0
+    },
+    "perfectionist": {
+      "precision": 0.9507389162561576,
+      "recall": 0.965,
+      "f1-score": 0.9578163771712159,
+      "support": 200.0
+    },
+    "lost": {
+      "precision": 0.979381443298969,
+      "recall": 0.95,
+      "f1-score": 0.9644670050761421,
+      "support": 200.0
+    },
+    "accuracy": 0.958,
+    "macro avg": {
+      "precision": 0.9580848646412207,
+      "recall": 0.958,
+      "f1-score": 0.9579716084197262,
+      "support": 2000.0
+    },
+    "weighted avg": {
+      "precision": 0.9580848646412207,
+      "recall": 0.958,
+      "f1-score": 0.9579716084197263,
+      "support": 2000.0
+    }
+  }
+}
