@@ -80,6 +80,15 @@ type BehaviorDataProvider interface {
 	GetBehaviorData(ctx context.Context, userID uuid.UUID) (*learningpulse.BehaviorData, error)
 }
 
+// GetBehaviorData returns the user's behavior data for persona prediction.
+// This is exposed via HTTP endpoint for frontend to fetch and send to Learning Pulse.
+func (s *Service) GetBehaviorData(ctx context.Context, userID uuid.UUID) (*learningpulse.BehaviorData, error) {
+	if s.behaviorDataProvider == nil {
+		return nil, fmt.Errorf("behavior data provider not configured")
+	}
+	return s.behaviorDataProvider.GetBehaviorData(ctx, userID)
+}
+
 type Service struct {
 	chatSessionRepo      ChatSessionRepository
 	chatMessageRepo      ChatMessageRepository

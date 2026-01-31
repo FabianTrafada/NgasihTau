@@ -145,6 +145,32 @@ func (m *MockCEKRepository) DeleteByDeviceID(ctx context.Context, deviceID uuid.
 	return args.Error(0)
 }
 
+func (m *MockCEKRepository) DeleteByMaterialID(ctx context.Context, materialID uuid.UUID) error {
+	args := m.Called(ctx, materialID)
+	return args.Error(0)
+}
+
+func (m *MockCEKRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.ContentEncryptionKey, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.ContentEncryptionKey), args.Error(1)
+}
+
+func (m *MockCEKRepository) FindByKeyVersion(ctx context.Context, keyVersion int) ([]*domain.ContentEncryptionKey, error) {
+	args := m.Called(ctx, keyVersion)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.ContentEncryptionKey), args.Error(1)
+}
+
+func (m *MockCEKRepository) UpdateKeyVersion(ctx context.Context, id uuid.UUID, encryptedKey []byte, keyVersion int) error {
+	args := m.Called(ctx, id, encryptedKey, keyVersion)
+	return args.Error(0)
+}
+
 // Test helper to create a test device
 func createTestDevice(userID uuid.UUID) *domain.Device {
 	return &domain.Device{

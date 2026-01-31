@@ -230,6 +230,10 @@ func (m *mockOfflineEventPublisher) PublishEncryptionFailed(ctx context.Context,
 	return nil
 }
 
+func (m *mockOfflineEventPublisher) PublishMaterialDownloaded(ctx context.Context, event MaterialDownloadEvent) error {
+	return nil
+}
+
 // Helper function to create a test KeyManagementService
 func newTestKeyManagementService() (*KeyManagementService, *mockCEKRepository, *mockAuditLogRepository, *mockOfflineEventPublisher) {
 	cekRepo := newMockCEKRepository()

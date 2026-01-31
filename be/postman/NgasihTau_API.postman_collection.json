@@ -11,7 +11,12 @@
     {"key": "refresh_token", "value": "", "type": "string"},
     {"key": "user_id", "value": "", "type": "string"},
     {"key": "pod_id", "value": "", "type": "string"},
-    {"key": "temp_token", "value": "", "type": "string"}
+    {"key": "temp_token", "value": "", "type": "string"},
+    {"key": "device_id", "value": "", "type": "string"},
+    {"key": "material_id", "value": "", "type": "string"},
+    {"key": "license_id", "value": "", "type": "string"},
+    {"key": "license_nonce", "value": "", "type": "string"},
+    {"key": "job_id", "value": "", "type": "string"}
   ],
   "item": [
     {
@@ -575,6 +580,291 @@
                   "host": ["{{pod_base_url}}"],
                   "path": ["api", "v1", "users", "{{user_id}}", "starred"],
                   "query": [{"key": "page", "value": "1"}, {"key": "per_page", "value": "20"}]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offline Service",
+      "item": [
+        {
+          "name": "Devices",
+          "item": [
+            {
+              "name": "Register Device",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('device_id', jsonData.data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fingerprint\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6\",\n  \"name\": \"My iPhone\",\n  \"platform\": \"ios\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/devices",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "devices"]
+                }
+              }
+            },
+            {
+              "name": "List Devices",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/devices",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "devices"]
+                }
+              }
+            },
+            {
+              "name": "Deregister Device",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/devices/{{device_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "devices", "{{device_id}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Licenses",
+          "item": [
+            {
+              "name": "Issue License",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('license_id', jsonData.data.id);",
+                      "    pm.collectionVariables.set('license_nonce', jsonData.data.nonce);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"device_id\": \"{{device_id}}\",\n  \"fingerprint\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/materials/{{material_id}}/license",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "materials", "{{material_id}}", "license"]
+                }
+              }
+            },
+            {
+              "name": "Validate License",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fingerprint\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6\",\n  \"nonce\": \"{{license_nonce}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/licenses/{{license_id}}/validate",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "licenses", "{{license_id}}", "validate"]
+                }
+              }
+            },
+            {
+              "name": "Renew License",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fingerprint\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/licenses/{{license_id}}/renew",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "licenses", "{{license_id}}", "renew"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Downloads",
+          "item": [
+            {
+              "name": "Download Material",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/materials/{{material_id}}/download?device_id={{device_id}}&fingerprint=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6&license_id={{license_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "materials", "{{material_id}}", "download"],
+                  "query": [
+                    {"key": "device_id", "value": "{{device_id}}"},
+                    {"key": "fingerprint", "value": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
+                    {"key": "license_id", "value": "{{license_id}}"}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Download Material (Range Request)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Range", "value": "bytes=0-1048575"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/materials/{{material_id}}/download?device_id={{device_id}}&fingerprint=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6&license_id={{license_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "materials", "{{material_id}}", "download"],
+                  "query": [
+                    {"key": "device_id", "value": "{{device_id}}"},
+                    {"key": "fingerprint", "value": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
+                    {"key": "license_id", "value": "{{license_id}}"}
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Jobs",
+          "item": [
+            {
+              "name": "Get Job Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/jobs/{{job_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "jobs", "{{job_id}}"]
+                }
+              }
+            },
+            {
+              "name": "Get Job for Material",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/materials/{{material_id}}/job",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "materials", "{{material_id}}", "job"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync",
+          "item": [
+            {
+              "name": "Sync Offline State",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"device_id\": \"{{device_id}}\",\n  \"fingerprint\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6\",\n  \"last_sync_at\": \"2025-01-15T10:00:00Z\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/offline/sync",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "offline", "sync"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Health",
+          "item": [
+            {
+              "name": "Liveness Probe",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/health/live",
+                  "host": ["{{base_url}}"],
+                  "path": ["health", "live"]
+                }
+              }
+            },
+            {
+              "name": "Readiness Probe",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/health/ready",
+                  "host": ["{{base_url}}"],
+                  "path": ["health", "ready"]
+                }
+              }
+            },
+            {
+              "name": "Full Health Check",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/health/full",
+                  "host": ["{{base_url}}"],
+                  "path": ["health", "full"]
                 }
               }
             }

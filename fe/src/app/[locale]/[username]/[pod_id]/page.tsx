@@ -11,6 +11,8 @@ import { Pod } from "@/types/pod";
 import { Material } from "@/types/material";
 import { ProtectedRoute } from "@/components/auth";
 import { useAuth } from "@/lib/auth-context";
+import { usePersona, useRecommendationTrigger } from "@/hooks/usePersona";
+import { PersonaRecommendationPopup } from "@/components/persona";
 import { useCollaborators } from "@/hooks/useCollaborators";
 import AddCollaboratorModal from "@/components/knowledge-pod/AddCollaboratorModal";
 import {
@@ -51,6 +53,10 @@ export default function KnowledgePodDetail({ params }: PageProps) {
   const router = useRouter();
   const { username, pod_id } = React.use(params);
   const { user } = useAuth();
+
+  // Persona hooks
+  const { persona, loading: personaLoading } = usePersona(user?.id);
+  const { shouldShow: showRecommendation, dismiss: dismissRecommendation } = useRecommendationTrigger(persona);
   const t = useTranslations("collaborator");
   const tPod = useTranslations("podDetail");
   const tCommon = useTranslations("common");
@@ -231,6 +237,17 @@ export default function KnowledgePodDetail({ params }: PageProps) {
 
   return (
     <ProtectedRoute>
+      {/* Persona Recommendation Popup */}
+      <PersonaRecommendationPopup
+        isOpen={showRecommendation}
+        onClose={dismissRecommendation}
+        persona={persona}
+        onActionClick={(rec) => {
+          console.log("Recommendation clicked:", rec);
+          // TODO: Handle different action types
+        }}
+      />
+
       {/* Edit Material Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md border-2 border-black bg-[#FFFBF7] shadow-[6px_6px_0_0_black]">

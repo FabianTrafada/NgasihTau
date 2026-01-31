@@ -252,6 +252,10 @@ func (m *mockJobEventPublisher) PublishEncryptionFailed(ctx context.Context, eve
 	return nil
 }
 
+func (m *mockJobEventPublisher) PublishMaterialDownloaded(ctx context.Context, event MaterialDownloadEvent) error {
+	return nil
+}
+
 func TestJobService_CreateJob(t *testing.T) {
 	ctx := context.Background()
 	jobRepo := newMockEncryptionJobRepository()

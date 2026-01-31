@@ -240,16 +240,17 @@ func TestValidateLicense_Success(t *testing.T) {
 	materialID := uuid.New()
 	device := createTestDevice(userID)
 	license := createTestLicense(userID, materialID, device.ID)
+	originalNonce := license.Nonce
 
 	input := ValidateLicenseInput{
 		LicenseID:   license.ID,
 		DeviceID:    device.ID,
 		Fingerprint: device.Fingerprint,
-		Nonce:       license.Nonce,
+		Nonce:       originalNonce,
 	}
 
 	mockLicenseRepo.On("FindByID", ctx, license.ID).Return(license, nil)
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 	mockLicenseRepo.On("UpdateValidation", ctx, license.ID, mock.AnythingOfType("string")).Return(nil)
 	mockDeviceRepo.On("UpdateLastUsed", ctx, device.ID).Return(nil)
 
@@ -257,7 +258,7 @@ func TestValidateLicense_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.NotEqual(t, license.Nonce, result.Nonce) // Nonce should be updated
+	assert.NotEqual(t, originalNonce, result.Nonce) // Nonce should be updated
 	mockLicenseRepo.AssertExpectations(t)
 	mockDeviceRepo.AssertExpectations(t)
 }
@@ -282,7 +283,7 @@ func TestValidateLicense_InvalidNonce(t *testing.T) {
 	}
 
 	mockLicenseRepo.On("FindByID", ctx, license.ID).Return(license, nil)
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 
 	result, err := service.ValidateLicense(ctx, input)
 
@@ -316,7 +317,7 @@ func TestValidateLicense_Expired(t *testing.T) {
 	}
 
 	mockLicenseRepo.On("FindByID", ctx, license.ID).Return(license, nil)
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 
 	result, err := service.ValidateLicense(ctx, input)
 
@@ -352,7 +353,7 @@ func TestValidateLicense_Revoked(t *testing.T) {
 	}
 
 	mockLicenseRepo.On("FindByID", ctx, license.ID).Return(license, nil)
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 
 	result, err := service.ValidateLicense(ctx, input)
 
@@ -377,6 +378,8 @@ func TestRenewLicense_Success(t *testing.T) {
 	materialID := uuid.New()
 	device := createTestDevice(userID)
 	license := createTestLicense(userID, materialID, device.ID)
+	// Set expiration to 7 days from now (less than default 30 days)
+	license.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
 	originalExpiresAt := license.ExpiresAt
 
 	input := RenewLicenseInput{
@@ -386,7 +389,7 @@ func TestRenewLicense_Success(t *testing.T) {
 	}
 
 	mockLicenseRepo.On("FindByID", ctx, license.ID).Return(license, nil)
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 	mockLicenseRepo.On("UpdateExpiration", ctx, license.ID, mock.AnythingOfType("time.Time")).Return(nil)
 	mockLicenseRepo.On("UpdateValidation", ctx, license.ID, mock.AnythingOfType("string")).Return(nil)
 	mockDeviceRepo.On("UpdateLastUsed", ctx, device.ID).Return(nil)
@@ -422,7 +425,7 @@ func TestRenewLicense_Revoked(t *testing.T) {
 	}
 
 	mockLicenseRepo.On("FindByID", ctx, license.ID).Return(license, nil)
-	mockDeviceRepo.On("FindByID", ctx, device.ID).Return(device, nil)
+	mockDeviceRepo.On("FindById", ctx, device.ID).Return(device, nil)
 
 	result, err := service.RenewLicense(ctx, input)
 
@@ -570,7 +573,7 @@ func TestGetLicensesByUser_Success(t *testing.T) {
 	mockLicenseRepo.AssertExpectations(t)
 }
 
-func TestGenerateNonce(t *testing.T) {
+func TestLicenseGenerateNonce(t *testing.T) {
 	// Test that nonces are unique
 	nonces := make(map[string]bool)
 	for i := 0; i < 100; i++ {

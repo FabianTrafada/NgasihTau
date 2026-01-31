@@ -78,6 +78,57 @@ http:
 
   routers:
     # ===========================================
+    # AI Service Routes
+    # ===========================================
+    # AI behavior data endpoint
+    ai-service-behavior:
+      rule: "Path(`/api/v1/ai/behavior`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - rate-limit-general
+      service: ai-service
+      priority: 100
+
+    # Material-specific chat endpoints
+    ai-service-material-chat:
+      rule: "PathPrefix(`/api/v1/materials`) && PathRegexp(`/api/v1/materials/[^/]+/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - rate-limit-ai
+      service: ai-service
+      priority: 120
+
+    # Pod-wide chat endpoints
+    ai-service-pod-chat:
+      rule: "PathPrefix(`/api/v1/pods`) && PathRegexp(`/api/v1/pods/[^/]+/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - rate-limit-ai
+      service: ai-service
+      priority: 120
+
+    # Chat feedback endpoint
+    ai-service-feedback:
+      rule: "PathPrefix(`/api/v1/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - rate-limit-general
+      service: ai-service
+      priority: 95
+
+    # ===========================================
     # File Processor Routes (Learning Pulse)
     # ===========================================
     learning-pulse:

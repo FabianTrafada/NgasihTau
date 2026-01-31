@@ -52,6 +52,9 @@ type OfflineEventPublisher interface {
 
 	// PublishEncryptionFailed publishes an encryption failure event.
 	PublishEncryptionFailed(ctx context.Context, event EncryptionJobEvent) error
+
+	// PublishMaterialDownloaded publishes a material download event.
+	PublishMaterialDownloaded(ctx context.Context, event MaterialDownloadEvent) error
 }
 
 // KeyManagementService handles CEK generation, storage, and management.
