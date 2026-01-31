@@ -1,0 +1,77 @@
+# ===========================================
+# Traefik Dynamic Configuration - Development Services
+# ===========================================
+# Use this when running services on host machine (not in Docker)
+# Overrides service URLs to use host.docker.internal
+
+http:
+  services:
+    user-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8001"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    pod-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8002"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    material-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8003"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    search-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8004"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    ai-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8005"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    notification-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8006"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    file-processor:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8007"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true

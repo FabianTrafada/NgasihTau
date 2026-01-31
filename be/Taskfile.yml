@@ -1,0 +1,553 @@
+version: '3'
+
+vars:
+  GO_MODULE: ngasihtau
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Development
+  dev:user:
+    desc: Run user service in development mode
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/user-service
+
+  dev:pod:
+    desc: Run pod service in development mode
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/pod-service
+
+  dev:material:
+    desc: Run material service in development mode
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/material-service
+
+  dev:search:
+    desc: Run search service in development mode
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/search-service
+
+  dev:ai:
+    desc: Run AI service in development mode
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/ai-service
+
+  dev:notification:
+    desc: Run notification service in development mode
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/notification-service
+
+  dev:file-processor:
+    desc: Run file processor service (Python)
+    dir: file-processor
+    dotenv: ['../.env']
+    cmds:
+      - uv run uvicorn main:app --host 0.0.0.0 --port 8007 --reload
+
+  dev:all:
+    desc: Run all services in separate terminal windows
+    cmds:
+      - task: dev:all:{{.OS}}
+
+  dev:all:windows:
+    desc: Run all services on Windows
+    cmds:
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:user'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:pod'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:material'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:search'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:ai'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:notification'"
+      - powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'Set-Location ''{{.ROOT_DIR}}''; task dev:file-processor'"
+      - echo "All services started in separate PowerShell windows"
+
+  dev:all:darwin:
+    desc: Run all services on macOS
+    cmds:
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:user"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:pod"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:material"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:search"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:ai"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:notification"'
+      - osascript -e 'tell app "Terminal" to do script "cd \"{{.ROOT_DIR}}\" && task dev:file-processor"'
+      - echo "All services started in separate Terminal windows"
+
+  dev:all:linux:
+    desc: Run all services on Linux
+    cmds:
+      - gnome-terminal --tab --title="User Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:user; exec bash'
+      - gnome-terminal --tab --title="Pod Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:pod; exec bash'
+      - gnome-terminal --tab --title="Material Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:material; exec bash'
+      - gnome-terminal --tab --title="Search Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:search; exec bash'
+      - gnome-terminal --tab --title="AI Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:ai; exec bash'
+      - gnome-terminal --tab --title="Notification Service" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:notification; exec bash'
+      - gnome-terminal --tab --title="File Processor" -- bash -c 'cd "{{.ROOT_DIR}}" && task dev:file-processor; exec bash'
+      - echo "All services started in separate terminal tabs"
+
+  dev:all:bg:
+    desc: Run all services in background (logs to files)
+    dotenv: ['.env']
+    cmds:
+      - mkdir -p logs
+      - nohup go run ./cmd/user-service > logs/user-service.log 2>&1 &
+      - nohup go run ./cmd/pod-service > logs/pod-service.log 2>&1 &
+      - nohup go run ./cmd/material-service > logs/material-service.log 2>&1 &
+      - nohup go run ./cmd/search-service > logs/search-service.log 2>&1 &
+      - nohup go run ./cmd/ai-service > logs/ai-service.log 2>&1 &
+      - nohup go run ./cmd/notification-service > logs/notification-service.log 2>&1 &
+      - echo "All services started in background. Logs in ./logs/"
+
+  dev:stop:
+    desc: Stop all background services
+    cmds:
+      - pkill -f "go run ./cmd/user-service" || true
+      - pkill -f "go run ./cmd/pod-service" || true
+      - pkill -f "go run ./cmd/material-service" || true
+      - pkill -f "go run ./cmd/search-service" || true
+      - pkill -f "go run ./cmd/ai-service" || true
+      - pkill -f "go run ./cmd/notification-service" || true
+      - echo "All services stopped"
+
+  # Build
+  build:
+    desc: Build all services
+    cmds:
+      - task: build:user
+      - task: build:pod
+      - task: build:material
+      - task: build:search
+      - task: build:ai
+      - task: build:notification
+
+  build:user:
+    desc: Build user service
+    cmds:
+      - go build -o bin/user-service ./cmd/user-service
+
+  build:pod:
+    desc: Build pod service
+    cmds:
+      - go build -o bin/pod-service ./cmd/pod-service
+
+  build:material:
+    desc: Build material service
+    cmds:
+      - go build -o bin/material-service ./cmd/material-service
+
+  build:search:
+    desc: Build search service
+    cmds:
+      - go build -o bin/search-service ./cmd/search-service
+
+  build:ai:
+    desc: Build AI service
+    cmds:
+      - go build -o bin/ai-service ./cmd/ai-service
+
+  build:notification:
+    desc: Build notification service
+    cmds:
+      - go build -o bin/notification-service ./cmd/notification-service
+
+  # Testing
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -v -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - go test -v -short ./...
+
+  # Code Quality
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  # Dependencies
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+
+  deps:tidy:
+    desc: Tidy dependencies
+    cmds:
+      - go mod tidy
+
+  deps:update:
+    desc: Update dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # Database Migrations
+  # Requires: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+  
+  # User Service Migrations
+  migrate:user:up:
+    desc: Run all user service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/user -database "postgres://${USER_DB_USER}:${USER_DB_PASSWORD}@${USER_DB_HOST}:${USER_DB_PORT}/${USER_DB_NAME}?sslmode=${USER_DB_SSL_MODE}" up
+
+  migrate:user:down:
+    desc: Rollback last user service migration
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/user -database "postgres://${USER_DB_USER}:${USER_DB_PASSWORD}@${USER_DB_HOST}:${USER_DB_PORT}/${USER_DB_NAME}?sslmode=${USER_DB_SSL_MODE}" down 1
+
+  migrate:user:down:all:
+    desc: Rollback all user service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/user -database "postgres://${USER_DB_USER}:${USER_DB_PASSWORD}@${USER_DB_HOST}:${USER_DB_PORT}/${USER_DB_NAME}?sslmode=${USER_DB_SSL_MODE}" down -all
+
+  migrate:user:version:
+    desc: Show current user service migration version
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/user -database "postgres://${USER_DB_USER}:${USER_DB_PASSWORD}@${USER_DB_HOST}:${USER_DB_PORT}/${USER_DB_NAME}?sslmode=${USER_DB_SSL_MODE}" version
+
+  migrate:user:force:
+    desc: Force set user service migration version (usage - task migrate:user:force -- VERSION)
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/user -database "postgres://${USER_DB_USER}:${USER_DB_PASSWORD}@${USER_DB_HOST}:${USER_DB_PORT}/${USER_DB_NAME}?sslmode=${USER_DB_SSL_MODE}" force {{.CLI_ARGS}}
+
+  migrate:user:create:
+    desc: Create a new user service migration (usage - task migrate:user:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/user -seq {{.CLI_ARGS}}
+
+  # Pod Service Migrations
+  migrate:pod:up:
+    desc: Run all pod service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/pod -database "postgres://${POD_DB_USER}:${POD_DB_PASSWORD}@${POD_DB_HOST}:${POD_DB_PORT}/${POD_DB_NAME}?sslmode=${POD_DB_SSL_MODE}" up
+
+  migrate:pod:down:
+    desc: Rollback last pod service migration
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/pod -database "postgres://${POD_DB_USER}:${POD_DB_PASSWORD}@${POD_DB_HOST}:${POD_DB_PORT}/${POD_DB_NAME}?sslmode=${POD_DB_SSL_MODE}" down 1
+
+  migrate:pod:down:all:
+    desc: Rollback all pod service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/pod -database "postgres://${POD_DB_USER}:${POD_DB_PASSWORD}@${POD_DB_HOST}:${POD_DB_PORT}/${POD_DB_NAME}?sslmode=${POD_DB_SSL_MODE}" down -all
+
+  migrate:pod:version:
+    desc: Show current pod service migration version
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/pod -database "postgres://${POD_DB_USER}:${POD_DB_PASSWORD}@${POD_DB_HOST}:${POD_DB_PORT}/${POD_DB_NAME}?sslmode=${POD_DB_SSL_MODE}" version
+
+  migrate:pod:force:
+    desc: Force set pod service migration version (usage - task migrate:pod:force -- VERSION)
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/pod -database "postgres://${POD_DB_USER}:${POD_DB_PASSWORD}@${POD_DB_HOST}:${POD_DB_PORT}/${POD_DB_NAME}?sslmode=${POD_DB_SSL_MODE}" force {{.CLI_ARGS}}
+
+  migrate:pod:create:
+    desc: Create a new pod service migration (usage - task migrate:pod:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/pod -seq {{.CLI_ARGS}}
+
+  # Material Service Migrations
+  migrate:material:up:
+    desc: Run all material service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/material -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" up
+
+  migrate:material:down:
+    desc: Rollback last material service migration
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/material -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" down 1
+
+  migrate:material:down:all:
+    desc: Rollback all material service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/material -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" down -all
+
+  migrate:material:version:
+    desc: Show current material service migration version
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/material -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" version
+
+  migrate:material:force:
+    desc: Force set material service migration version (usage - task migrate:material:force -- VERSION)
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/material -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" force {{.CLI_ARGS}}
+
+  migrate:material:create:
+    desc: Create a new material service migration (usage - task migrate:material:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/material -seq {{.CLI_ARGS}}
+
+  # AI Service Migrations
+  migrate:ai:up:
+    desc: Run all AI service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/ai -database "postgres://${AI_DB_USER}:${AI_DB_PASSWORD}@${AI_DB_HOST}:${AI_DB_PORT}/${AI_DB_NAME}?sslmode=${AI_DB_SSL_MODE}" up
+
+  migrate:ai:down:
+    desc: Rollback last AI service migration
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/ai -database "postgres://${AI_DB_USER}:${AI_DB_PASSWORD}@${AI_DB_HOST}:${AI_DB_PORT}/${AI_DB_NAME}?sslmode=${AI_DB_SSL_MODE}" down 1
+
+  migrate:ai:down:all:
+    desc: Rollback all AI service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/ai -database "postgres://${AI_DB_USER}:${AI_DB_PASSWORD}@${AI_DB_HOST}:${AI_DB_PORT}/${AI_DB_NAME}?sslmode=${AI_DB_SSL_MODE}" down -all
+
+  migrate:ai:version:
+    desc: Show current AI service migration version
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/ai -database "postgres://${AI_DB_USER}:${AI_DB_PASSWORD}@${AI_DB_HOST}:${AI_DB_PORT}/${AI_DB_NAME}?sslmode=${AI_DB_SSL_MODE}" version
+
+  migrate:ai:force:
+    desc: Force set AI service migration version (usage - task migrate:ai:force -- VERSION)
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/ai -database "postgres://${AI_DB_USER}:${AI_DB_PASSWORD}@${AI_DB_HOST}:${AI_DB_PORT}/${AI_DB_NAME}?sslmode=${AI_DB_SSL_MODE}" force {{.CLI_ARGS}}
+
+  migrate:ai:create:
+    desc: Create a new AI service migration (usage - task migrate:ai:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/ai -seq {{.CLI_ARGS}}
+
+  # Notification Service Migrations
+  migrate:notification:up:
+    desc: Run all notification service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/notification -database "postgres://${NOTIFICATION_DB_USER}:${NOTIFICATION_DB_PASSWORD}@${NOTIFICATION_DB_HOST}:${NOTIFICATION_DB_PORT}/${NOTIFICATION_DB_NAME}?sslmode=${NOTIFICATION_DB_SSL_MODE}" up
+
+  migrate:notification:down:
+    desc: Rollback last notification service migration
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/notification -database "postgres://${NOTIFICATION_DB_USER}:${NOTIFICATION_DB_PASSWORD}@${NOTIFICATION_DB_HOST}:${NOTIFICATION_DB_PORT}/${NOTIFICATION_DB_NAME}?sslmode=${NOTIFICATION_DB_SSL_MODE}" down 1
+
+  migrate:notification:down:all:
+    desc: Rollback all notification service migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/notification -database "postgres://${NOTIFICATION_DB_USER}:${NOTIFICATION_DB_PASSWORD}@${NOTIFICATION_DB_HOST}:${NOTIFICATION_DB_PORT}/${NOTIFICATION_DB_NAME}?sslmode=${NOTIFICATION_DB_SSL_MODE}" down -all
+
+  migrate:notification:version:
+    desc: Show current notification service migration version
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/notification -database "postgres://${NOTIFICATION_DB_USER}:${NOTIFICATION_DB_PASSWORD}@${NOTIFICATION_DB_HOST}:${NOTIFICATION_DB_PORT}/${NOTIFICATION_DB_NAME}?sslmode=${NOTIFICATION_DB_SSL_MODE}" version
+
+  migrate:notification:force:
+    desc: Force set notification service migration version (usage - task migrate:notification:force -- VERSION)
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/notification -database "postgres://${NOTIFICATION_DB_USER}:${NOTIFICATION_DB_PASSWORD}@${NOTIFICATION_DB_HOST}:${NOTIFICATION_DB_PORT}/${NOTIFICATION_DB_NAME}?sslmode=${NOTIFICATION_DB_SSL_MODE}" force {{.CLI_ARGS}}
+
+  migrate:notification:create:
+    desc: Create a new notification service migration (usage - task migrate:notification:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/notification -seq {{.CLI_ARGS}}
+
+  # Offline Material Migrations (runs on materials database)
+  migrate:offline:up:
+    desc: Run all offline material migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/offline -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" up
+
+  migrate:offline:down:
+    desc: Rollback last offline material migration
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/offline -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" down 1
+
+  migrate:offline:down:all:
+    desc: Rollback all offline material migrations
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/offline -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" down -all
+
+  migrate:offline:version:
+    desc: Show current offline material migration version
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/offline -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" version
+
+  migrate:offline:force:
+    desc: Force set offline material migration version (usage - task migrate:offline:force -- VERSION)
+    dotenv: ['.env']
+    cmds:
+      - migrate -path ./migrations/offline -database "postgres://${MATERIAL_DB_USER}:${MATERIAL_DB_PASSWORD}@${MATERIAL_DB_HOST}:${MATERIAL_DB_PORT}/${MATERIAL_DB_NAME}?sslmode=${MATERIAL_DB_SSL_MODE}" force {{.CLI_ARGS}}
+
+  migrate:offline:create:
+    desc: Create a new offline material migration (usage - task migrate:offline:create -- migration_name)
+    cmds:
+      - migrate create -ext sql -dir ./migrations/offline -seq {{.CLI_ARGS}}
+
+  migrate:up:
+    desc: Run all migrations for all services
+    cmds:
+      - task: migrate:user:up
+      - task: migrate:pod:up
+      - task: migrate:material:up
+      - task: migrate:ai:up
+      - task: migrate:notification:up
+      - task: migrate:offline:up
+
+  migrate:down:
+    desc: Rollback last migration for all services
+    cmds:
+      - task: migrate:user:down
+      - task: migrate:pod:down
+      - task: migrate:material:down
+      - task: migrate:ai:down
+      - task: migrate:notification:down
+      - task: migrate:offline:down
+
+  migrate:version:
+    desc: Show current migration version for all services
+    cmds:
+      - echo "=== User Service ==="
+      - task: migrate:user:version
+      - echo "=== Pod Service ==="
+      - task: migrate:pod:version
+      - echo "=== Material Service ==="
+      - task: migrate:material:version
+      - echo "=== AI Service ==="
+      - task: migrate:ai:version
+      - echo "=== Notification Service ==="
+      - task: migrate:notification:version
+      - echo "=== Offline Module ==="
+      - task: migrate:offline:version
+
+  migrate:create:
+    desc: Create a new migration (usage - task migrate:create -- service_name migration_name)
+    cmds:
+      - echo "Use task migrate:{service}:create -- migration_name"
+      - echo "Available services - user, pod, material, ai, notification, offline"
+
+  # Docker Infrastructure
+  infra:up:
+    desc: Start infrastructure services (PostgreSQL, Redis, NATS, MinIO, Meilisearch, Qdrant, Traefik)
+    cmds:
+      - docker compose up -d
+
+  infra:down:
+    desc: Stop infrastructure services
+    cmds:
+      - docker compose down
+
+  infra:down:volumes:
+    desc: Stop infrastructure services and remove volumes
+    cmds:
+      - docker compose down -v
+
+  infra:logs:
+    desc: View logs from infrastructure services
+    cmds:
+      - docker compose logs -f
+
+  infra:logs:service:
+    desc: View logs from a specific service (usage - task infra:logs:service -- postgres)
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
+  infra:ps:
+    desc: Show status of infrastructure services
+    cmds:
+      - docker compose ps
+
+  infra:restart:
+    desc: Restart infrastructure services
+    cmds:
+      - docker compose restart
+
+  infra:pull:
+    desc: Pull latest images for infrastructure services
+    cmds:
+      - docker compose pull
+
+  # Docker (legacy aliases)
+  docker:up:
+    desc: Start all services with Docker Compose (alias for infra:up)
+    cmds:
+      - task: infra:up
+
+  docker:down:
+    desc: Stop all services (alias for infra:down)
+    cmds:
+      - task: infra:down
+
+  docker:logs:
+    desc: View logs from all services (alias for infra:logs)
+    cmds:
+      - task: infra:logs
+
+  docker:build:
+    desc: Build all Docker images
+    cmds:
+      - docker compose build
+
+  # Swagger/OpenAPI
+  swagger:
+    desc: Generate Swagger documentation
+    cmds:
+      - swag init -g main.go -o api/swagger --parseDependency --parseInternal
+    silent: false
+
+  swagger:fmt:
+    desc: Format Swagger annotations
+    cmds:
+      - swag fmt
+
+  # Clean
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf bin/
+      - rm -f coverage.out coverage.html

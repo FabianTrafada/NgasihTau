@@ -1,0 +1,448 @@
+# ===========================================
+# Traefik Dynamic Configuration - Routers
+# ===========================================
+# Routing rules with priority-based routing:
+# 
+# IMPORTANT: Some /api/v1/users/* routes go to Pod Service!
+# - /api/v1/users/:id/pods -> Pod Service (pod data)
+# - /api/v1/users/:id/starred -> Pod Service (starred pods)
+# - /api/v1/users/me/upvoted-pods -> Pod Service (upvoted pods)
+# - /api/v1/users/me/upload-requests -> Pod Service (upload requests)
+# - /api/v1/users/me/shared-pods -> Pod Service (shared pods)
+# - /api/v1/users/me/preferences -> Pod Service (recommendation preferences)
+# - /api/v1/users/:id/followers -> User Service (follow data)
+# - /api/v1/users/:id/following -> User Service (follow data)
+# - Other /api/v1/users/* -> User Service
+#
+# Route priority order (higher = matched first):
+# 120 - AI chat endpoints (specific regex paths)
+# 110 - Material uploads & user "me" specific routes
+# 100 - Specific user paths (followers, pods, starred, preferences)
+# 95 - Feed, bookmarks, comments, admin, upload-requests
+# 90 - Interests
+# 80 - General pod routes
+# 70 - General user routes (catch-all), material routes
+# 50 - API docs
+
+http:
+  routers:
+    # ===========================================
+    # User Service Routes (Requirement 10)
+    # ===========================================
+    user-service-auth:
+      rule: "PathPrefix(`/api/v1/auth`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-auth
+      service: user-service
+      priority: 100
+
+    # Admin Routes (protected - admin only)
+    user-service-admin:
+      rule: "PathPrefix(`/api/v1/admin`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 95
+
+    # Learning Interests Routes (Onboarding)
+    user-service-interests:
+      rule: "PathPrefix(`/api/v1/interests`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 90
+
+    # ===========================================
+    # Pod Service Routes (Requirement 10)
+    # ===========================================
+    # User preferences for recommendation (handled by Pod Service)
+    pod-service-user-preferences:
+      rule: "Path(`/api/v1/users/me/preferences`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers  
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 100
+
+    pod-service-feed:
+      rule: "PathPrefix(`/api/v1/feed`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 95
+
+    # Pod materials endpoint - route to material service
+    pod-materials:
+      rule: "PathRegexp(`/api/v1/pods/[^/]+/materials`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 100
+
+    # User pods endpoint - route to pod service (NOT user service)
+    user-pods:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 100
+
+    # User starred pods endpoint - route to pod service (NOT user service)
+    user-starred-pods:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/starred`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 100
+
+    # User followers/following endpoint - route to user service
+    user-followers:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/followers`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 100
+
+    user-following:
+      rule: "PathRegexp(`/api/v1/users/[^/]+/following`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 100
+
+    # User's personal pod routes (me) - route to pod service
+    user-me-upvoted-pods:
+      rule: "Path(`/api/v1/users/me/upvoted-pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 110
+
+    user-me-upload-requests:
+      rule: "Path(`/api/v1/users/me/upload-requests`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 110
+
+    user-me-shared-pods:
+      rule: "Path(`/api/v1/users/me/shared-pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 110
+
+    # Upload requests management routes
+    pod-service-upload-requests:
+      rule: "PathPrefix(`/api/v1/upload-requests`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 95
+
+    # General user routes - catch all remaining /api/v1/users/* (lower priority)
+    user-service-users:
+      rule: "PathPrefix(`/api/v1/users`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: user-service
+      priority: 70
+
+    pod-service:
+      rule: "PathPrefix(`/api/v1/pods`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: pod-service
+      priority: 80
+
+    # ===========================================
+    # Material Service Routes (Requirement 10)
+    # ===========================================
+    # Upload endpoints with stricter rate limiting
+    material-service-upload:
+      rule: "Path(`/api/v1/materials/upload-url`) || Path(`/api/v1/materials/confirm`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-upload
+      service: material-service
+      priority: 110
+
+    material-service-bookmarks:
+      rule: "PathPrefix(`/api/v1/bookmarks`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 95
+
+    material-service-comments:
+      rule: "PathPrefix(`/api/v1/comments`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 95
+
+    material-service:
+      rule: "PathPrefix(`/api/v1/materials`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: material-service
+      priority: 70
+
+    # ===========================================
+    # Search Service Routes (Requirement 10)
+    # ===========================================
+    search-service:
+      rule: "PathPrefix(`/api/v1/search`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-search
+      service: search-service
+      priority: 90
+
+    # ===========================================
+    # AI Service Routes (Requirement 10)
+    # ===========================================
+    # Material-specific chat endpoints
+    ai-service-material-chat:
+      rule: "PathPrefix(`/api/v1/materials`) && PathRegexp(`/api/v1/materials/[^/]+/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-ai
+      service: ai-service
+      priority: 120
+
+    # Pod-wide chat endpoints
+    ai-service-pod-chat:
+      rule: "PathPrefix(`/api/v1/pods`) && PathRegexp(`/api/v1/pods/[^/]+/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-ai
+      service: ai-service
+      priority: 120
+
+    # Chat feedback endpoint
+    ai-service-feedback:
+      rule: "PathPrefix(`/api/v1/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: ai-service
+      priority: 95
+
+    # ===========================================
+    # Notification Service Routes (Requirement 10)
+    # ===========================================
+    notification-service:
+      rule: "PathPrefix(`/api/v1/notifications`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+        - api-version
+        - rate-limit-general
+      service: notification-service
+      priority: 90
+
+    # ===========================================
+    # API Documentation Routes
+    # ===========================================
+    api-docs:
+      rule: "PathPrefix(`/api/docs`) || PathPrefix(`/api/openapi`)"
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - security-headers
+      service: user-service
+      priority: 50
+
+  # ===========================================
+  # Service Definitions
+  # ===========================================
+  # Load balancer configuration with health checks
+  # Services will be discovered via Docker labels when running
+  services:
+    user-service:
+      loadBalancer:
+        servers:
+          - url: "http://user-service:8001"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    pod-service:
+      loadBalancer:
+        servers:
+          - url: "http://pod-service:8002"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    material-service:
+      loadBalancer:
+        servers:
+          - url: "http://material-service:8003"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    search-service:
+      loadBalancer:
+        servers:
+          - url: "http://search-service:8004"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    ai-service:
+      loadBalancer:
+        servers:
+          - url: "http://ai-service:8005"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    notification-service:
+      loadBalancer:
+        servers:
+          - url: "http://notification-service:8006"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
+
+    file-processor:
+      loadBalancer:
+        servers:
+          - url: "http://file-processor:8007"
+        healthCheck:
+          path: /health
+          interval: 10s
+          timeout: 3s
+        passHostHeader: true
