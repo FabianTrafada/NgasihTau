@@ -197,6 +197,7 @@ services:
       EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -237,6 +238,7 @@ services:
       EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -282,6 +284,7 @@ services:
       EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
