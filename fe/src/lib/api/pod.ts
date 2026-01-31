@@ -16,6 +16,9 @@ export async function getPodDetail(podId: string): Promise<Pod> {
         description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ...',
         visibility: 'public',
         owner_id: 'me',
+        view_count: 150,
+        star_count: 42,
+        fork_count: 8,
         created_at: '2025-01-02T00:00:00Z',
         updated_at: '2025-01-02T00:00:00Z'
       },
@@ -25,6 +28,9 @@ export async function getPodDetail(podId: string): Promise<Pod> {
         description: 'Panduan lengkap memahami component, props, dan state dalam React modern menggunakan TypeScript.',
         visibility: 'public',
         owner_id: 'me',
+        view_count: 230,
+        star_count: 67,
+        fork_count: 15,
         created_at: '2025-01-05T00:00:00Z',
         updated_at: '2025-01-05T00:00:00Z'
       },
@@ -34,6 +40,9 @@ export async function getPodDetail(podId: string): Promise<Pod> {
         description: 'Tips dan trik mengelola jadwal skripsi tanpa mengabaikan kesehatan mental dan kehidupan sosial.',
         visibility: 'public',
         owner_id: 'me',
+        view_count: 89,
+        star_count: 23,
+        fork_count: 3,
         created_at: '2025-01-10T00:00:00Z',
         updated_at: '2025-01-10T00:00:00Z'
       },
@@ -43,6 +52,9 @@ export async function getPodDetail(podId: string): Promise<Pod> {
         description: 'Cara mengambil foto makanan yang estetik hanya dengan modal kamera HP dan cahaya matahari.',
         visibility: 'public',
         owner_id: 'me',
+        view_count: 178,
+        star_count: 55,
+        fork_count: 12,
         created_at: '2025-01-12T00:00:00Z',
         updated_at: '2025-01-12T00:00:00Z'
       }
