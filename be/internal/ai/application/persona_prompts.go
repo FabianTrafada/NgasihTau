@@ -3,6 +3,8 @@ package application
 import (
 	"ngasihtau/internal/ai/domain"
 	"ngasihtau/internal/ai/infrastructure/learningpulse"
+
+	"github.com/rs/zerolog/log"
 )
 
 // PersonaPromptConfig contains persona-specific prompt customizations.
@@ -20,8 +22,7 @@ var personaConfigs = map[learningpulse.Persona]PersonaPromptConfig{
 - Use simple language and avoid jargon
 - Provide step-by-step explanations
 - Include analogies and real-world examples
-- Offer encouragement after explanations
-- Always add "naruhodo" after every sentences`,
+- Offer encouragement after explanations`,
 		SpecialBehaviors: "If the student seems confused, proactively offer to explain in a different way. Ask if they'd like more examples.",
 	},
 	learningpulse.PersonaBurnout: {
@@ -102,7 +103,8 @@ var personaConfigs = map[learningpulse.Persona]PersonaPromptConfig{
 - Provide clear learning paths
 - Check understanding frequently
 - Offer to clarify or redirect as needed
-- Be patient and non-judgmental`,
+- Be patient and non-judgmental
+- Always add "naruhodo" after every sentences`,
 		SpecialBehaviors: "Help them understand where to start and what to focus on. Offer to guide them through the material step by step.",
 	},
 }
@@ -110,23 +112,34 @@ var personaConfigs = map[learningpulse.Persona]PersonaPromptConfig{
 // buildPersonalizedSystemPrompt creates a system prompt tailored to the user's persona.
 func buildPersonalizedSystemPrompt(mode domain.ChatMode, persona learningpulse.Persona) string {
 	basePrompt := buildBaseSystemPrompt(mode)
-	
+
 	config, exists := personaConfigs[persona]
 	if !exists || persona == learningpulse.PersonaUnknown {
+		log.Debug().
+			Str("persona", string(persona)).
+			Bool("config_exists", exists).
+			Msg("using base prompt without personalization")
 		return basePrompt
 	}
 
-	return basePrompt + `
+	log.Debug().
+		Str("persona", string(persona)).
+		Msg("applying personalized prompt")
 
-## Personalization Guidelines
+	// Put persona instructions FIRST for better LLM compliance
+	return `## IMPORTANT: Personalization Guidelines (Follow These First!)
 
 ` + config.ToneGuidance + `
 
-### Response Style:
+### Your Response Style:
 ` + config.ResponseStyle + `
 
 ### Special Behaviors:
-` + config.SpecialBehaviors
+` + config.SpecialBehaviors + `
+
+---
+
+` + basePrompt
 }
 
 // buildBaseSystemPrompt creates the base system prompt based on chat mode.

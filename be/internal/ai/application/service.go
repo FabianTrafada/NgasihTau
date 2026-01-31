@@ -297,7 +297,13 @@ func (s *Service) Chat(ctx context.Context, input ChatInput) (*ChatOutput, error
 // fetchUserPersona retrieves the user's learning persona from Learning Pulse.
 // Returns PersonaUnknown if the service is unavailable or data is missing.
 func (s *Service) fetchUserPersona(ctx context.Context, userID uuid.UUID) learningpulse.Persona {
-	if s.learningPulseClient == nil || s.behaviorDataProvider == nil {
+	if s.learningPulseClient == nil {
+		log.Debug().Str("user_id", userID.String()).Msg("learningPulseClient is nil - persona personalization disabled")
+		return learningpulse.PersonaUnknown
+	}
+
+	if s.behaviorDataProvider == nil {
+		log.Debug().Str("user_id", userID.String()).Msg("behaviorDataProvider is nil - persona personalization disabled")
 		return learningpulse.PersonaUnknown
 	}
 
@@ -308,6 +314,18 @@ func (s *Service) fetchUserPersona(ctx context.Context, userID uuid.UUID) learni
 		return learningpulse.PersonaUnknown
 	}
 
+	if behaviorData == nil {
+		log.Debug().Str("user_id", userID.String()).Msg("behavior data is nil - not enough data for persona prediction")
+		return learningpulse.PersonaUnknown
+	}
+
+	log.Debug().
+		Str("user_id", userID.String()).
+		Int("chat_messages", behaviorData.Chat.TotalMessages).
+		Int("material_views", behaviorData.Material.TotalViews).
+		Int("active_days", behaviorData.Activity.ActiveDays).
+		Msg("fetched behavior data for persona prediction")
+
 	// Get persona from Learning Pulse
 	persona, err := s.learningPulseClient.GetPersona(ctx, userID.String(), behaviorData)
 	if err != nil {
@@ -315,7 +333,7 @@ func (s *Service) fetchUserPersona(ctx context.Context, userID uuid.UUID) learni
 		return learningpulse.PersonaUnknown
 	}
 
-	log.Debug().
+	log.Info().
 		Str("user_id", userID.String()).
 		Str("persona", string(persona)).
 		Msg("fetched user persona for personalized chat")
