@@ -13,6 +13,7 @@ import { FormattedMessage } from "@/components/FormattedMessage";
 import { useAIFeatures } from "@/hooks/useAIFeatures";
 import VersionHistoryDialog from "@/components/knowledge-pod/VersionHistoryDialog";
 import { useDownloads } from "@/hooks/useDownloads";
+import { useOfflineMaterials } from "@/hooks/useOffline";
 
 interface PageProps {
   params: Promise<{
@@ -26,6 +27,15 @@ export default function MaterialDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { username, pod_id, material_id } = React.use(params);
   const { addMaterial, isDownloaded } = useDownloads();
+  const { 
+    downloadForOffline, 
+    isDownloaded: isOfflineDownloaded, 
+    isRegistered,
+    loading: offlineLoading 
+  } = useOfflineMaterials();
+
+  // State untuk offline download
+  const [savingOffline, setSavingOffline] = useState(false);
 
   // State untuk material data
   const [material, setMaterial] = useState<Material | null>(null);
@@ -217,6 +227,21 @@ export default function MaterialDetailPage({ params }: PageProps) {
     }
   };
 
+  // Handle save for offline
+  const handleSaveOffline = async () => {
+    if (!material) return;
+    
+    setSavingOffline(true);
+    try {
+      await downloadForOffline(material.id, material.title);
+    } catch (err) {
+      console.error("Error saving for offline:", err);
+      setError("Failed to save for offline");
+    } finally {
+      setSavingOffline(false);
+    }
+  };
+
   // Handle suggestion click
   const handleSuggestionClick = (question: string) => {
     setMessageInput(question);
@@ -304,6 +329,25 @@ export default function MaterialDetailPage({ params }: PageProps) {
             <h1 className="text-lg sm:text-xl font-bold text-[#2B2D42] truncate">{material.title}</h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Save Offline Button */}
+            <button
+              onClick={handleSaveOffline}
+              disabled={savingOffline || isOfflineDownloaded(material.id) || !isRegistered}
+              className={`px-4 py-2 max-sm:px-3 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] transition-all shadow-[2px_2px_0px_0px_#2B2D42] ${
+                savingOffline || isOfflineDownloaded(material.id) || !isRegistered
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-[#FF8811] hover:text-white hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+              }`}
+              title={!isRegistered ? "Register device first in Downloads page" : "Save for offline access"}
+            >
+              {savingOffline ? (
+                <Loader size={16} className="animate-spin" />
+              ) : isOfflineDownloaded(material.id) ? (
+                "Saved Offline"
+              ) : (
+                <Download size={16} />
+              )}
+            </button>
             <button
               onClick={handleDownload}
               disabled={material && isDownloaded(material.id)}

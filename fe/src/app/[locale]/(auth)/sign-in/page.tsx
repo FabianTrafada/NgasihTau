@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { PublicOnlyRoute } from "@/components/auth";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
+import { getBehaviorData, fetchUserPersona } from "@/lib/api/behavior";
 
 /**
  * Sign In Page Component
@@ -75,6 +77,18 @@ export default function SignInPage() {
         }
 
         console.log('[SignIn] ========== END LOGIN SUBMIT ==========');
+
+          useEffect(() => {
+            const fetchData = async () => {
+              const behavior = await getBehaviorData();
+              console.log("Behavior:", behavior);
+        
+              const persona = await fetchUserPersona("e409b45f-97bc-4b4a-9029-547650c9f9e3");
+              console.log("Persona:", persona);
+            };
+        
+            fetchData();
+          }, []);
     };
 
     /**
