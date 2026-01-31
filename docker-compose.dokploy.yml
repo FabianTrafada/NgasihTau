@@ -1,0 +1,488 @@
+# ===========================================
+# NgasihTau - Dokploy Docker Compose
+# ===========================================
+# This file is optimized for Dokploy deployment
+# Network: dokploy-network (external, managed by Dokploy)
+# Traefik: Managed by Dokploy (labels for routing)
+
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MIGRATIONS_BASE_PATH: /migrations
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./be/scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ./be/migrations:/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-}"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # NATS with JetStream
+  # ===========================================
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command: ["--jetstream", "--store_dir=/data", "-m", "8222"]
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/varz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # MinIO Object Storage
+  # ===========================================
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio-console.rule=Host(`minio.${DOMAIN}`)"
+      - "traefik.http.routers.minio-console.entrypoints=websecure"
+      - "traefik.http.routers.minio-console.tls.certResolver=letsencrypt"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+
+  # MinIO bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY};
+      mc mb myminio/materials --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # Meilisearch Full-Text Search
+  # ===========================================
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY}
+      MEILI_NO_ANALYTICS: true
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # Qdrant Vector Database
+  # ===========================================
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # User Service (Go)
+  # ===========================================
+  user-service:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      args:
+        SERVICE: user-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      USER_SERVICE_HOST: 0.0.0.0
+      USER_SERVICE_PORT: 8001
+      USER_DB_HOST: postgres
+      USER_DB_PORT: 5432
+      USER_DB_NAME: ngasihtau_users
+      USER_DB_USER: user_svc
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      USER_DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY:-15m}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY:-168h}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      NATS_URL: nats://nats:4222
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/v1/users`, `/api/v1/auth`)"
+      - "traefik.http.routers.user-service.entrypoints=websecure"
+      - "traefik.http.routers.user-service.tls.certResolver=letsencrypt"
+      - "traefik.http.services.user-service.loadbalancer.server.port=8001"
+
+  # ===========================================
+  # Pod Service (Go)
+  # ===========================================
+  pod-service:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      args:
+        SERVICE: pod-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      POD_SERVICE_HOST: 0.0.0.0
+      POD_SERVICE_PORT: 8002
+      POD_DB_HOST: postgres
+      POD_DB_PORT: 5432
+      POD_DB_NAME: ngasihtau_pods
+      POD_DB_USER: pod_svc
+      POD_DB_PASSWORD: ${POD_DB_PASSWORD}
+      POD_DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      NATS_URL: nats://nats:4222
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pod-service.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/v1/pods`)"
+      - "traefik.http.routers.pod-service.entrypoints=websecure"
+      - "traefik.http.routers.pod-service.tls.certResolver=letsencrypt"
+      - "traefik.http.services.pod-service.loadbalancer.server.port=8002"
+
+  # ===========================================
+  # Material Service (Go)
+  # ===========================================
+  material-service:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      args:
+        SERVICE: material-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      MATERIAL_SERVICE_HOST: 0.0.0.0
+      MATERIAL_SERVICE_PORT: 8003
+      MATERIAL_DB_HOST: postgres
+      MATERIAL_DB_PORT: 5432
+      MATERIAL_DB_NAME: ngasihtau_materials
+      MATERIAL_DB_USER: material_svc
+      MATERIAL_DB_PASSWORD: ${MATERIAL_DB_PASSWORD}
+      MATERIAL_DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      NATS_URL: nats://nats:4222
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_MATERIALS: materials
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.material-service.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/v1/materials`)"
+      - "traefik.http.routers.material-service.entrypoints=websecure"
+      - "traefik.http.routers.material-service.tls.certResolver=letsencrypt"
+      - "traefik.http.services.material-service.loadbalancer.server.port=8003"
+
+  # ===========================================
+  # Search Service (Go)
+  # ===========================================
+  search-service:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      args:
+        SERVICE: search-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      SEARCH_SERVICE_HOST: 0.0.0.0
+      SEARCH_SERVICE_PORT: 8004
+      SEARCH_DB_HOST: postgres
+      SEARCH_DB_PORT: 5432
+      SEARCH_DB_NAME: ngasihtau_search
+      SEARCH_DB_USER: search_svc
+      SEARCH_DB_PASSWORD: ${SEARCH_DB_PASSWORD}
+      SEARCH_DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      NATS_URL: nats://nats:4222
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY}
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6334
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.search-service.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/v1/search`)"
+      - "traefik.http.routers.search-service.entrypoints=websecure"
+      - "traefik.http.routers.search-service.tls.certResolver=letsencrypt"
+      - "traefik.http.services.search-service.loadbalancer.server.port=8004"
+
+  # ===========================================
+  # AI Service (Go)
+  # ===========================================
+  ai-service:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      args:
+        SERVICE: ai-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      AI_SERVICE_HOST: 0.0.0.0
+      AI_SERVICE_PORT: 8005
+      AI_DB_HOST: postgres
+      AI_DB_PORT: 5432
+      AI_DB_NAME: ngasihtau_ai
+      AI_DB_USER: ai_svc
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD}
+      AI_DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      NATS_URL: nats://nats:4222
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6334
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      FILE_PROCESSOR_URL: http://file-processor:8086
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ai-service.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/v1/ai`, `/api/v1/chat`)"
+      - "traefik.http.routers.ai-service.entrypoints=websecure"
+      - "traefik.http.routers.ai-service.tls.certResolver=letsencrypt"
+      - "traefik.http.services.ai-service.loadbalancer.server.port=8005"
+
+  # ===========================================
+  # Notification Service (Go)
+  # ===========================================
+  notification-service:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      args:
+        SERVICE: notification-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      NOTIFICATION_SERVICE_HOST: 0.0.0.0
+      NOTIFICATION_SERVICE_PORT: 8006
+      NOTIFICATION_DB_HOST: postgres
+      NOTIFICATION_DB_PORT: 5432
+      NOTIFICATION_DB_NAME: ngasihtau_notifications
+      NOTIFICATION_DB_USER: notification_svc
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      NOTIFICATION_DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      NATS_URL: nats://nats:4222
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-sendgrid}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NgasihTau}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notification-service.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/v1/notifications`)"
+      - "traefik.http.routers.notification-service.entrypoints=websecure"
+      - "traefik.http.routers.notification-service.tls.certResolver=letsencrypt"
+      - "traefik.http.services.notification-service.loadbalancer.server.port=8006"
+
+  # ===========================================
+  # File Processor Service (Python)
+  # ===========================================
+  file-processor:
+    build:
+      context: ./be/file-processor
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      FILE_PROCESSOR_HOST: 0.0.0.0
+      FILE_PROCESSOR_PORT: 8086
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dokploy-network
+
+  # ===========================================
+  # Frontend (Next.js)
+  # ===========================================
+  frontend:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}
+        NEXT_PUBLIC_APP_URL: https://${DOMAIN}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certResolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  dokploy-network:
+    external: true
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data:
+  redis_data:
+  nats_data:
+  minio_data:
+  meilisearch_data:
+  qdrant_data:
