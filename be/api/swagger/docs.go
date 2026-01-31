@@ -211,6 +211,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/ai/materials/{id}/generate-questions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generate quiz questions from material content using AI",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Generate quiz questions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Material ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Question generation options",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.GenerateQuestionsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generated questions",
+                        "schema": {
+                            "$ref": "#/definitions/docs.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Pro subscription required",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/feed/recommended": {
             "get": {
                 "security": [
@@ -2201,6 +2266,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/docs.ErrorResponse"
                         }
+                    },
+                    "403": {
+                        "description": "Premium subscription required",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -3161,6 +3232,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/pods/slug/{slug}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a Knowledge Pod by its URL-friendly slug. Private pods require authentication and access.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Get a Knowledge Pod by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pod slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pod details",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Pod"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied to private pod",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/pods/{id}": {
             "get": {
                 "security": [
@@ -3462,6 +3582,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/docs.ErrorResponse"
                         }
+                    },
+                    "403": {
+                        "description": "Pro subscription required",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -3527,7 +3653,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Invite a user to collaborate on a pod. Requires owner or admin access.",
+                "description": "Invite a user to collaborate on a pod by email. Requires owner or admin access. The system resolves the email to a user internally.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3548,12 +3674,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Collaborator invitation",
+                        "description": "Collaborator invitation with email and role",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/application.InviteCollaboratorInput"
+                            "$ref": "#/definitions/http.InviteCollaboratorRequest"
                         }
                     }
                 ],
@@ -3565,7 +3691,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Invalid request body or email format",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -3730,6 +3856,110 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Pod or collaborator not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pods/{id}/downvote": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a downvote to a pod as a negative trust indicator. Each user can only downvote a pod once.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Downvote a Knowledge Pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pod downvoted",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Already downvoted",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove your downvote from a pod",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Remove downvote from a Knowledge Pod",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Pod ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downvote removed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pod not found or not downvoted",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -5028,6 +5258,96 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/me/ai-usage": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the authenticated user's AI usage, daily limit, and remaining messages",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user AI usage info",
+                "responses": {
+                    "200": {
+                        "description": "AI usage information",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_AIUsageInfoResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/downvoted-pods": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of pods downvoted by the current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pods"
+                ],
+                "summary": "Get current user's downvoted pods",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of downvoted pods",
+                        "schema": {
+                            "$ref": "#/definitions/response.PaginatedResponse-domain_Pod"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/me/shared-pods": {
             "get": {
                 "security": [
@@ -5071,6 +5391,103 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/storage": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the authenticated user's storage usage, quota, and tier information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user storage info",
+                "responses": {
+                    "200": {
+                        "description": "Storage information",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_StorageInfoResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/tier": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the authenticated user's subscription tier",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update current user tier",
+                "parameters": [
+                    {
+                        "description": "Tier update data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.UpdateTierRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated tier info",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-http_UpdateTierResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or tier value",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -5750,30 +6167,6 @@ const docTemplate = `{
                 }
             }
         },
-        "application.InviteCollaboratorInput": {
-            "type": "object",
-            "required": [
-                "role",
-                "user_id"
-            ],
-            "properties": {
-                "role": {
-                    "enum": [
-                        "viewer",
-                        "contributor",
-                        "admin"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/domain.CollaboratorRole"
-                        }
-                    ]
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
         "application.OnboardingStatus": {
             "type": "object",
             "properties": {
@@ -6424,6 +6817,29 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": true
         },
+        "http.AIUsageInfoResponse": {
+            "type": "object",
+            "properties": {
+                "daily_limit": {
+                    "type": "integer"
+                },
+                "is_unlimited": {
+                    "type": "boolean"
+                },
+                "remaining": {
+                    "type": "integer"
+                },
+                "reset_at": {
+                    "type": "string"
+                },
+                "tier": {
+                    "type": "string"
+                },
+                "used_today": {
+                    "type": "integer"
+                }
+            }
+        },
         "http.AddCommentRequest": {
             "type": "object",
             "required": [
@@ -6587,6 +7003,19 @@ const docTemplate = `{
                 }
             }
         },
+        "http.GenerateQuestionsRequest": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "default 5, max 20",
+                    "type": "integer"
+                },
+                "question_type": {
+                    "description": "multiple_choice, true_false, short_answer, mixed",
+                    "type": "string"
+                }
+            }
+        },
         "http.GoogleLoginRequest": {
             "type": "object",
             "required": [
@@ -6599,6 +7028,25 @@ const docTemplate = `{
                 },
                 "redirect_uri": {
                     "type": "string"
+                }
+            }
+        },
+        "http.InviteCollaboratorRequest": {
+            "description": "Invite collaborator request with email and role",
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "collaborator@example.com"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "viewer",
+                        "contributor",
+                        "admin"
+                    ],
+                    "example": "collaborator"
                 }
             }
         },
@@ -6883,6 +7331,35 @@ const docTemplate = `{
                 }
             }
         },
+        "http.StorageInfoResponse": {
+            "type": "object",
+            "properties": {
+                "next_tier": {
+                    "type": "string"
+                },
+                "next_tier_quota": {
+                    "type": "integer"
+                },
+                "quota_bytes": {
+                    "type": "integer"
+                },
+                "remaining_bytes": {
+                    "type": "integer"
+                },
+                "tier": {
+                    "type": "string"
+                },
+                "usage_percent": {
+                    "type": "number"
+                },
+                "used_bytes": {
+                    "type": "integer"
+                },
+                "warning": {
+                    "type": "string"
+                }
+            }
+        },
         "http.SubmitVerificationRequest": {
             "description": "Teacher verification submission request",
             "type": "object",
@@ -7146,6 +7623,33 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 2
+                }
+            }
+        },
+        "http.UpdateTierRequest": {
+            "type": "object",
+            "required": [
+                "tier"
+            ],
+            "properties": {
+                "tier": {
+                    "type": "string",
+                    "enum": [
+                        "free",
+                        "premium",
+                        "pro"
+                    ]
+                }
+            }
+        },
+        "http.UpdateTierResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "tier": {
+                    "type": "string"
                 }
             }
         },
@@ -7658,6 +8162,20 @@ const docTemplate = `{
                 }
             }
         },
+        "response.Response-http_AIUsageInfoResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.AIUsageInfoResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "response.Response-http_AuthResponse": {
             "type": "object",
             "properties": {
@@ -7691,6 +8209,20 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/http.SimilarPodsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_StorageInfoResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.StorageInfoResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"
@@ -7747,6 +8279,20 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/http.TwoFactorSetupResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-http_UpdateTierResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/http.UpdateTierResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"

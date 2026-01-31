@@ -72,7 +72,7 @@ function SidebarProvider({
 
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  
+
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen)
@@ -613,6 +613,7 @@ function SidebarMenuSkeleton({
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`
+    // eslint-disable-next-line react-hooks/purity
   }, [])
 
   return (

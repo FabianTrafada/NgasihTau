@@ -72,6 +72,7 @@ type PodService interface {
 	UpdateCollaboratorRole(ctx context.Context, podID, collaboratorID, ownerID uuid.UUID, role domain.CollaboratorRole) error
 	GetCollaborators(ctx context.Context, podID uuid.UUID) ([]*domain.CollaboratorWithUser, error)
 	GetUserCollaborations(ctx context.Context, userID uuid.UUID) ([]*domain.Collaborator, error)
+	GetUserCollaborativePods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error)
 
 	// Follow operations (Requirement 12)
 	FollowPod(ctx context.Context, podID, userID uuid.UUID) error
@@ -112,7 +113,7 @@ type UpdatePodInput struct {
 type InviteCollaboratorInput struct {
 	PodID     uuid.UUID               `json:"-"` // Set from URL param
 	InviterID uuid.UUID               `json:"-"` // Set from auth context
-	UserID    uuid.UUID               `json:"user_id" validate:"required"`
+	Email     string                  `json:"email" validate:"required,email"`
 	Role      domain.CollaboratorRole `json:"role" validate:"required,oneof=viewer contributor admin"`
 }
 
@@ -167,6 +168,19 @@ type podService struct {
 	activityRepo     domain.ActivityRepository
 	eventPublisher   EventPublisher
 	userRoleChecker  UserRoleChecker
+	userFinder       UserFinder
+}
+
+// UserFinder defines the interface for finding users.
+// This allows the pod service to lookup users by email without direct dependency on user repository.
+type UserFinder interface {
+	// FindUserByEmail finds a user by their email address.
+	// Returns the user ID if found, or an error if not found.
+	FindUserByEmail(ctx context.Context, email string) (uuid.UUID, error)
+
+	// GetUserDetails gets user details by user ID.
+	// Returns name, email, and avatar_url for a user.
+	GetUserDetails(ctx context.Context, userID uuid.UUID) (name string, email string, avatarURL *string, err error)
 }
 
 // EventPublisher defines the interface for publishing pod events.
@@ -202,6 +216,7 @@ func NewPodService(
 	activityRepo domain.ActivityRepository,
 	eventPublisher EventPublisher,
 	userRoleChecker UserRoleChecker,
+	userFinder UserFinder,
 ) PodService {
 	return &podService{
 		podRepo:          podRepo,
@@ -215,6 +230,7 @@ func NewPodService(
 		activityRepo:     activityRepo,
 		eventPublisher:   eventPublisher,
 		userRoleChecker:  userRoleChecker,
+		userFinder:       userFinder,
 	}
 }
 
@@ -1067,8 +1083,9 @@ func (s *podService) GetUploadRequestsByRequester(ctx context.Context, requester
 	}, nil
 }
 
-// InviteCollaborator invites a user to collaborate on a pod.
+// InviteCollaborator invites a user to collaborate on a pod by email.
 // Implements requirement 4: Knowledge Pod Collaboration.
+// The email is resolved to a user ID internally - no user enumeration exposed.
 func (s *podService) InviteCollaborator(ctx context.Context, input InviteCollaboratorInput) (*domain.Collaborator, error) {
 	// Check if inviter can manage the pod
 	canEdit, err := s.CanUserEditPod(ctx, input.PodID, input.InviterID)
@@ -1079,8 +1096,14 @@ func (s *podService) InviteCollaborator(ctx context.Context, input InviteCollabo
 		return nil, errors.Forbidden("you do not have permission to invite collaborators")
 	}
 
+	// Resolve email to user ID
+	userID, err := s.userFinder.FindUserByEmail(ctx, input.Email)
+	if err != nil {
+		return nil, errors.NotFound("user", "user with this email not found")
+	}
+
 	// Check if user is already a collaborator
-	exists, err := s.collaboratorRepo.Exists(ctx, input.PodID, input.UserID)
+	exists, err := s.collaboratorRepo.Exists(ctx, input.PodID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1093,19 +1116,19 @@ func (s *podService) InviteCollaborator(ctx context.Context, input InviteCollabo
 	if err != nil {
 		return nil, err
 	}
-	if pod.IsOwner(input.UserID) {
+	if pod.IsOwner(userID) {
 		return nil, errors.BadRequest("cannot invite the owner as a collaborator")
 	}
 
 	// Create collaborator with pending status
-	collaborator := domain.NewCollaborator(input.PodID, input.UserID, input.InviterID, input.Role)
+	collaborator := domain.NewCollaborator(input.PodID, userID, input.InviterID, input.Role)
 	if err := s.collaboratorRepo.Create(ctx, collaborator); err != nil {
 		return nil, err
 	}
 
 	// Log activity
 	activity := domain.NewActivity(input.PodID, input.InviterID, domain.ActivityActionCollaboratorAdded, domain.ActivityMetadata{
-		"collaborator_id": input.UserID.String(),
+		"collaborator_id": userID.String(),
 		"role":            string(input.Role),
 	})
 	_ = s.activityRepo.Create(ctx, activity)
@@ -1213,12 +1236,100 @@ func (s *podService) UpdateCollaboratorRole(ctx context.Context, podID, collabor
 
 // GetCollaborators returns all collaborators for a pod.
 func (s *podService) GetCollaborators(ctx context.Context, podID uuid.UUID) ([]*domain.CollaboratorWithUser, error) {
-	return s.collaboratorRepo.FindByPodIDWithUsers(ctx, podID)
+	// Get collaborators without user details first
+	collaborators, err := s.collaboratorRepo.FindByPodID(ctx, podID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enrich with user details using UserFinder (queries user database)
+	result := make([]*domain.CollaboratorWithUser, 0, len(collaborators))
+	for _, c := range collaborators {
+		cwu := &domain.CollaboratorWithUser{
+			Collaborator: *c,
+		}
+
+		// Try to get user details
+		if s.userFinder != nil {
+			name, email, avatarURL, err := s.userFinder.GetUserDetails(ctx, c.UserID)
+			if err == nil {
+				cwu.UserName = name
+				cwu.UserEmail = email
+				cwu.UserAvatarURL = avatarURL
+			}
+		}
+
+		result = append(result, cwu)
+	}
+
+	return result, nil
 }
 
 // GetUserCollaborations returns all pods a user collaborates on.
 func (s *podService) GetUserCollaborations(ctx context.Context, userID uuid.UUID) ([]*domain.Collaborator, error) {
 	return s.collaboratorRepo.FindByUserID(ctx, userID)
+}
+
+// GetUserCollaborativePods returns all pods a user collaborates on with pod details.
+func (s *podService) GetUserCollaborativePods(ctx context.Context, userID uuid.UUID, page, perPage int) (*PodListResult, error) {
+	// Get user's collaborations
+	collaborations, err := s.collaboratorRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter verified collaborations only
+	verifiedPodIDs := make([]uuid.UUID, 0)
+	for _, collab := range collaborations {
+		if collab.Status == domain.CollaboratorStatusVerified {
+			verifiedPodIDs = append(verifiedPodIDs, collab.PodID)
+		}
+	}
+
+	if len(verifiedPodIDs) == 0 {
+		return &PodListResult{
+			Pods:       []*domain.Pod{},
+			Total:      0,
+			Page:       page,
+			PerPage:    perPage,
+			TotalPages: 0,
+		}, nil
+	}
+
+	// Fetch pod details
+	pods := make([]*domain.Pod, 0)
+	for _, podID := range verifiedPodIDs {
+		pod, err := s.podRepo.FindByID(ctx, podID)
+		if err == nil { // Skip pods that no longer exist
+			pods = append(pods, pod)
+		}
+	}
+
+	// Apply pagination
+	total := len(pods)
+	start := (page - 1) * perPage
+	if start >= total {
+		return &PodListResult{
+			Pods:       []*domain.Pod{},
+			Total:      total,
+			Page:       page,
+			PerPage:    perPage,
+			TotalPages: (total + perPage - 1) / perPage,
+		}, nil
+	}
+
+	end := start + perPage
+	if end > total {
+		end = total
+	}
+
+	return &PodListResult{
+		Pods:       pods[start:end],
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: (total + perPage - 1) / perPage,
+	}, nil
 }
 
 // FollowPod follows a pod.

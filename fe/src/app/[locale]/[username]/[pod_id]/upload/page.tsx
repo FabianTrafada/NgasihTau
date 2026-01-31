@@ -184,7 +184,7 @@ export default function UploadMaterialPage({ params }: PageProps) {
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 text-center">
-                                        Please don't close this page while uploading
+                                        Please don&apos;t close this page while uploading
                                     </p>
                                 </div>
                             </div>

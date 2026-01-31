@@ -6,7 +6,11 @@ interface FormData {
   title?: string;
   description?: string;
   name?: string;
-  [key: string]: any;
+  visibility?: string;
+  categories?: string[];
+  tags?: string[];
+  materialFiles?: File[];
+  [key: string]: unknown;
 }
 
 interface FormContextType {
@@ -33,9 +37,9 @@ export const FormProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <FormContext.Provider value={{ 
-      formData, 
-      updateFormData, 
+    <FormContext.Provider value={{
+      formData,
+      updateFormData,
       resetForm,
       currentStep,
       setCurrentStep

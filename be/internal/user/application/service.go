@@ -62,6 +62,9 @@ type UserService interface {
 	ApproveVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID) error
 	RejectVerification(ctx context.Context, verificationID uuid.UUID, reviewerID uuid.UUID, reason string) error
 	GetPendingVerifications(ctx context.Context, page, perPage int) (*VerificationListResult, error)
+
+	// User search operations
+	SearchUserByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 // RegisterInput contains the data required for user registration.
@@ -1406,4 +1409,16 @@ func (s *userService) GetPendingVerifications(ctx context.Context, page, perPage
 		PerPage:       perPage,
 		TotalPages:    totalPages,
 	}, nil
+}
+
+// SearchUserByEmail searches for a user by their email address.
+// Used for finding users to invite as collaborators.
+func (s *userService) SearchUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	// Find user by email
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

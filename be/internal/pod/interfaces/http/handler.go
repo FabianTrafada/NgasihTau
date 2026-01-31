@@ -103,6 +103,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Public routes - list pods
 	pods.Get("", middleware.OptionalAuth(h.jwtManager), h.podHandler.ListPods)
 
+	// Get user's collaborative pods - requires authentication
+	pods.Get("/collaborations", middleware.Auth(h.jwtManager), h.podHandler.GetUserCollaborativePods)
+
 	// GET pod by slug - public with optional auth, checks visibility
 	pods.Get("/slug/:slug",
 		middleware.OptionalAuth(h.jwtManager),
