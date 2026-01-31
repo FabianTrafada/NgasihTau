@@ -6,10 +6,8 @@
 # Traefik: Managed by Dokploy (labels for routing)
 #
 # SETUP REQUIRED:
-# 1. In Dokploy: Advanced > File Mounts
-# 2. Create file mount "init-databases.sh"
-# 3. Copy content from be/scripts/init-databases-dokploy.sh
-# 4. Set all environment variables in Dokploy
+# 1. Set all environment variables in Dokploy
+# 2. Databases will be created automatically by services on first run
 
 version: "3.8"
 
@@ -17,31 +15,21 @@ services:
   # ===========================================
   # PostgreSQL Database
   # ===========================================
-  # NOTE: For Dokploy, upload init-databases.sh via File Mounts
-  # Path in Dokploy: Advanced > File Mounts > Create "init-databases.sh"
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      # Database credentials for init script
-      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
-      POD_DB_PASSWORD: ${POD_DB_PASSWORD}
-      MATERIAL_DB_PASSWORD: ${MATERIAL_DB_PASSWORD}
-      AI_DB_PASSWORD: ${AI_DB_PASSWORD}
-      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
-      SEARCH_DB_PASSWORD: ${SEARCH_DB_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: ngasihtau_users,ngasihtau_pods,ngasihtau_materials,ngasihtau_ai,ngasihtau_notifications,ngasihtau_search
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Use Dokploy File Mounts - upload init-databases.sh content there
-      - ../files/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 30
+      start_period: 60s
     networks:
       - dokploy-network
 
@@ -55,10 +43,11 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 10s
     networks:
       - dokploy-network
 
@@ -72,16 +61,18 @@ services:
     volumes:
       - nats_data:/data
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/varz"]
-      interval: 10s
+      test: ["CMD", "nats-server", "--help"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 10s
     networks:
       - dokploy-network
 
   # ===========================================
   # MinIO Object Storage
   # ===========================================
+  # Note: MinIO minimal image has no curl/wget, using service_started
   minio:
     image: minio/minio:latest
     restart: unless-stopped
@@ -91,11 +82,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - dokploy-network
     labels:
@@ -110,9 +96,10 @@ services:
     image: minio/mc:latest
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     entrypoint: >
       /bin/sh -c "
+      sleep 15;
       mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY};
       mc mb myminio/materials --ignore-existing;
       exit 0;
@@ -123,6 +110,7 @@ services:
   # ===========================================
   # Meilisearch Full-Text Search
   # ===========================================
+  # Note: Meilisearch image has curl available
   meilisearch:
     image: getmeili/meilisearch:v1.6
     restart: unless-stopped
@@ -132,27 +120,18 @@ services:
       MEILI_NO_ANALYTICS: true
     volumes:
       - meilisearch_data:/meili_data
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7700/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - dokploy-network
 
   # ===========================================
   # Qdrant Vector Database
   # ===========================================
+  # Note: Qdrant is a distroless image, no shell/curl/wget available
   qdrant:
     image: qdrant/qdrant:v1.7.4
     restart: unless-stopped
     volumes:
       - qdrant_data:/qdrant/storage
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - dokploy-network
 
@@ -173,9 +152,23 @@ services:
       USER_DB_HOST: postgres
       USER_DB_PORT: 5432
       USER_DB_NAME: ngasihtau_users
-      USER_DB_USER: user_svc
-      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      USER_DB_USER: ${POSTGRES_USER:-postgres}
+      USER_DB_PASSWORD: ${POSTGRES_PASSWORD}
       USER_DB_SSL_MODE: disable
+      # AI Database for behavior tracking (chat behavior, activity patterns)
+      AI_DB_HOST: postgres
+      AI_DB_PORT: 5432
+      AI_DB_NAME: ngasihtau_ai
+      AI_DB_USER: ${POSTGRES_USER:-postgres}
+      AI_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      AI_DB_SSL_MODE: disable
+      # Pod Database for behavior tracking (material interactions)
+      POD_DB_HOST: postgres
+      POD_DB_PORT: 5432
+      POD_DB_NAME: ngasihtau_pods
+      POD_DB_USER: ${POSTGRES_USER:-postgres}
+      POD_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      POD_DB_SSL_MODE: disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY:-15m}
       JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY:-168h}
@@ -220,8 +213,8 @@ services:
       POD_DB_HOST: postgres
       POD_DB_PORT: 5432
       POD_DB_NAME: ngasihtau_pods
-      POD_DB_USER: pod_svc
-      POD_DB_PASSWORD: ${POD_DB_PASSWORD}
+      POD_DB_USER: ${POSTGRES_USER:-postgres}
+      POD_DB_PASSWORD: ${POSTGRES_PASSWORD}
       POD_DB_SSL_MODE: disable
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
@@ -262,8 +255,8 @@ services:
       MATERIAL_DB_HOST: postgres
       MATERIAL_DB_PORT: 5432
       MATERIAL_DB_NAME: ngasihtau_materials
-      MATERIAL_DB_USER: material_svc
-      MATERIAL_DB_PASSWORD: ${MATERIAL_DB_PASSWORD}
+      MATERIAL_DB_USER: ${POSTGRES_USER:-postgres}
+      MATERIAL_DB_PASSWORD: ${POSTGRES_PASSWORD}
       MATERIAL_DB_SSL_MODE: disable
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
@@ -284,7 +277,7 @@ services:
       nats:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        condition: service_started
     networks:
       - dokploy-network
     labels:
@@ -311,8 +304,8 @@ services:
       SEARCH_DB_HOST: postgres
       SEARCH_DB_PORT: 5432
       SEARCH_DB_NAME: ngasihtau_search
-      SEARCH_DB_USER: search_svc
-      SEARCH_DB_PASSWORD: ${SEARCH_DB_PASSWORD}
+      SEARCH_DB_USER: ${POSTGRES_USER:-postgres}
+      SEARCH_DB_PASSWORD: ${POSTGRES_PASSWORD}
       SEARCH_DB_SSL_MODE: disable
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
@@ -333,9 +326,9 @@ services:
       nats:
         condition: service_healthy
       meilisearch:
-        condition: service_healthy
+        condition: service_started
       qdrant:
-        condition: service_healthy
+        condition: service_started
     networks:
       - dokploy-network
     labels:
@@ -362,8 +355,8 @@ services:
       AI_DB_HOST: postgres
       AI_DB_PORT: 5432
       AI_DB_NAME: ngasihtau_ai
-      AI_DB_USER: ai_svc
-      AI_DB_PASSWORD: ${AI_DB_PASSWORD}
+      AI_DB_USER: ${POSTGRES_USER:-postgres}
+      AI_DB_PASSWORD: ${POSTGRES_PASSWORD}
       AI_DB_SSL_MODE: disable
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
@@ -388,7 +381,7 @@ services:
       nats:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
     networks:
       - dokploy-network
     labels:
@@ -415,8 +408,8 @@ services:
       NOTIFICATION_DB_HOST: postgres
       NOTIFICATION_DB_PORT: 5432
       NOTIFICATION_DB_NAME: ngasihtau_notifications
-      NOTIFICATION_DB_USER: notification_svc
-      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      NOTIFICATION_DB_USER: ${POSTGRES_USER:-postgres}
+      NOTIFICATION_DB_PASSWORD: ${POSTGRES_PASSWORD}
       NOTIFICATION_DB_SSL_MODE: disable
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
@@ -456,10 +449,11 @@ services:
       FILE_PROCESSOR_HOST: 0.0.0.0
       FILE_PROCESSOR_PORT: 8086
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8086/health')"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     networks:
       - dokploy-network
 

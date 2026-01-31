@@ -120,8 +120,8 @@ export default function UploadMaterialPage({ params }: PageProps) {
         <ProtectedRoute>
             <div className="min-h-screen bg-[#FFFBF7]">
                 {/* Header */}
-                <header className="fixed top-0 w-full border-b-2 border-black bg-white shadow-sm">
-                    <div className="mx-auto max-w-4xl px-4 py-2 md:px-6">
+                <header className="fixed top-0 w-full border-b-2 border-black bg-white shadow-sm z-50">
+                    <div className="w-full px-4 py-3 md:px-6">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleBack}
@@ -131,11 +131,11 @@ export default function UploadMaterialPage({ params }: PageProps) {
                                 <ChevronLeft size={20} />
                             </button>
                             <div className="flex-1">
-                                <h1 className="text-xl font-black text-black md:text-2xl">
+                                <h1 className="text-xl font-black text-black md:text-2xl leading-none">
                                     Upload Material
                                 </h1>
                                 {pod && (
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-gray-500 mt-0.5">
                                         to <span className="font-bold text-black">{pod.name}</span>
                                     </p>
                                 )}
@@ -184,7 +184,7 @@ export default function UploadMaterialPage({ params }: PageProps) {
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 text-center">
-                                        Please don't close this page while uploading
+                                        Please don&apos;t close this page while uploading
                                     </p>
                                 </div>
                             </div>

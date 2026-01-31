@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, BadgeCheck, FileText, Loader, Plus, Edit2, Trash2, X, UploadCloud } from "lucide-react";
+import { Eye, BadgeCheck, FileText, Loader, Plus, Edit2, Trash2, X, UploadCloud, UserMinus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import FileListItem from "@/components/knowledge-pod/FileListItem";
 import { getPodDetail, getPodMaterials, UpdatePod } from "@/lib/api/pod";
 import { updateMaterial, deleteMaterial } from "@/lib/api/material";
@@ -12,11 +13,14 @@ import { ProtectedRoute } from "@/components/auth";
 import { useAuth } from "@/lib/auth-context";
 import { usePersona, useRecommendationTrigger } from "@/hooks/usePersona";
 import { PersonaRecommendationPopup } from "@/components/persona";
+import { useCollaborators } from "@/hooks/useCollaborators";
+import AddCollaboratorModal from "@/components/knowledge-pod/AddCollaboratorModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,6 +57,9 @@ export default function KnowledgePodDetail({ params }: PageProps) {
   // Persona hooks
   const { persona, loading: personaLoading } = usePersona(user?.id);
   const { shouldShow: showRecommendation, dismiss: dismissRecommendation } = useRecommendationTrigger(persona);
+  const t = useTranslations("collaborator");
+  const tPod = useTranslations("podDetail");
+  const tCommon = useTranslations("common");
 
   const [pod, setPod] = useState<Pod | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -63,6 +70,30 @@ export default function KnowledgePodDetail({ params }: PageProps) {
   const [podVisibility, setPodVisibility] = useState<"public" | "private">("public");
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
 
+  // Collaborator state
+  const [isAddCollaboratorOpen, setIsAddCollaboratorOpen] = useState(false);
+
+  // Collaborator hook
+  const {
+    collaborators,
+    loading: collaboratorsLoading,
+    error: collaboratorError,
+    inviting,
+    removing,
+    fetchCollaborators,
+    invite,
+    remove,
+    clearError: clearCollaboratorError,
+    getPermissions,
+    verifiedCollaborators,
+  } = useCollaborators(pod_id);
+
+  // Compute permissions (use email for reliable cross-service validation)
+  const currentUserId = user?.id || "";
+  const currentUserEmail = user?.email || "";
+  const ownerId = pod?.owner_id || "";
+  const permissions = getPermissions(currentUserId, ownerId, currentUserEmail);
+  const isOwner = permissions.isOwner;
 
   // Edit material states
   const [editingMaterial, setEditingMaterial] = useState<EditingMaterial | null>(null);
@@ -89,7 +120,7 @@ export default function KnowledgePodDetail({ params }: PageProps) {
     }
   };
 
-  
+
 
   // Handle Edit Material
   const handleEditMaterial = (material: Material) => {
@@ -153,14 +184,11 @@ export default function KnowledgePodDetail({ params }: PageProps) {
     }
   };
 
-  // Handle Upload Material
-
-
-  const collaborators = [
-    { name: "Rahmat Hadiwibowo", avatar: "https://github.com/shadcn.png" },
-    { name: "Edi Hadiwibowo", avatar: "https://github.com/shadcn.png" },
-    { name: "Slamet Oli Samping", avatar: "https://github.com/shadcn.png" },
-  ];
+  // Handle Remove Collaborator
+  const handleRemoveCollaborator = async (userId: string, userName: string) => {
+    if (!confirm(t("confirmRemove"))) return;
+    await remove(userId);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -172,6 +200,9 @@ export default function KnowledgePodDetail({ params }: PageProps) {
 
         const podMaterials = await getPodMaterials(pod_id);
         setMaterials(podMaterials);
+
+        // Fetch collaborators
+        await fetchCollaborators();
       } catch (err) {
         setError("Failed to load pod");
         setIsNotFound(true);
@@ -181,7 +212,7 @@ export default function KnowledgePodDetail({ params }: PageProps) {
     };
 
     fetchData();
-  }, [pod_id, username]);
+  }, [pod_id, username, fetchCollaborators]);
 
   if (loading) {
     return (
@@ -281,7 +312,17 @@ export default function KnowledgePodDetail({ params }: PageProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Upload Material Dialog */}
+      {/* Add Collaborator Modal */}
+      <AddCollaboratorModal
+        open={isAddCollaboratorOpen}
+        onOpenChange={setIsAddCollaboratorOpen}
+        onInvite={invite}
+        inviting={inviting}
+        error={collaboratorError}
+        clearError={clearCollaboratorError}
+        currentUserEmail={user?.email || ""}
+        existingCollaboratorEmails={collaborators.map((c) => c.user_email || "").filter(Boolean)}
+      />
 
       <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-6 space-y-6">
         {/* ================= HEADER ================= */}
@@ -292,89 +333,177 @@ export default function KnowledgePodDetail({ params }: PageProps) {
               {pod.name}
             </h1>
 
-            <Link href={`/${pod.owner_id}/${pod.id}/upload`} >
-              <button
-                className="w-full md:w-auto flex items-center justify-center gap-2 rounded-lg border-2 border-black bg-[#FF8811] px-6 py-2 text-sm font-bold text-white shadow-[3px_3px_0_0_black] hover:shadow-[2px_2px_0_0_black] hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
-                <UploadCloud size={16} />
-                Upload
-              </button>
-            </Link>
+            {/* Upload button - only show if user can upload */}
+            {permissions.canUpload && (
+              <Link href={`/${pod.owner_id}/${pod.id}/upload`} >
+                <button
+                  className="w-full md:w-auto flex items-center justify-center gap-2 rounded-lg border-2 border-black bg-[#FF8811] px-6 py-2 text-sm font-bold text-white shadow-[3px_3px_0_0_black] hover:shadow-[2px_2px_0_0_black] hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                  <UploadCloud size={16} />
+                  Upload
+                </button>
+              </Link>
+            )}
 
-            <button className="w-full md:w-auto rounded-lg border-2 border-black bg-[#FF8811] px-6 py-2 text-sm font-bold text-white shadow-[3px_3px_0_0_black] hover:bg-[#FF8811]  hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
-              Use
-            </button>
           </div>
 
           {/* BOTTOM ROW — COLLAB + SWITCH + SAVE */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-center">
             {/* LEFT SIDE */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* COLLABORATORS */}
+              {/* COLLABORATOR AVATARS (max 2 + overflow) */}
+              <div className="flex items-center -space-x-2">
+                {/* Show up to 2 collaborator avatars + overflow indicator */}
+                {verifiedCollaborators.slice(0, 2).map((collab) => (
+                  <Avatar
+                    key={collab.id}
+                    className="h-9 w-9 border-2 border-black"
+                    title={collab.user_name || collab.user_email || "Collaborator"}
+                  >
+                    <AvatarImage src={collab.user_avatar_url} />
+                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
+                      {(collab.user_name || "U").substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+                {/* Overflow indicator */}
+                {verifiedCollaborators.length > 2 && (
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-gray-100 text-xs font-bold text-gray-700"
+                    title={`+${verifiedCollaborators.length - 2} more collaborators`}
+                  >
+                    +{verifiedCollaborators.length - 2}
+                  </div>
+                )}
+              </div>
+
+              {/* ADD COLLABORATOR BUTTON */}
               <div className="flex items-center -space-x-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-orange-500 text-white shadow-[2px_2px_0_0_black]">
+                    <button
+                      className="z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-orange-500 text-white shadow-[2px_2px_0_0_black]"
+                      title={permissions.canManageCollaborators ? t("addCollaborator") : t("title")}
+                    >
                       <Plus size={16} />
                     </button>
                   </DropdownMenuTrigger>
 
-                  <DropdownMenuContent className="w-64 border-2 border-black bg-[#FFFBF7] p-3 shadow-[4px_4px_0_0_black]">
+                  <DropdownMenuContent className="w-72 border-2 border-black bg-[#FFFBF7] p-3 shadow-[4px_4px_0_0_black]">
                     <DropdownMenuLabel className="text-sm font-bold text-center">
-                      Collaborators
+                      {t("title")}
                     </DropdownMenuLabel>
 
-                    <div className="mt-2 space-y-1">
-                      {collaborators.map((c, i) => (
+                    {/* Add Collaborator Button - only if user can manage */}
+                    {permissions.canManageCollaborators && (
+                      <>
                         <DropdownMenuItem
-                          key={i}
-                          className="flex items-center gap-2 rounded-md px-2 py-1"
+                          className="flex items-center gap-2 rounded-md px-2 py-2 cursor-pointer bg-orange-50 hover:bg-orange-100 mt-2"
+                          onClick={() => setIsAddCollaboratorOpen(true)}
                         >
-                          <Avatar className="h-7 w-7 border-2 border-black">
-                            <AvatarImage src={c.avatar} />
-                            <AvatarFallback>
-                              {c.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs font-bold">{c.name}</span>
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-white">
+                            <Plus size={14} />
+                          </div>
+                          <span className="text-xs font-bold text-orange-700">{t("addCollaborator")}</span>
                         </DropdownMenuItem>
-                      ))}
+                        <DropdownMenuSeparator className="my-2" />
+                      </>
+                    )}
+
+                    <div className="mt-2 space-y-1 max-h-60 overflow-y-auto">
+                      {collaboratorsLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader className="w-4 h-4 animate-spin text-orange-500" />
+                        </div>
+                      ) : verifiedCollaborators.length === 0 ? (
+                        <p className="text-xs text-gray-500 text-center py-2">
+                          {t("noCollaborators")}
+                        </p>
+                      ) : (
+                        verifiedCollaborators.map((collab) => (
+                          <DropdownMenuItem
+                            key={collab.id}
+                            className="flex items-center gap-2 rounded-md px-2 py-1 cursor-default"
+                          >
+                            <Avatar className="h-7 w-7 border-2 border-black">
+                              <AvatarFallback className="bg-gray-100 text-xs font-bold">
+                                {(collab.user_name || "U").substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold block truncate">
+                                {collab.user_name || collab.user_id.substring(0, 8)}
+                              </span>
+                              <span className="text-[10px] text-gray-500">
+                                {t(`roles.${collab.role}`)}
+                              </span>
+                            </div>
+                            {/* Remove button - only if user can manage and not removing self */}
+                            {permissions.canManageCollaborators && collab.user_id !== currentUserId && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveCollaborator(collab.user_id, collab.user_name || "");
+                                }}
+                                disabled={removing === collab.user_id}
+                                className="p-1 rounded hover:bg-red-100 text-red-500 transition-colors"
+                                title={t("remove")}
+                              >
+                                {removing === collab.user_id ? (
+                                  <Loader className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <UserMinus size={14} />
+                                )}
+                              </button>
+                            )}
+                          </DropdownMenuItem>
+                        ))
+                      )}
                     </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Avatar className="h-9 w-9 border-2 border-black bg-white">
-                  <AvatarImage src="https://github.com/shadcn.png" />
-                  <AvatarFallback>AB</AvatarFallback>
-                </Avatar>
+                {/* Display first few collaborator avatars */}
+                {verifiedCollaborators.slice(0, 2).map((collab) => (
+                  <Avatar key={collab.id} className="h-9 w-9 border-2 border-black bg-white">
+                    <AvatarFallback className="text-xs font-bold">
+                      {(collab.user_name || "U").substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
 
-                <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-[#FFFBF7] text-xs font-bold shadow-[2px_2px_0_0_black]">
-                  +3
-                </div>
-              </div>
-
-              {/* PRIVATE / PUBLIC SWITCH */}
-              <div className="flex items-center gap-2 rounded-full border-2 border-black bg-white px-3 py-1 shadow-[2px_2px_0_0_black] relative">
-                <span className={`text-xs font-bold ${podVisibility === "private" ? "text-black" : "text-zinc-400"}`}>
-                  Private
-                </span>
-
-                {isUpdatingVisibility ? (
-                  <div className="flex items-center justify-center h-6 w-12 mx-1">
-                    <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                {/* Show count if more than 2 collaborators */}
+                {verifiedCollaborators.length > 2 && (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-[#FFFBF7] text-xs font-bold shadow-[2px_2px_0_0_black]">
+                    +{verifiedCollaborators.length - 2}
                   </div>
-                ) : (
-                  <Switch
-                    checked={podVisibility === "public"}
-                    onCheckedChange={handleUpdateVisibility}
-                    disabled={isUpdatingVisibility}
-                    className="data-[state=checked]:bg-orange-500"
-                  />
                 )}
-
-                <span className={`text-xs font-bold ${podVisibility === "public" ? "text-black" : "text-zinc-400"}`}>
-                  Public
-                </span>
               </div>
+
+              {/* PRIVATE / PUBLIC SWITCH - only show if user is owner */}
+              {permissions.isOwner && (
+                <div className="flex items-center gap-2 rounded-full border-2 border-black bg-white px-3 py-1 shadow-[2px_2px_0_0_black] relative">
+                  <span className={`text-xs font-bold ${podVisibility === "private" ? "text-black" : "text-zinc-400"}`}>
+                    Private
+                  </span>
+
+                  {isUpdatingVisibility ? (
+                    <div className="flex items-center justify-center h-6 w-12 mx-1">
+                      <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : (
+                    <Switch
+                      checked={podVisibility === "public"}
+                      onCheckedChange={handleUpdateVisibility}
+                      disabled={isUpdatingVisibility}
+                      className="data-[state=checked]:bg-orange-500"
+                    />
+                  )}
+
+                  <span className={`text-xs font-bold ${podVisibility === "public" ? "text-black" : "text-zinc-400"}`}>
+                    Public
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -423,25 +552,29 @@ export default function KnowledgePodDetail({ params }: PageProps) {
                     />
                   </div>
 
-                  {/* Edit & Delete Actions */}
-                  <div className="flex items-center gap-2 ml-4">
-                    <button
-                      onClick={() => handleEditMaterial(material)}
-                      className="p-2 rounded-lg border-2 border-black bg-blue-100 hover:bg-blue-200 transition-colors"
-                      title="Edit material"
-                    >
-                      <Edit2 size={16} className="text-blue-600" />
-                    </button>
+                  {/* Edit & Delete Actions - only show if user has permission */}
+                  {permissions.canEdit && (
+                    <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => handleEditMaterial(material)}
+                        className="p-2 rounded-lg border-2 border-black bg-blue-100 hover:bg-blue-200 transition-colors"
+                        title="Edit material"
+                      >
+                        <Edit2 size={16} className="text-blue-600" />
+                      </button>
 
-                    <button
-                      onClick={() => handleDeleteMaterial(material.id)}
-                      disabled={isDeletingMaterial === material.id}
-                      className="p-2 rounded-lg border-2 border-black bg-red-100 hover:bg-red-200 transition-colors disabled:opacity-50"
-                      title="Delete material"
-                    >
-                      <Trash2 size={16} className="text-red-600" />
-                    </button>
-                  </div>
+                      {permissions.canDelete && (
+                        <button
+                          onClick={() => handleDeleteMaterial(material.id)}
+                          disabled={isDeletingMaterial === material.id}
+                          className="p-2 rounded-lg border-2 border-black bg-red-100 hover:bg-red-200 transition-colors disabled:opacity-50"
+                          title="Delete material"
+                        >
+                          <Trash2 size={16} className="text-red-600" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

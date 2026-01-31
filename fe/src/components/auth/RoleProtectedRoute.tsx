@@ -124,10 +124,11 @@ export function RoleProtectedRoute({
                 );
 
                 // Show loading for 4 seconds then redirect
-                setIsRedirecting(true);
-                setTimeout(() => {
+                const timer = setTimeout(() => {
+                    setIsRedirecting(true);
                     router.push(accessDeniedRedirect);
                 }, 4000);
+                return () => clearTimeout(timer);
                 return;
             }
 

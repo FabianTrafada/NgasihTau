@@ -41,8 +41,8 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: ChunkSource[];
-  feedback?: "thumbs_up" | "thumbs_down";
-  feedback_text?: string;
+  feedback?: "thumbs_up" | "thumbs_down" | null;
+  feedback_text?: string | null;
   created_at: string;
 }
 

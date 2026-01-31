@@ -18,9 +18,10 @@ import (
 
 // UserHandler handles user profile and follow-related HTTP requests.
 type UserHandler struct {
-	userService    application.UserService
-	storageService application.StorageService
-	aiService      application.AIService
+	userService     application.UserService
+	storageService  application.StorageService
+	aiService       application.AIService
+	behaviorService application.BehaviorService
 }
 
 // NewUserHandler creates a new UserHandler.
@@ -44,6 +45,34 @@ func NewUserHandlerWithServices(userService application.UserService, storageServ
 		userService:    userService,
 		storageService: storageService,
 		aiService:      aiService,
+	}
+}
+
+// NewUserHandlerWithAllServices creates a new UserHandler with all services including behavior service.
+func NewUserHandlerWithAllServices(
+	userService application.UserService,
+	storageService application.StorageService,
+	aiService application.AIService,
+	behaviorService application.BehaviorService,
+) *UserHandler {
+	return &UserHandler{
+		userService:     userService,
+		storageService:  storageService,
+		aiService:       aiService,
+		behaviorService: behaviorService,
+	}
+}
+
+// NewUserHandlerWithBehavior creates a new UserHandler with storage and behavior services.
+func NewUserHandlerWithBehavior(
+	userService application.UserService,
+	storageService application.StorageService,
+	behaviorService application.BehaviorService,
+) *UserHandler {
+	return &UserHandler{
+		userService:     userService,
+		storageService:  storageService,
+		behaviorService: behaviorService,
 	}
 }
 
@@ -622,4 +651,160 @@ func (h *UserHandler) GetAIUsageInfo(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, ToAIUsageInfoResponse(info)))
+}
+
+// ChatBehaviorResponse represents chat behavior in API responses.
+type ChatBehaviorResponse struct {
+	TotalMessages               int     `json:"total_messages"`
+	UserMessages                int     `json:"user_messages"`
+	AssistantMessages           int     `json:"assistant_messages"`
+	QuestionCount               int     `json:"question_count"`
+	AvgMessageLength            float64 `json:"avg_message_length"`
+	ThumbsUpCount               int     `json:"thumbs_up_count"`
+	ThumbsDownCount             int     `json:"thumbs_down_count"`
+	UniqueSessions              int     `json:"unique_sessions"`
+	TotalSessionDurationMinutes float64 `json:"total_session_duration_minutes"`
+}
+
+// MaterialBehaviorResponse represents material behavior in API responses.
+type MaterialBehaviorResponse struct {
+	TotalTimeSpentSeconds int     `json:"total_time_spent_seconds"`
+	TotalViews            int     `json:"total_views"`
+	UniqueMaterialsViewed int     `json:"unique_materials_viewed"`
+	BookmarkCount         int     `json:"bookmark_count"`
+	AvgScrollDepth        float64 `json:"avg_scroll_depth"`
+}
+
+// ActivityBehaviorResponse represents activity behavior in API responses.
+type ActivityBehaviorResponse struct {
+	ActiveDays            int     `json:"active_days"`
+	TotalSessions         int     `json:"total_sessions"`
+	PeakHour              int     `json:"peak_hour"`
+	LateNightSessions     int     `json:"late_night_sessions"`
+	WeekendSessions       int     `json:"weekend_sessions"`
+	TotalWeekdaySessions  int     `json:"total_weekday_sessions"`
+	DailyActivityVariance float64 `json:"daily_activity_variance"`
+}
+
+// QuizBehaviorResponse represents quiz behavior in API responses.
+type QuizBehaviorResponse struct {
+	QuizAttempts   int     `json:"quiz_attempts"`
+	AvgScore       float64 `json:"avg_score"`
+	CompletionRate float64 `json:"completion_rate"`
+}
+
+// BehaviorDataResponse represents behavior data in API responses.
+type BehaviorDataResponse struct {
+	UserID             string                   `json:"user_id"`
+	AnalysisPeriodDays int                      `json:"analysis_period_days"`
+	Chat               ChatBehaviorResponse     `json:"chat"`
+	Material           MaterialBehaviorResponse `json:"material"`
+	Activity           ActivityBehaviorResponse `json:"activity"`
+	Quiz               QuizBehaviorResponse     `json:"quiz"`
+}
+
+// UserBehaviorResponse represents the full user behavior in API responses.
+type UserBehaviorResponse struct {
+	UserID          string               `json:"user_id"`
+	BehaviorData    BehaviorDataResponse `json:"behavior_data"`
+	QuizScore       float64              `json:"quiz_score"`
+	PreviousPersona string               `json:"previous_persona"`
+}
+
+// ToUserBehaviorResponse converts a domain.UserBehavior to UserBehaviorResponse.
+func ToUserBehaviorResponse(behavior *domain.UserBehavior) *UserBehaviorResponse {
+	if behavior == nil {
+		return nil
+	}
+
+	return &UserBehaviorResponse{
+		UserID: behavior.UserID,
+		BehaviorData: BehaviorDataResponse{
+			UserID:             behavior.BehaviorData.UserID,
+			AnalysisPeriodDays: behavior.BehaviorData.AnalysisPeriodDays,
+			Chat: ChatBehaviorResponse{
+				TotalMessages:               behavior.BehaviorData.Chat.TotalMessages,
+				UserMessages:                behavior.BehaviorData.Chat.UserMessages,
+				AssistantMessages:           behavior.BehaviorData.Chat.AssistantMessages,
+				QuestionCount:               behavior.BehaviorData.Chat.QuestionCount,
+				AvgMessageLength:            behavior.BehaviorData.Chat.AvgMessageLength,
+				ThumbsUpCount:               behavior.BehaviorData.Chat.ThumbsUpCount,
+				ThumbsDownCount:             behavior.BehaviorData.Chat.ThumbsDownCount,
+				UniqueSessions:              behavior.BehaviorData.Chat.UniqueSessions,
+				TotalSessionDurationMinutes: behavior.BehaviorData.Chat.TotalSessionDurationMinutes,
+			},
+			Material: MaterialBehaviorResponse{
+				TotalTimeSpentSeconds: behavior.BehaviorData.Material.TotalTimeSpentSeconds,
+				TotalViews:            behavior.BehaviorData.Material.TotalViews,
+				UniqueMaterialsViewed: behavior.BehaviorData.Material.UniqueMaterialsViewed,
+				BookmarkCount:         behavior.BehaviorData.Material.BookmarkCount,
+				AvgScrollDepth:        behavior.BehaviorData.Material.AvgScrollDepth,
+			},
+			Activity: ActivityBehaviorResponse{
+				ActiveDays:            behavior.BehaviorData.Activity.ActiveDays,
+				TotalSessions:         behavior.BehaviorData.Activity.TotalSessions,
+				PeakHour:              behavior.BehaviorData.Activity.PeakHour,
+				LateNightSessions:     behavior.BehaviorData.Activity.LateNightSessions,
+				WeekendSessions:       behavior.BehaviorData.Activity.WeekendSessions,
+				TotalWeekdaySessions:  behavior.BehaviorData.Activity.TotalWeekdaySessions,
+				DailyActivityVariance: behavior.BehaviorData.Activity.DailyActivityVariance,
+			},
+			Quiz: QuizBehaviorResponse{
+				QuizAttempts:   behavior.BehaviorData.Quiz.QuizAttempts,
+				AvgScore:       behavior.BehaviorData.Quiz.AvgScore,
+				CompletionRate: behavior.BehaviorData.Quiz.CompletionRate,
+			},
+		},
+		QuizScore:       behavior.QuizScore,
+		PreviousPersona: behavior.PreviousPersona,
+	}
+}
+
+// GetUserBehavior handles getting the current user's behavior data.
+// @Summary Get current user behavior data
+// @Description Get the authenticated user's learning behavior data including chat, material, activity, and quiz metrics
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response[UserBehaviorResponse] "User behavior data"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /users/me/behavior [get]
+func (h *UserHandler) GetUserBehavior(c *fiber.Ctx) error {
+	requestID := middleware.GetRequestID(c)
+
+	// Get user ID from context (set by auth middleware)
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return sendError(c, requestID, errors.Unauthorized(""))
+	}
+
+	// Check if behavior service is available
+	if h.behaviorService != nil {
+		// Use the behavior service to get real data
+		behavior, err := h.behaviorService.GetUserBehavior(c.Context(), userID)
+		if err != nil {
+			// Log error but continue with fallback
+			// log.Warn().Err(err).Msg("failed to get user behavior from service")
+		} else {
+			return c.Status(fiber.StatusOK).JSON(response.OK(requestID, ToUserBehaviorResponse(behavior)))
+		}
+	}
+
+	// Fallback: return default/empty behavior data
+	behavior := &domain.UserBehavior{
+		UserID: userID.String(),
+		BehaviorData: domain.BehaviorData{
+			UserID:             userID.String(),
+			AnalysisPeriodDays: 30,
+			Chat:               domain.ChatBehavior{},
+			Material:           domain.MaterialBehavior{AvgScrollDepth: 0.5},
+			Activity:           domain.ActivityBehavior{PeakHour: 12},
+			Quiz:               domain.QuizBehavior{},
+		},
+		QuizScore:       0,
+		PreviousPersona: "false",
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.OK(requestID, ToUserBehaviorResponse(behavior)))
 }

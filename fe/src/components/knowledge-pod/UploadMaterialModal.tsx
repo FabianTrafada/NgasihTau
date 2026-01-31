@@ -37,6 +37,7 @@ export default function UploadMaterialModal({
         if (file) {
             setSelectedFile(file);
             setError(null);
+
             // Auto-fill title from filename
             const fileName = file.name;
             const fileNameWithoutExt = fileName.substring(

@@ -39,7 +39,7 @@ export function SearchBar({
   } = useSearch(300);
 
   const [localSuggestions, setLocalSuggestions] = useState<string[]>([]);
-
+  
   // Fetch suggestions when input changes
   const fetchSuggestionsLocal = useCallback(async (value: string) => {
     if (value.length < 2) {

@@ -22,6 +22,7 @@ import (
 	"ngasihtau/internal/common/health"
 	"ngasihtau/internal/common/middleware"
 	"ngasihtau/internal/pod/application"
+	"ngasihtau/internal/pod/infrastructure/adapter"
 	"ngasihtau/internal/pod/infrastructure/postgres"
 	podhttp "ngasihtau/internal/pod/interfaces/http"
 	"ngasihtau/pkg/jwt"
@@ -96,13 +97,14 @@ func main() {
 type App struct {
 	httpServer    *fiber.App
 	db            *pgxpool.Pool
+	userDB        *pgxpool.Pool
 	natsClient    *nats.Client
 	healthChecker *health.Checker
 }
 
 // initializeApp creates and configures the application with all dependencies.
 func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
-	// Initialize database connection pool
+	// Initialize pod database connection pool
 	dbConfig, err := pgxpool.ParseConfig(cfg.PodDB.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database config: %w", err)
@@ -122,7 +124,29 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	if err := db.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	log.Info().Msg("connected to database")
+	log.Info().Msg("connected to pod database")
+
+	// Initialize user database connection pool (for user lookups)
+	userDBConfig, err := pgxpool.ParseConfig(cfg.UserDB.DSN())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse user database config: %w", err)
+	}
+
+	userDBConfig.MaxConns = int32(cfg.UserDB.MaxOpenConns)
+	userDBConfig.MinConns = int32(cfg.UserDB.MaxIdleConns / 2)
+	userDBConfig.MaxConnLifetime = cfg.UserDB.ConnMaxLifetime
+	userDBConfig.MaxConnIdleTime = 5 * time.Minute
+
+	userDB, err := pgxpool.NewWithConfig(ctx, userDBConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to user database: %w", err)
+	}
+
+	// Verify user database connection
+	if err := userDB.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping user database: %w", err)
+	}
+	log.Info().Msg("connected to user database")
 
 	// Initialize JWT manager
 	jwtManager := jwt.NewManager(jwt.Config{
@@ -180,6 +204,9 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		interactionRepo,
 	)
 
+	// Initialize user finder adapter for email lookup
+	userFinder := adapter.NewUserFinderAdapter(userDB)
+
 	// Initialize services
 	podService := application.NewPodService(
 		podRepo,
@@ -192,7 +219,8 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		followRepo,
 		activityRepo,
 		eventPublisher,
-		nil, // UserRoleChecker - will be initialized when user DB connection is available
+		nil,        // UserRoleChecker - will be initialized when user DB connection is available
+		userFinder, // UserFinder - for email-based collaborator invites
 	)
 
 	recommendationService := application.NewRecommendationService(
@@ -249,6 +277,7 @@ func initializeApp(ctx context.Context, cfg *config.Config) (*App, error) {
 	return &App{
 		httpServer:    fiberApp,
 		db:            db,
+		userDB:        userDB,
 		natsClient:    natsClient,
 		healthChecker: healthChecker,
 	}, nil
@@ -275,10 +304,14 @@ func (a *App) Shutdown(ctx context.Context) error {
 		log.Info().Msg("NATS connection closed")
 	}
 
-	// Close database pool
+	// Close database pools
 	if a.db != nil {
 		a.db.Close()
-		log.Info().Msg("database connection closed")
+		log.Info().Msg("pod database connection closed")
+	}
+	if a.userDB != nil {
+		a.userDB.Close()
+		log.Info().Msg("user database connection closed")
 	}
 
 	return nil

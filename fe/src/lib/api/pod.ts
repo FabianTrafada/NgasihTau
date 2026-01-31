@@ -7,6 +7,61 @@ import { Material } from "@/types/material";
  * Endpoint: GET /api/v1/pods/{id}
  */
 export async function getPodDetail(podId: string): Promise<Pod> {
+  // MOCK DATA for "Restore Dummy Data" request
+  if (['1', '2', '3', '4'].includes(podId)) {
+    const mockPods: Record<string, Pod> = {
+      '1': {
+        id: '1',
+        name: 'Cara Belajar Mobil Kopling (99% bisa 1% nya hanya tuhan ....)',
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ...',
+        visibility: 'public',
+        owner_id: 'me',
+        view_count: 150,
+        star_count: 42,
+        fork_count: 8,
+        created_at: '2025-01-02T00:00:00Z',
+        updated_at: '2025-01-02T00:00:00Z'
+      },
+      '2': {
+        id: '2',
+        name: 'Dasar Pemrograman React untuk Pemula',
+        description: 'Panduan lengkap memahami component, props, dan state dalam React modern menggunakan TypeScript.',
+        visibility: 'public',
+        owner_id: 'me',
+        view_count: 230,
+        star_count: 67,
+        fork_count: 15,
+        created_at: '2025-01-05T00:00:00Z',
+        updated_at: '2025-01-05T00:00:00Z'
+      },
+      '3': {
+        id: '3',
+        name: 'Manajemen Waktu untuk Mahasiswa Akhir',
+        description: 'Tips dan trik mengelola jadwal skripsi tanpa mengabaikan kesehatan mental dan kehidupan sosial.',
+        visibility: 'public',
+        owner_id: 'me',
+        view_count: 89,
+        star_count: 23,
+        fork_count: 3,
+        created_at: '2025-01-10T00:00:00Z',
+        updated_at: '2025-01-10T00:00:00Z'
+      },
+      '4': {
+        id: '4',
+        name: 'Food Photography dengan Smartphone',
+        description: 'Cara mengambil foto makanan yang estetik hanya dengan modal kamera HP dan cahaya matahari.',
+        visibility: 'public',
+        owner_id: 'me',
+        view_count: 178,
+        star_count: 55,
+        fork_count: 12,
+        created_at: '2025-01-12T00:00:00Z',
+        updated_at: '2025-01-12T00:00:00Z'
+      }
+    };
+    return mockPods[podId];
+  }
+
   try {
     const response = await apiClient.get<{ data: Pod }>(`/api/v1/pods/${podId}`);
     return response.data.data || response.data;
@@ -21,6 +76,49 @@ export async function getPodDetail(podId: string): Promise<Pod> {
  * Endpoint: GET /api/v1/pods/{id}/materials
  */
 export async function getPodMaterials(podId: string, limit: number = 20, offset: number = 0): Promise<Material[]> {
+  // MOCK DATA for "Restore Dummy Data" request
+  if (['1', '2', '3', '4'].includes(podId)) {
+    // Return some dummy materials so the pod isn't empty
+    return [
+      {
+        id: `mat-${podId}-1`,
+        pod_id: podId,
+        uploader_id: 'me',
+        title: 'Pengenalan.pdf',
+        description: 'Materi pengantar',
+        file_type: 'pdf',
+        file_url: 'dummy.pdf',
+        file_size: 1024 * 1024 * 2,
+        current_version: 1,
+        status: 'ready',
+        view_count: 10,
+        download_count: 5,
+        average_rating: 4.5,
+        rating_count: 2,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: `mat-${podId}-2`,
+        pod_id: podId,
+        uploader_id: 'me',
+        title: 'Latihan_Praktek.docx',
+        description: 'Soal latihan mingguan',
+        file_type: 'docx',
+        file_url: 'dummy.docx',
+        file_size: 1024 * 500,
+        current_version: 1,
+        status: 'ready',
+        view_count: 8,
+        download_count: 3,
+        average_rating: 4.8,
+        rating_count: 4,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+  }
+
   try {
     const token = localStorage.getItem("access_token");
     const response = await apiClient.get<{ data: Material }>(`/api/v1/pods/${podId}/materials`, {
@@ -136,11 +234,11 @@ export async function unstarPod(podId: string): Promise<void> {
   }
 }
 
-export async function UpdatePod(podId: string, input:UpdatePodInput): Promise<Pod> {
+export async function UpdatePod(podId: string, input: UpdatePodInput): Promise<Pod> {
   try {
     const token = localStorage.getItem("access_token");
 
-    const response = await apiClient.put<{data: Pod}>(`/api/v1/pods/${podId}`, input, {
+    const response = await apiClient.put<{ data: Pod }>(`/api/v1/pods/${podId}`, input, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

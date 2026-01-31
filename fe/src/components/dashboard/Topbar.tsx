@@ -2,7 +2,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useTranslations } from 'next-intl';
 
-import { BookText, LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
+import { Bell, BookText, LogOut, PanelLeft, Search, Settings, User, Users } from 'lucide-react'
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
@@ -62,7 +62,7 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
 
 
                 {/* TODO Hackaton 50% */}
-                {/* <DropdownMenu>
+                <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button className="relative p-2 text-gray-600 hover:text-[#FF8811] transition-colors hidden sm:block">
                             <Bell className="w-5 h-5 lg:w-6 lg:h-6" />
@@ -120,7 +120,7 @@ const Topbar = ({ onRightMenuClick, }: TopbarProps) => {
                             </Link>
                         </div>
                     </DropdownMenuContent>
-                </DropdownMenu> */}
+                </DropdownMenu>
 
 
                 <DropdownMenu>

@@ -16,6 +16,31 @@ import (
 	_ "ngasihtau/docs" // Swagger docs
 )
 
+// CollaboratorInviteResponse is the response body for POST /api/v1/pods/:id/collaborators.
+type CollaboratorInviteResponse struct {
+	CreatedAt string `json:"created_at"`
+	ID        string `json:"id"`
+	InvitedBy string `json:"invited_by"`
+	PodID     string `json:"pod_id"`
+	Role      string `json:"role"`
+	Status    string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+	UserID    string `json:"user_id"`
+}
+
+func toCollaboratorInviteResponse(c *domain.Collaborator) CollaboratorInviteResponse {
+	return CollaboratorInviteResponse{
+		CreatedAt: c.CreatedAt.UTC().Format("2006-01-02T15:04:05Z07:00"),
+		ID:        c.ID.String(),
+		InvitedBy: c.InvitedBy.String(),
+		PodID:     c.PodID.String(),
+		Role:      string(c.Role),
+		Status:    string(c.Status),
+		UpdatedAt: c.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z07:00"),
+		UserID:    c.UserID.String(),
+	}
+}
+
 // PodHandler handles HTTP requests for pod operations.
 type PodHandler struct {
 	podService            application.PodService
@@ -512,17 +537,24 @@ func (h *PodHandler) UnfollowPod(c *fiber.Ctx) error {
 	return c.JSON(response.OK(requestID, fiber.Map{"following": false}))
 }
 
+// InviteCollaboratorRequest represents the request body for inviting a collaborator.
+// @Description Invite collaborator request with email and role
+type InviteCollaboratorRequest struct {
+	Email string `json:"email" example:"collaborator@example.com"`
+	Role  string `json:"role" example:"collaborator" enums:"viewer,contributor,admin"`
+}
+
 // InviteCollaborator handles POST /api/v1/pods/:id/collaborators
 // @Summary Invite a collaborator
-// @Description Invite a user to collaborate on a pod. Requires owner or admin access.
+// @Description Invite a user to collaborate on a pod by email. Requires owner or admin access. The system resolves the email to a user internally.
 // @Tags Pods
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "Pod ID" format(uuid)
-// @Param request body application.InviteCollaboratorInput true "Collaborator invitation"
+// @Param request body InviteCollaboratorRequest true "Collaborator invitation with email and role"
 // @Success 201 {object} response.Response[domain.Collaborator] "Collaborator invited"
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body or email format"
 // @Failure 401 {object} errors.ErrorResponse "Authentication required"
 // @Failure 403 {object} errors.ErrorResponse "Collaborator management access required"
 // @Failure 404 {object} errors.ErrorResponse "Pod or user not found"
@@ -561,7 +593,7 @@ func (h *PodHandler) InviteCollaborator(c *fiber.Ctx) error {
 	}
 
 	requestID := middleware.GetRequestID(c)
-	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, collaborator))
+	return c.Status(fiber.StatusCreated).JSON(response.Created(requestID, toCollaboratorInviteResponse(collaborator)))
 }
 
 // UpdateCollaborator handles PUT /api/v1/pods/:id/collaborators/:userId
@@ -738,6 +770,44 @@ func (h *PodHandler) GetCollaborators(c *fiber.Ctx) error {
 
 	requestID := middleware.GetRequestID(c)
 	return c.JSON(response.OK(requestID, collaborators))
+}
+
+// GetUserCollaborativePods handles GET /api/v1/pods/collaborations
+// @Summary Get user's collaborative pods
+// @Description Get all pods where the user is a verified collaborator
+// @Tags Pods
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param per_page query int false "Items per page" default(10)
+// @Success 200 {object} response.PaginatedResponse[domain.Pod] "List of collaborative pods"
+// @Failure 401 {object} errors.ErrorResponse "Authentication required"
+// @Router /pods/collaborations [get]
+func (h *PodHandler) GetUserCollaborativePods(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok || userID == uuid.Nil {
+		return errors.Unauthorized("authentication required")
+	}
+
+	// Parse pagination parameters
+	page := c.QueryInt("page", 1)
+	perPage := c.QueryInt("per_page", 10)
+
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 10
+	}
+
+	result, err := h.podService.GetUserCollaborativePods(c.Context(), userID, page, perPage)
+	if err != nil {
+		return err
+	}
+
+	requestID := middleware.GetRequestID(c)
+	return c.JSON(response.Paginated(requestID, result.Pods, result.Total, result.Page, result.PerPage))
 }
 
 // GetPodActivity handles GET /api/v1/pods/:id/activity

@@ -157,8 +157,11 @@ export function WorkspaceSetup({ onComplete }: WorkspaceSetupProps) {
                 // Fallback: Redirect to dashboard directly
                 router.push("/dashboard");
             }
-        } catch (err: any) {
-            setError(err.response?.data?.message || t('failedToSave'));
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error && 'response' in err
+                ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || t('failedToSave')
+                : t('failedToSave');
+            setError(errorMessage);
             console.error("Error saving interests:", err);
         } finally {
             setIsSaving(false);

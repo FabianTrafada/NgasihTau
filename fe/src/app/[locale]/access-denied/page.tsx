@@ -12,12 +12,7 @@ export default function AccessDeniedPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
-    const [fromPath, setFromPath] = useState<string | null>(null);
-
-    useEffect(() => {
-        const from = searchParams.get('from');
-        setFromPath(from);
-    }, [searchParams]);
+    const fromPath = searchParams.get('from');
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 text-center bg-[#FFFBF7] font-[family-name:var(--font-plus-jakarta-sans)]">

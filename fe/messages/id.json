@@ -356,8 +356,90 @@
         "stepAssets": "ASET",
         "stepDeploy": "DEPLOY"
     },
-    "DetailPod":{
-       "title": "Detail Pod"
-
+    "podDetail": {
+        "loading": "Memuat...",
+        "notFound": "Pod tidak ditemukan",
+        "editMaterial": "Edit Materi",
+        "title": "Judul",
+        "description": "Deskripsi",
+        "materialTitle": "Judul materi",
+        "materialDescription": "Deskripsi materi",
+        "saving": "Menyimpan...",
+        "saveChanges": "Simpan Perubahan",
+        "uploadMaterial": "Unggah Materi",
+        "editMaterialButton": "Edit materi",
+        "deleteMaterialButton": "Hapus materi",
+        "noMaterials": "Belum ada materi",
+        "private": "Privat",
+        "public": "Publik",
+        "visibility": "Visibilitas",
+        "materials": "Materi",
+        "settings": "Pengaturan"
+    },
+    "DetailPod": {
+        "title": "Detail Pod"
+    },
+    "collaborator": {
+        "title": "Kolaborator",
+        "addCollaborator": "Tambah Kolaborator",
+        "inviteCollaborator": "Undang Kolaborator",
+        "manageCollaborators": "Kelola Kolaborator",
+        "searchByEmail": "Cari berdasarkan email",
+        "enterEmail": "Masukkan alamat email",
+        "emailPlaceholder": "pengguna@contoh.com",
+        "emailHint": "Masukkan alamat email pengguna yang ingin Anda undang",
+        "add": "Tambah",
+        "remove": "Hapus",
+        "invite": "Undang",
+        "cancel": "Batal",
+        "close": "Tutup",
+        "search": "Cari",
+        "searching": "Mencari...",
+        "inviting": "Mengundang...",
+        "removing": "Menghapus...",
+        "noCollaborators": "Belum ada kolaborator",
+        "noResults": "Tidak ada pengguna dengan email ini",
+        "userFound": "Pengguna ditemukan",
+        "roles": {
+            "owner": "Pemilik",
+            "admin": "Admin",
+            "contributor": "Kontributor",
+            "viewer": "Penonton"
+        },
+        "roleDescriptions": {
+            "admin": "Dapat mengelola kolaborator dan mengunggah materi",
+            "contributor": "Dapat mengunggah dan mengedit materi",
+            "viewer": "Hanya dapat melihat materi"
+        },
+        "status": {
+            "pending": "Menunggu",
+            "pendingVerification": "Menunggu Verifikasi",
+            "verified": "Terverifikasi"
+        },
+        "permissions": {
+            "canUpload": "Dapat mengunggah materi",
+            "canEdit": "Dapat mengedit pod",
+            "canManage": "Dapat mengelola kolaborator",
+            "viewOnly": "Hanya lihat"
+        },
+        "errors": {
+            "userNotFound": "Pengguna tidak ditemukan dengan email ini",
+            "userNotVerified": "Pengguna ini belum memverifikasi email mereka",
+            "alreadyCollaborator": "Pengguna ini sudah menjadi kolaborator",
+            "cannotInviteSelf": "Anda tidak dapat mengundang diri sendiri",
+            "permissionDenied": "Anda tidak memiliki izin untuk melakukan ini",
+            "collaboratorNotFound": "Kolaborator tidak ditemukan",
+            "invalidRole": "Peran yang dipilih tidak valid",
+            "invalidEmail": "Silakan masukkan alamat email yang valid",
+            "networkError": "Kesalahan jaringan. Silakan coba lagi.",
+            "unknown": "Terjadi kesalahan yang tidak terduga"
+        },
+        "success": {
+            "invited": "Kolaborator berhasil diundang",
+            "removed": "Kolaborator berhasil dihapus",
+            "updated": "Kolaborator berhasil diperbarui"
+        },
+        "confirmRemove": "Apakah Anda yakin ingin menghapus kolaborator ini?",
+        "selectRole": "Pilih peran"
     }
 }

@@ -9,6 +9,8 @@ import { UploadMaterialInput } from "@/types";
 import { Material, ChatSession, ChatMessage, UploadUrlResponse } from "@/types/material";
 import { resolve } from "path";
 import { confirmUpload, ConfirmUploadRequest } from "./uploadMaterial";
+import { MaterialVersion, MaterialVersionFromAPI } from "@/types/version";
+
 // Use the configured apiClient which already has:
 // - Correct base URL from NEXT_PUBLIC_API_URL
 // - Token interceptor for auth
@@ -19,6 +21,29 @@ import { confirmUpload, ConfirmUploadRequest } from "./uploadMaterial";
  * Endpoint: GET /api/v1/materials/{id}
  */
 export async function getMaterialDetail(materialId: string): Promise<Material> {
+  // MOCK DATA
+  if (materialId.startsWith('mat-')) {
+    const podId = materialId.split('-')[1];
+    return {
+      id: materialId,
+      pod_id: podId,
+      uploader_id: 'me',
+      title: materialId.includes('1') ? 'Pengenalan.pdf' : 'Latihan_Praktek.docx',
+      description: 'Materi dummy description',
+      file_type: materialId.includes('1') ? 'pdf' : 'docx',
+      file_url: 'dummy',
+      file_size: 1024 * 1024,
+      current_version: 1,
+      status: 'ready',
+      view_count: 10,
+      download_count: 5,
+      average_rating: 4.5,
+      rating_count: 2,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
   try {
     const token = localStorage.getItem("access_token");
     const response = await apiClient.get<{ data: Material }>(
@@ -41,6 +66,19 @@ export async function getMaterialDetail(materialId: string): Promise<Material> {
  * Endpoint: GET /api/v1/materials/{id}/chat/history (routed to AI Service via Traefik)
  */
 export async function getMaterialChatHistory(materialId: string, limit: number = 20, offset: number = 0): Promise<ChatMessage[]> {
+  // MOCK DATA
+  if (materialId.startsWith('mat-')) {
+    return [
+      {
+        id: 'msg-1',
+        session_id: 'mock-session',
+        role: 'assistant',
+        content: 'Hello! I am ready to help you with this material. What would you like to know?',
+        created_at: new Date().toISOString()
+      }
+    ];
+  }
+
   try {
     const response = await apiClient.get<{ data: ChatMessage[] }>(
       `/api/v1/materials/${materialId}/chat/history`,
@@ -58,6 +96,12 @@ export async function getMaterialChatHistory(materialId: string, limit: number =
  * Endpoint: GET /api/v1/materials/{id}/preview
  */
 export async function getMaterialPreviewUrl(materialId: string): Promise<string> {
+  // MOCK DATA
+  if (materialId.startsWith('mat-')) {
+    // Return local sample PDF for stable preview
+    return "/dummy.pdf";
+  }
+
   try {
     const token = localStorage.getItem("access_token");
     const response = await apiClient.get<{ data: { preview_url: string } }>(
@@ -76,11 +120,18 @@ export async function getMaterialPreviewUrl(materialId: string): Promise<string>
   }
 }
 
-export async function getMaterialDownloadUrl(materialId: string): Promise<string> {
+export async function getMaterialDownloadUrl(materialId: string, version?: number): Promise<string> {
+  // MOCK DATA
+  if (materialId.startsWith('mat-')) {
+    return "https://example.com/dummy-download.pdf";
+  }
+
   try {
     const token = localStorage.getItem("access_token");
+    const url = `/api/v1/materials/${materialId}/download${version ? `?version=${version}` : ''}`;
+
     const response = await apiClient.get<{ data: { download_url: string } }>(
-      `/api/v1/materials/${materialId}/download`,
+      url,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,8 +140,9 @@ export async function getMaterialDownloadUrl(materialId: string): Promise<string
     );
     // Return the presigned URL directly - do NOT modify it as it will break the signature
     const downloadUrl = response.data?.data?.download_url || "";
-    console.log("Download URL fetched:", { materialId, url: downloadUrl });
-    return downloadUrl;  } catch (error) {
+    console.log("Download URL fetched:", { materialId, version, url: downloadUrl });
+    return downloadUrl;
+  } catch (error) {
     console.error("Error fetching download URL:", error);
     throw error;
   }
@@ -101,6 +153,17 @@ export async function getMaterialDownloadUrl(materialId: string): Promise<string
  * Endpoint: POST /api/v1/materials/{id}/chat (routed to AI Service via Traefik)
  */
 export async function sendMaterialChatMessage(materialId: string, message: string): Promise<ChatMessage> {
+  // MOCK DATA
+  if (materialId.startsWith('mat-')) {
+    return {
+      id: `msg-${Date.now()}`,
+      session_id: 'mock-session',
+      role: 'assistant',
+      content: `[MOCK] I received your message: "${message}". Since this is a mock material, I cannot analyze it genuinely.`,
+      created_at: new Date().toISOString()
+    };
+  }
+
   try {
     console.log("Sending chat message:", { materialId, message });
     const response = await apiClient.post<{ data: ChatMessage }>(
@@ -145,7 +208,7 @@ export async function getUploadUrl(filename: string, content_type: string, size:
     const response = await apiClient.post<{ data: UploadUrlResponse }>(
       `/api/v1/materials/upload-url`,
       {
-        filenmae: filename,
+        filename: filename,
         content_type,
         size
       },
@@ -317,3 +380,84 @@ export async function deleteMaterial(materialId: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Get material version history
+ * Endpoint: GET /api/v1/materials/{id}/versions
+ */
+export async function getMaterialVersions(materialId: string): Promise<MaterialVersion[]> {
+  const response = await apiClient.get<{ data: MaterialVersionFromAPI[] }>(
+    `/api/v1/materials/${materialId}/versions`
+  );
+  const raw = response.data?.data ?? response.data;
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((v: MaterialVersionFromAPI) => ({
+    id: v.id,
+    version_number: `v${v.version}`,
+    version: v.version,
+    created_at: v.created_at,
+    commit_message: v.changelog?.trim() || "No description",
+    author_name: "User",
+    uploader_id: v.uploader_id,
+  }));
+}
+
+/**
+ * Restore material to a specific version
+ * Endpoint: POST /api/v1/materials/{id}/versions/{version}/restore
+ */
+export async function restoreMaterialVersion(materialId: string, version: number): Promise<Material> {
+  // MOCK DATA
+  if (materialId.startsWith('mat-')) {
+    const podId = materialId.split('-')[1];
+    return {
+      id: materialId,
+      pod_id: podId,
+      uploader_id: 'me',
+      title: `[Restored v${version}] Mock Material`,
+      description: 'Materi dummy description restored',
+      file_type: 'pdf',
+      file_url: 'dummy',
+      file_size: 1024 * 1024,
+      current_version: version, // Updated version
+      status: 'ready',
+      view_count: 15,
+      download_count: 8,
+      average_rating: 4.5,
+      rating_count: 2,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  const response = await apiClient.post<{ data: Material }>(
+    `/api/v1/materials/${materialId}/versions/${version}/restore`
+  );
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * Create a new version of a material (after file is uploaded to storage)
+ * Endpoint: POST /api/v1/materials/{id}/versions
+ */
+export async function createMaterialVersion(
+  materialId: string,
+  objectKey: string,
+  changelog?: string | null
+): Promise<MaterialVersion> {
+  const response = await apiClient.post<{ data: MaterialVersionFromAPI }>(
+    `/api/v1/materials/${materialId}/versions`,
+    { object_key: objectKey, changelog: changelog || null }
+  );
+  const v = response.data?.data ?? response.data;
+  return {
+    id: v.id,
+    version_number: `v${v.version}`,
+    version: v.version,
+    created_at: v.created_at,
+    commit_message: v.changelog?.trim() || "No description",
+    author_name: "User",
+    uploader_id: v.uploader_id,
+  };
+}
+

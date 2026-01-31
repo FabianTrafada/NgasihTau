@@ -48,10 +48,10 @@ const DashboardSidebar = ({ groups }: { groups: typeof USER_SIDEBAR_GROUPS }) =>
                 </div>
             </SidebarHeader>
 
-            <SidebarContent className="bg-[#FFFBF7]  ">
+            <SidebarContent className="bg-[#FFFBF7] group-data-[collapsible=icon]:gap-0">
                 {groups.map((group) => (
-                    <SidebarGroup key={group.title}>
-                        <SidebarGroupLabel className="text-black font-bold uppercase tracking-wider text-xs mb-2">{groupTitleMap[group.title] || group.title}</SidebarGroupLabel>
+                    <SidebarGroup key={group.title} className="group-data-[collapsible=icon]:py-0">
+                        <SidebarGroupLabel className="text-black font-bold uppercase tracking-wider text-xs mb-2 group-data-[collapsible=icon]:hidden">{groupTitleMap[group.title] || group.title}</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {group.items.map((item) => {
@@ -69,7 +69,7 @@ const DashboardSidebar = ({ groups }: { groups: typeof USER_SIDEBAR_GROUPS }) =>
                                                 data-[active=true]:bg-[#FF8811] data-[active=true]:text-white data-[active=true]:border-black data-[active=true]:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-data-[collapsible=icon]:justify-center
                                             `}
                                             >
-                                                <Link href={item.href} className="flex font-medium">
+                                                <Link href={item.href} className="flex items-center gap-2 font-medium">
                                                     <item.icon className="size-4" />
                                                     <span className="group-data-[collapsible=icon]:hidden">{itemLabelMap[item.label] || item.label}</span>
                                                 </Link>

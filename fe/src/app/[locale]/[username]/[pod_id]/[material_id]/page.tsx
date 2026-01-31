@@ -3,11 +3,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ProtectedRoute } from "@/components/auth";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, Download, Loader, Plus, Search, Send, MessageCircle, X, Minimize2, Maximize2 } from "lucide-react";
+import { Bell, ChevronLeft, Download, Loader, Plus, Search, Send, MessageCircle, X, Minimize2, Maximize2, ThumbsUp, ThumbsDown, FileDown, Sparkles, Lock } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getMaterialDetail, getMaterialChatHistory, sendMaterialChatMessage, getMaterialPreviewUrl, getMaterialDownloadUrl } from "@/lib/api/material";
 import { getUserDetail } from "@/lib/api/user";
 import { Material, ChatMessage } from "@/types/material";
 import { FormattedMessage } from "@/components/FormattedMessage";
+import { useAIFeatures } from "@/hooks/useAIFeatures";
+import VersionHistoryDialog from "@/components/knowledge-pod/VersionHistoryDialog";
+import { useDownloads } from "@/hooks/useDownloads";
 
 interface PageProps {
   params: Promise<{
@@ -20,6 +25,7 @@ interface PageProps {
 export default function MaterialDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { username, pod_id, material_id } = React.use(params);
+  const { addMaterial, isDownloaded } = useDownloads();
 
   // State untuk material data
   const [material, setMaterial] = useState<Material | null>(null);
@@ -35,6 +41,28 @@ export default function MaterialDetailPage({ params }: PageProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+  // AI Features integration
+  const {
+    suggestions,
+    suggestionsLoading,
+    loadSuggestions,
+    exportLoading,
+    handleExport,
+    feedbackLoading,
+    handleFeedback,
+  } = useAIFeatures({ materialId: material_id });
+
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, "thumbs_up" | "thumbs_down">>({});
+
+  // Debug: Monitor suggestions state
+  useEffect(() => {
+    console.log("[Page] Suggestions state changed:", suggestions);
+    console.log("[Page] Suggestions length:", suggestions.length);
+    console.log("[Page] Show suggestions:", showSuggestions);
+  }, [suggestions, showSuggestions]);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -189,6 +217,40 @@ export default function MaterialDetailPage({ params }: PageProps) {
     }
   };
 
+  // Handle suggestion click
+  const handleSuggestionClick = (question: string) => {
+    setMessageInput(question);
+    setShowSuggestions(false);
+  };
+
+  // Handle export chat
+  const handleExportChat = async (format: "pdf" | "markdown") => {
+    // Show premium modal instead of exporting
+    setIsPremiumModalOpen(true);
+    /* 
+    try {
+      await handleExport(format);
+    } catch (err) {
+      console.error("Export failed:", err);
+      setError("Failed to export chat");
+    } 
+    */
+  };
+
+  // Handle message feedback
+  const handleMessageFeedback = async (
+    messageId: string,
+    feedback: "thumbs_up" | "thumbs_down"
+  ) => {
+    try {
+      await handleFeedback(messageId, feedback);
+      setMessageFeedback((prev) => ({ ...prev, [messageId]: feedback }));
+    } catch (err) {
+      console.error("Feedback submission failed:", err);
+      setError("Failed to submit feedback");
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -241,12 +303,25 @@ export default function MaterialDetailPage({ params }: PageProps) {
             </button>
             <h1 className="text-lg sm:text-xl font-bold text-[#2B2D42] truncate">{material.title}</h1>
           </div>
-          <button
-            onClick={handleDownload}
-            className="px-6 py-2 ml-2 max-sm:px-4 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white transition-all shadow-[2px_2px_0px_0px_#2B2D42] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
-          >
-            Download
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              disabled={material && isDownloaded(material.id)}
+              className={`px-6 py-2 max-sm:px-4 max-sm:text-xs bg-white border-2 border-[#2B2D42] text-sm font-bold text-[#2B2D42] transition-all shadow-[2px_2px_0px_0px_#2B2D42] ${material && isDownloaded(material.id)
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-[#FF8811] hover:text-white hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+                }`}
+            >
+              {material && isDownloaded(material.id) ? "Saved" : "Download"}
+            </button>
+            <VersionHistoryDialog
+              materialId={material.id}
+              currentVersion={material.current_version}
+              onRestore={() => {
+                getMaterialDetail(material_id).then(setMaterial);
+              }}
+            />
+          </div>
         </div>
 
         {/* Material Information - Horizontal Columns */}
@@ -345,9 +420,44 @@ export default function MaterialDetailPage({ params }: PageProps) {
             {/* Chat Header */}
             <div className="bg-[#FF8811] text-white px-4 py-3 flex items-center justify-between">
               <h3 className="font-bold text-sm">Chat with AI</h3>
-              <button onClick={() => setIsChatOpen(false)} className="hover:bg-[#e67a0f] p-1 rounded transition">
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Export Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="hover:bg-[#e67a0f] p-1 rounded transition disabled:opacity-50"
+                      title="Export Chat"
+                      disabled={exportLoading}
+                    >
+                      {exportLoading ? (
+                        <Loader size={18} className="animate-spin" />
+                      ) : (
+                        <FileDown size={18} />
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] rounded-none p-0 min-w-[160px]">
+                    <DropdownMenuItem
+                      onClick={() => handleExportChat("pdf")}
+                      className="px-4 py-3 text-xs font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white rounded-none cursor-pointer focus:bg-[#FF8811] focus:text-white"
+                      disabled={exportLoading}
+                    >
+                      Export as PDF
+                    </DropdownMenuItem>
+                    <div className="h-[2px] bg-[#2B2D42]"></div>
+                    <DropdownMenuItem
+                      onClick={() => handleExportChat("markdown")}
+                      className="px-4 py-3 text-xs font-bold text-[#2B2D42] hover:bg-[#FF8811] hover:text-white rounded-none cursor-pointer focus:bg-[#FF8811] focus:text-white"
+                      disabled={exportLoading}
+                    >
+                      Export as Markdown
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button onClick={() => setIsChatOpen(false)} className="hover:bg-[#e67a0f] p-1 rounded transition">
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Chat Messages */}
@@ -361,9 +471,38 @@ export default function MaterialDetailPage({ params }: PageProps) {
                       return null;
                     }
                     return (
-                      <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end wrap-break-word" : "gap-2"}`}>
-                        {msg.role === "assistant" && <div className="w-6 h-6 rounded-full bg-[#FF8811] shrink-0 flex items-center justify-center text-[9px] text-white font-bold">AI</div>}
-                        <FormattedMessage content={msg.content} role={msg.role} />
+                      <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "gap-2"}`}>
+                        <div className={`flex ${msg.role === "user" ? "justify-end wrap-break-word" : "gap-2"}`}>
+                          {msg.role === "assistant" && <div className="w-6 h-6 rounded-full bg-[#FF8811] shrink-0 flex items-center justify-center text-[9px] text-white font-bold">AI</div>}
+                          <FormattedMessage content={msg.content} role={msg.role} />
+                        </div>
+                        {/* Feedback buttons for assistant messages */}
+                        {msg.role === "assistant" && (
+                          <div className="flex gap-1 ml-8 mt-1">
+                            <button
+                              onClick={() => handleMessageFeedback(msg.id, "thumbs_up")}
+                              disabled={feedbackLoading[msg.id] || !!messageFeedback[msg.id]}
+                              className={`p-1 rounded transition ${messageFeedback[msg.id] === "thumbs_up"
+                                ? "bg-green-100 text-green-600"
+                                : "hover:bg-gray-200 text-gray-500"
+                                } disabled:opacity-50`}
+                              title="Good response"
+                            >
+                              <ThumbsUp size={12} />
+                            </button>
+                            <button
+                              onClick={() => handleMessageFeedback(msg.id, "thumbs_down")}
+                              disabled={feedbackLoading[msg.id] || !!messageFeedback[msg.id]}
+                              className={`p-1 rounded transition ${messageFeedback[msg.id] === "thumbs_down"
+                                ? "bg-red-100 text-red-600"
+                                : "hover:bg-gray-200 text-gray-500"
+                                } disabled:opacity-50`}
+                              title="Bad response"
+                            >
+                              <ThumbsDown size={12} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -374,7 +513,59 @@ export default function MaterialDetailPage({ params }: PageProps) {
 
             {/* Chat Input */}
             <div className="border-t-2 border-gray-200 p-3">
+              {/* Suggestions Panel - Above Input */}
+              {showSuggestions && (
+                <div className="mb-3 bg-gray-50 border border-gray-300 rounded-lg p-2 max-h-32 overflow-y-auto">
+                  <div className="text-xs font-bold text-[#2B2D42] mb-2">Suggested Questions:</div>
+                  {suggestionsLoading ? (
+                    <div className="text-center py-2">
+                      <Loader size={14} className="animate-spin inline-block" />
+                      <span className="ml-2 text-xs text-gray-500">Loading suggestions...</span>
+                    </div>
+                  ) : suggestions.length > 0 ? (
+                    <div className="space-y-1">
+                      {suggestions.map((question, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSuggestionClick(question)}
+                          className="block w-full text-left text-xs p-2 bg-white border border-gray-300 rounded hover:bg-[#FF8811] hover:text-white transition"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500 text-center py-2">
+                      No suggestions available. Try asking a question!
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    console.log("[Page] Suggestions button clicked");
+                    console.log("[Page] Current showSuggestions:", showSuggestions);
+                    console.log("[Page] Current suggestions:", suggestions);
+                    console.log("[Page] Suggestions length:", suggestions.length);
+                    if (!showSuggestions && suggestions.length === 0) {
+                      console.log("[Page] Calling loadSuggestions...");
+                      loadSuggestions();
+                    }
+                    setShowSuggestions(!showSuggestions);
+                    console.log("[Page] Toggled showSuggestions to:", !showSuggestions);
+                  }}
+                  disabled={suggestionsLoading}
+                  className="px-2 h-10 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition disabled:opacity-50"
+                  title="Get suggestions"
+                >
+                  {suggestionsLoading ? (
+                    <Loader size={14} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={14} className={showSuggestions ? "text-[#FF8811]" : ""} />
+                  )}
+                </button>
                 <textarea
                   ref={textareaRef}
                   data-lenis-prevent
@@ -396,6 +587,41 @@ export default function MaterialDetailPage({ params }: PageProps) {
             </div>
           </div>
         )}
+
+        {/* Premium Modal */}
+        <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
+          <DialogContent className="bg-white border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#2B2D42] rounded-none sm:max-w-md p-0 overflow-hidden gap-0">
+            <div className="bg-[#FF8811] p-4 flex items-center justify-between border-b-2 border-[#2B2D42]">
+              <div className="flex items-center gap-3">
+                <div className="bg-white p-1 border-2 border-[#2B2D42] shadow-[2px_2px_0px_0px_#2B2D42]">
+                  <Lock className="w-5 h-5 text-[#2B2D42]" />
+                </div>
+                <DialogTitle className="text-xl font-bold text-white uppercase tracking-wider">LOCKED</DialogTitle>
+              </div>
+              <button onClick={() => setIsPremiumModalOpen(false)} className="text-white hover:text-[#2B2D42] transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-8 bg-white">
+              <div className="mb-6 bg-yellow-50 border-2 border-[#2B2D42] p-4 shadow-[2px_2px_0px_0px_#2B2D42]">
+                <h4 className="text-lg font-bold text-[#2B2D42] mb-1">PREMIUM ONLY!</h4>
+                <DialogDescription className="text-sm font-medium text-[#2B2D42] opacity-100">
+                  You need to upgrade to Premium to export your chat history. Don&apos;t miss out!
+                </DialogDescription>
+              </div>
+
+              <DialogFooter className="sm:justify-center">
+                <button
+                  onClick={() => setIsPremiumModalOpen(false)}
+                  className="w-full px-6 py-3 bg-[#2B2D42] text-white font-bold text-lg uppercase border-2 border-[#2B2D42] shadow-[4px_4px_0px_0px_#FF8811] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
+                >
+                  I Understand
+                </button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   );
