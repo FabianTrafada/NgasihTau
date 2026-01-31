@@ -4,22 +4,38 @@
 # This file is optimized for Dokploy deployment
 # Network: dokploy-network (external, managed by Dokploy)
 # Traefik: Managed by Dokploy (labels for routing)
+#
+# SETUP REQUIRED:
+# 1. In Dokploy: Advanced > File Mounts
+# 2. Create file mount "init-databases.sh"
+# 3. Copy content from be/scripts/init-databases-dokploy.sh
+# 4. Set all environment variables in Dokploy
+
+version: "3.8"
 
 services:
   # ===========================================
   # PostgreSQL Database
   # ===========================================
+  # NOTE: For Dokploy, upload init-databases.sh via File Mounts
+  # Path in Dokploy: Advanced > File Mounts > Create "init-databases.sh"
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      MIGRATIONS_BASE_PATH: /migrations
+      # Database credentials for init script
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      POD_DB_PASSWORD: ${POD_DB_PASSWORD}
+      MATERIAL_DB_PASSWORD: ${MATERIAL_DB_PASSWORD}
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      SEARCH_DB_PASSWORD: ${SEARCH_DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./be/scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
-      - ./be/migrations:/migrations:ro
+      # Use Dokploy File Mounts - upload init-databases.sh content there
+      - ../files/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

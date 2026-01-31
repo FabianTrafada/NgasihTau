@@ -44,9 +44,8 @@ COPY --from=builder /app/api ./api
 RUN adduser -D -g '' appuser
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://localhost:${PORT:-8001}/health || exit 1
+# Expose common ports (actual port depends on service)
+EXPOSE 8001 8002 8003 8004 8005 8006
 
 # Default command
 CMD ["./service"]
