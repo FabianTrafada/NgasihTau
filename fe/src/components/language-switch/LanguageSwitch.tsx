@@ -5,7 +5,7 @@ import { Globe } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl';
 
-import { locales, localeFlags, Locale, localNames } from '@/i18n/config';
+import { locales, localeFlags, Locale, localeNames } from '@/i18n/config';
 
 const LanguageSwitch = () => {
     const locale = useLocale() as Locale;
@@ -40,7 +40,7 @@ const LanguageSwitch = () => {
                 >
                     <Globe className="h-4 w-4" />
                     <span className="hidden sm:inline">
-                        {localeFlags[locale]} {localNames[locale]}
+                        {localeFlags[locale]} {localeNames[locale]}
                     </span>
                     <span className="sm:hidden">{localeFlags[locale]}</span>
                 </Button>
@@ -53,7 +53,7 @@ const LanguageSwitch = () => {
                         className={locale === loc ? 'bg-accent' : ''}
                     >
                         <span className="mr-2">{localeFlags[loc]}</span>
-                        {localNames[loc]}
+                        {localeNames[loc]}
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>
